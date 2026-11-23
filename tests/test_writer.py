@@ -6,7 +6,7 @@ import pytest
 from reels_wiki.models import AtomicNoteSynthesis, RawReelArtifact
 from reels_wiki.queue_manager import QueueManager
 from reels_wiki.vault_context import VaultContext
-from reels_wiki.writer import WriterError, update_index, write_synthesis
+from reels_wiki.writer import WriterError, _choose_path, update_index, write_synthesis
 
 SC = "DAbCdEfGhIj"
 URL = f"https://www.instagram.com/reel/{SC}/"
@@ -191,3 +191,22 @@ def test_missing_vault_files_are_created(tmp_path):
     assert (tmp_path / res["note_path"]).exists()
     assert "[[mcp-araclari-sunmak|" in (tmp_path / "_index.md").read_text(encoding="utf-8")
     assert (tmp_path / "_log.md").exists()
+
+
+@pytest.mark.parametrize("outside_target", ["absolute", "../outside.md"])
+def test_choose_path_rejects_overwrite_outside_vault(tmp_path, outside_target):
+    vault_dir = tmp_path / "vault"
+    vault_dir.mkdir()
+    outside = tmp_path / "outside.md"
+    outside.write_text("external", encoding="utf-8")
+    inside = vault_dir / "ideas" / "existing.md"
+    inside.parent.mkdir(parents=True)
+    inside.write_text("ok", encoding="utf-8")
+
+    _, ctx = _setup(vault_dir)
+    bad = str(outside) if outside_target == "absolute" else outside_target
+
+    with pytest.raises(WriterError, match="outside the vault"):
+        _choose_path(ctx, _syn(), _artifact(), overwrite=bad)
+
+    assert _choose_path(ctx, _syn(), _artifact(), overwrite="ideas/existing.md") == inside.resolve()

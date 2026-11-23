@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import urllib.error
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -7,6 +8,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from reels_wiki.telegram_bot import (
+    TelegramBotClient,
     _get_authorized_chat_id,
     extract_instagram_urls,
     handle_update,
@@ -73,3 +75,19 @@ def test_handle_update_enqueues_valid_url(tmp_path: Path) -> None:
     mock_enq.assert_called_once()
     client.send_message.assert_called_once()
     assert "Queued [ABC12345678]" in client.send_message.call_args.kwargs["text"]
+
+
+def test_telegram_client_redacts_token_on_network_error() -> None:
+    secret = "123456:TEST_SECRET_TOKEN"
+    client = TelegramBotClient(token=secret)
+
+    with patch(
+        "urllib.request.urlopen",
+        side_effect=urllib.error.URLError(f"failed calling https://api.telegram.org/bot{secret}/getUpdates"),
+    ):
+        with pytest.raises(RuntimeError) as exc_info:
+            client.get_updates()
+
+    msg = str(exc_info.value)
+    assert secret not in msg
+    assert "<redacted>" in msg
