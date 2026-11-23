@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" alt="reels-wiki logo" width="120" />
+</p>
+
 # reels-wiki
 
 Local-first pipeline that turns **saved Instagram Reels** into **atomic idea notes** inside an existing 3-layer Obsidian LLM Wiki vault (`sources/` → atomic note → `_index.md` / `_log.md`), without duplicates and without breaking the vault's conventions.
