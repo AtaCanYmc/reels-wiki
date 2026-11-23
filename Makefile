@@ -5,6 +5,8 @@ VENV ?= .venv
 VENV_PYTHON := $(VENV)/bin/python
 PIP := $(VENV)/bin/pip
 PYTEST := $(VENV)/bin/pytest
+RUFF := $(VENV)/bin/ruff
+MYPY := $(VENV)/bin/mypy
 REELS_SYNC := $(VENV)/bin/reels-sync
 
 CONFIG ?=
@@ -18,7 +20,7 @@ K ?=
 GLOBAL_FLAGS := $(if $(CONFIG),--config "$(CONFIG)",) $(if $(VAULT),--vault "$(VAULT)",)
 
 .PHONY: help venv install install-dev install-local install-all update-yt-dlp init-config doctor \
-        test test-fast test-match check-docs check-release verify \
+        test test-fast test-match test-cov lint typecheck check-docs check-release verify \
         stats stats-json ingest import-ig process-dry process retry-failed reprocess reprocess-all telegram mcp \
         build clean clean-all
 
@@ -77,9 +79,18 @@ test-match: ## Run pytest matching K=<pattern>
 	@test -n "$(K)" || (echo "Usage: make test-match K=<pattern>" && exit 1)
 	$(PYTEST) -v -k "$(K)"
 
+test-cov: ## Run pytest with coverage report and 70% minimum threshold
+	$(PYTEST) -v --cov=reels_wiki --cov-report=term-missing --cov-fail-under=70
+
+lint: ## Run ruff linter on src and tests
+	$(RUFF) check src tests
+
+typecheck: ## Run mypy type checker on src/reels_wiki
+	$(MYPY) src/reels_wiki
+
 check-docs: ## Verify README links exist and polished docs have no em-dashes
 	@$(PYTHON) -c 'import pathlib, re; \
-		docs = [pathlib.Path(p) for p in ["README.md", "docs/step-by-step.md", "docs/example-walkthrough.md"]]; \
+		docs = [pathlib.Path(p) for p in ["README.md", "docs/step-by-step.md", "docs/example-walkthrough.md", "docs/troubleshooting.md"]]; \
 		[(_ for _ in ()).throw(AssertionError(f"Em-dash found in {p}")) for p in docs if "—" in p.read_text()]; \
 		readme = pathlib.Path("README.md").read_text(); \
 		links = re.findall(r"\]\(([^)#http][^)]*)\)", readme) + re.findall(r"src=\"([^\"]+)\"", readme); \
@@ -100,7 +111,7 @@ check-release: ## Validate release-please JSON/YAML and version parity
 	@$(VENV_PYTHON) -c 'import yaml, pathlib; yaml.safe_load(pathlib.Path(".github/workflows/release-please.yml").read_text()); print("Workflow YAML syntax OK.")' 2>/dev/null || \
 		$(PYTHON) -c 'import yaml, pathlib; yaml.safe_load(pathlib.Path(".github/workflows/release-please.yml").read_text()); print("Workflow YAML syntax OK.")'
 
-verify: check-docs check-release test ## Run doc checks, release parity checks, and pytest suite
+verify: check-docs check-release lint typecheck test-cov ## Run doc checks, release parity, lint, mypy, and coverage tests
 
 # --- CLI Workflows
 stats: ## Show queue statistics

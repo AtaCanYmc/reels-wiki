@@ -5,7 +5,7 @@ import json
 import os
 import re
 from pathlib import Path
-from typing import Iterable
+from typing import Any, Iterable
 from urllib.parse import urlparse
 
 from filelock import FileLock
@@ -167,8 +167,9 @@ class QueueManager:
                 self._save_index(index)
             return result
 
-    def enqueue_many(self, urls: Iterable[str], source: str = "manual", force: bool = False) -> dict:
-        summary = {"enqueued": 0, "duplicates": 0, "invalid": 0, "shortcodes": []}
+    def enqueue_many(self, urls: Iterable[str], source: str = "manual", force: bool = False) -> dict[str, Any]:
+        shortcodes: list[str] = []
+        summary: dict[str, Any] = {"enqueued": 0, "duplicates": 0, "invalid": 0, "shortcodes": shortcodes}
         with self._lock:
             index = self.load_index()
             seen: set[str] = set()
@@ -180,7 +181,7 @@ class QueueManager:
                 result = self._enqueue_one(index, url, source, force)
                 if result["result"] == "enqueued":
                     summary["enqueued"] += 1
-                    summary["shortcodes"].append(result["shortcode"])
+                    shortcodes.append(result["shortcode"])
                     seen.add(result["shortcode"])
                 elif result["result"] == "duplicate":
                     summary["duplicates"] += 1

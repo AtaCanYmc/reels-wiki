@@ -6,10 +6,10 @@ from typing import Any
 try:
     from mcp.server.mcpserver import MCPServer as FastMCP
 except ImportError:
-    from mcp.server.fastmcp import FastMCP
+    from mcp.server.fastmcp import FastMCP  # type: ignore[no-redef,attr-defined]
 
 from .config import Config, load_config
-from .ig_export import import_ig_export
+from .ig_export import import_ig_export as _import_ig_export
 from .pipeline import process_queue
 from .queue_manager import enqueue, queue_stats
 
@@ -44,11 +44,11 @@ def create_mcp_server(default_cfg: Config | None = None) -> FastMCP:
     ) -> dict[str, Any]:
         """Bulk-import saved Instagram URLs from saved_posts.json or an export directory."""
         cfg = _resolve_cfg(vault_path)
-        return import_ig_export(
-            cfg=cfg,
-            export_path=Path(export_path).expanduser(),
-            reels_only=reels_only,
+        return _import_ig_export(
+            Path(export_path).expanduser(),
+            vault=cfg.vault_path,
             force=force,
+            include_posts=not reels_only,
         )
 
     @mcp.tool()
@@ -66,7 +66,7 @@ def create_mcp_server(default_cfg: Config | None = None) -> FastMCP:
             limit=limit,
             dry_run=dry_run,
             retry_failed=retry_failed,
-            force=force,
+            re_extract=force,
         )
 
     @mcp.tool()

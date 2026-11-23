@@ -861,14 +861,31 @@
             <a href="#sandbox" class="btn-primary">Inspect Live Sandbox</a>
 
             <div class="install-box">
-              <code id="install-cmd">pip install -e ".[dev]"</code>
+              <code id="install-cmd">pip install reels-wiki</code>
               <span class="copy">
                 <button
                   type="button"
                   class="copy-button"
                   command="--copy"
                   commandfor="install-cmd"
-                  aria-label="Copy install command"
+                  aria-label="Copy PyPI install command"
+                >
+                  <span class="copy-icon-default" aria-hidden="true">Copy</span>
+                  <span class="copy-icon-check" aria-hidden="true">Copied</span>
+                </button>
+                <span class="copy-tip" role="status"></span>
+              </span>
+            </div>
+
+            <div class="install-box">
+              <code id="brew-cmd">brew install AtaCanYmc/tap/reels-wiki</code>
+              <span class="copy">
+                <button
+                  type="button"
+                  class="copy-button"
+                  command="--copy"
+                  commandfor="brew-cmd"
+                  aria-label="Copy Homebrew install command"
                 >
                   <span class="copy-icon-default" aria-hidden="true">Copy</span>
                   <span class="copy-icon-check" aria-hidden="true">Copied</span>
@@ -1248,7 +1265,7 @@ reels-sync telegram
           <li class="step-card">
             <div class="step-title">
               <span class="step-badge">1</span>
-              <span>Clone repository and install package</span>
+              <span>Install via PyPI, Homebrew, or source</span>
             </div>
             <div class="code-shell">
               <div class="code-header">
@@ -1261,10 +1278,14 @@ reels-sync telegram
                   <span class="copy-tip" role="status"></span>
                 </span>
               </div>
-              <pre class="code-body" tabindex="0"><code id="qs-step-1">git clone https://github.com/AtaCanYmc/reels-secretary.git
-cd reels-secretary
-python3 -m venv .venv &amp;&amp; source .venv/bin/activate
-pip install -e ".[dev]"</code></pre>
+              <pre class="code-body" tabindex="0"><code id="qs-step-1"># PyPI
+pip install reels-wiki
+
+# Homebrew (macOS / Linux)
+brew install AtaCanYmc/tap/reels-wiki
+
+# From source
+git clone https://github.com/AtaCanYmc/reels-wiki.git &amp;&amp; cd reels-wiki &amp;&amp; pip install -e ".[dev]"</code></pre>
             </div>
           </li>
 
@@ -1323,6 +1344,8 @@ reels-sync stats</code></pre>
     <div class="container footer-inner">
       <div>reels-wiki · MIT License</div>
       <div class="footer-links">
+        <a href="https://pypi.org/project/reels-wiki/" target="_blank" rel="noopener noreferrer">PyPI</a>
+        <a href="https://github.com/AtaCanYmc/homebrew-tap" target="_blank" rel="noopener noreferrer">Homebrew</a>
         <a href="https://github.com/AtaCanYmc/reels-secretary/blob/main/docs/architecture.md" target="_blank" rel="noopener noreferrer">Architecture</a>
         <a href="https://github.com/AtaCanYmc/reels-secretary/blob/main/docs/step-by-step.md" target="_blank" rel="noopener noreferrer">Step-by-Step</a>
         <a href="https://github.com/AtaCanYmc/reels-secretary/blob/main/docs/example-walkthrough.md" target="_blank" rel="noopener noreferrer">Examples</a>

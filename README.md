@@ -4,7 +4,14 @@
 
 # reels-wiki
 
-[![CI](https://github.com/AtaCanYmc/reels-secretary/actions/workflows/ci.yml/badge.svg)](https://github.com/AtaCanYmc/reels-secretary/actions/workflows/ci.yml)
+[![CI](https://github.com/AtaCanYmc/reels-wiki/actions/workflows/ci.yml/badge.svg)](https://github.com/AtaCanYmc/reels-wiki/actions/workflows/ci.yml)
+[![Release Please](https://github.com/AtaCanYmc/reels-wiki/actions/workflows/release-please.yml/badge.svg)](https://github.com/AtaCanYmc/reels-wiki/actions/workflows/release-please.yml)
+[![GitHub Pages](https://github.com/AtaCanYmc/reels-wiki/actions/workflows/pages.yml/badge.svg)](https://github.com/AtaCanYmc/reels-wiki/actions/workflows/pages.yml)
+[![GitHub Release](https://img.shields.io/github/v/release/AtaCanYmc/reels-wiki)](https://github.com/AtaCanYmc/reels-wiki/releases)
+[![PyPI](https://img.shields.io/pypi/v/reels-wiki)](https://pypi.org/project/reels-wiki/)
+[![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/github/license/AtaCanYmc/reels-wiki)](LICENSE)
+[![Homebrew](https://img.shields.io/badge/homebrew-AtaCanYmc%2Ftap-FBB040?logo=homebrew&logoColor=white)](https://github.com/AtaCanYmc/homebrew-tap)
 
 Local-first pipeline that converts saved Instagram Reels into atomic Markdown notes inside an existing 3-layer Obsidian LLM Wiki vault without duplicates.
 
@@ -243,7 +250,8 @@ reels-secretary/
 │   ├── cli-and-mcp.md
 │   ├── configuration.md
 │   ├── example-walkthrough.md
-│   └── step-by-step.md
+│   ├── step-by-step.md
+│   └── troubleshooting.md
 ├── src/
 │   └── reels_wiki/
 │       ├── __init__.py
@@ -282,6 +290,7 @@ Tests run offline via `make test` (`pytest`) without making network or LLM API c
 - [Example Walkthrough](docs/example-walkthrough.md)
 - [CLI and MCP Reference](docs/cli-and-mcp.md)
 - [Configuration Reference](docs/configuration.md)
+- [Troubleshooting Guide](docs/troubleshooting.md)
 - [Contributing Guide](CONTRIBUTING.md)
 - [Security Policy](SECURITY.md)
 - [Roadmap](ROADMAP.md)

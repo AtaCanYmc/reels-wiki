@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import re
 import time
-from typing import Callable
+from typing import Any, Callable
 
 from pydantic import ValidationError
 
@@ -87,7 +87,7 @@ def _call_gemini(system: str, user: str, cfg: Config) -> str:
     from google.genai import types
 
     client = genai.Client(api_key=cfg.require_key("gemini"))
-    kwargs = dict(
+    kwargs: dict[str, Any] = dict(
         system_instruction=system,
         temperature=cfg.synthesis.temperature,
         response_mime_type="application/json",
@@ -113,7 +113,8 @@ def parse_json_object(raw: str) -> dict:
 
 def _run_provider(provider: str, user: str, cfg: Config) -> AtomicNoteSynthesis:
     cfg.require_key(provider)
-    prompt, last_err = user, None
+    prompt: str = user
+    last_err: Exception | None = None
     for attempt in range(1, cfg.synthesis.max_retries + 1):
         try:
             raw = PROVIDERS[provider](SYSTEM_PROMPT, prompt, cfg)

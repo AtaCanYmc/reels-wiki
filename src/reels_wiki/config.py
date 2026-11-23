@@ -56,8 +56,8 @@ class Config(BaseModel):
     allowed_folders: list[str] | None = None
     default_folder: str | None = None
     delay_seconds: float = Field(2.0, ge=0)
-    extraction: ExtractionConfig = Field(default_factory=ExtractionConfig)
-    synthesis: SynthesisConfig = Field(default_factory=SynthesisConfig)
+    extraction: ExtractionConfig = Field(default_factory=lambda: ExtractionConfig())
+    synthesis: SynthesisConfig = Field(default_factory=lambda: SynthesisConfig())
 
     # Secrets: populated from the environment / .env, never required in YAML.
     groq_api_key: str | None = Field(default=None, repr=False)

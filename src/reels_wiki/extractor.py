@@ -133,7 +133,7 @@ def subtitle_to_text(raw: str) -> str:
 def _fetch_subtitles(info: dict[str, Any]) -> str:
     pools = [info.get("subtitles") or {}, info.get("automatic_captions") or {}]
     for pool in pools:
-        langs = [l for l in ("tr", "en") if l in pool] + [l for l in pool if l not in ("tr", "en")]
+        langs = [lang for lang in ("tr", "en") if lang in pool] + [lang for lang in pool if lang not in ("tr", "en")]
         for lang in langs:
             for fmt in pool[lang]:
                 if fmt.get("ext") in ("vtt", "srt") and fmt.get("url"):

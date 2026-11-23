@@ -62,7 +62,10 @@ class AtomicNoteSynthesis(BaseModel):
     target_folder: str = Field(default="", description="One of the vault's allowed folders.")
     tags: list[str] = Field(default_factory=list, description="Lowercase tags aligned with existing vault tags.")
     core_insight: str = Field(default="", description="2-4 sentences distilling the core idea, tool, workflow or mental model.")
-    for_future_agent: list[str] = Field(default_factory=list, description="Bullets: constraints, architecture patterns, context for future AI agents.")
+    for_future_agent: list[str] = Field(
+        default_factory=list,
+        description="Bullets: constraints, architecture patterns, context for future AI agents.",
+    )
     actionable_next_step: str = Field(default="", description="One concrete next action or experiment.")
     related_wikilinks: list[str] = Field(default_factory=list, description="Existing note names (no brackets).")
 

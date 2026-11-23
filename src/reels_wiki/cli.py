@@ -3,11 +3,13 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
+import shutil
 import sys
 from pathlib import Path
 from typing import Any
 
-from .config import load_config
+from .config import Config, load_config
 from .ig_export import import_ig_export
 from .mcp_server import run_mcp_server
 from .pipeline import process_queue, reprocess
@@ -153,6 +155,9 @@ def _build_parser() -> argparse.ArgumentParser:
     # stats
     subparsers.add_parser("stats", help="Show queue counts, index status breakdown, and vault info.")
 
+    # doctor
+    subparsers.add_parser("doctor", help="Verify runtime dependencies, cookies, API keys, and vault permissions.")
+
     # telegram
     subparsers.add_parser("telegram", help="Run long-polling Telegram share capture bot.")
 
@@ -160,6 +165,55 @@ def _build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("mcp", help="Run MCP server over stdio.")
 
     return parser
+
+
+def run_doctor(cfg: Config) -> dict[str, Any]:
+    """Check Python version, ffmpeg, cookie configuration, API key presence, and vault permissions."""
+    py_ok = sys.version_info >= (3, 10)
+    py_ver = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+
+    ffmpeg_path = shutil.which(cfg.extraction.ffmpeg_path)
+
+    browser = cfg.extraction.cookies_from_browser
+    cookies_file = cfg.extraction.cookies_file
+    cookies_file_exists = bool(cookies_file and Path(cookies_file).expanduser().is_file())
+    cookies_ok = bool(browser or cookies_file_exists)
+
+    groq_set = bool(getattr(cfg, "groq_api_key", None) or os.getenv("GROQ_API_KEY"))
+    gemini_set = bool(getattr(cfg, "gemini_api_key", None) or os.getenv("GEMINI_API_KEY"))
+    primary = cfg.synthesis.provider
+    fallback = cfg.synthesis.fallback_provider
+    api_ok = bool((primary == "groq" and groq_set) or (primary == "gemini" and gemini_set))
+
+    vault_dir = Path(cfg.vault_path)
+    vault_exists = vault_dir.is_dir()
+    vault_writable = vault_exists and os.access(vault_dir, os.W_OK)
+
+    overall_ok = bool(py_ok and vault_writable and api_ok)
+    return {
+        "ok": overall_ok,
+        "python": {"ok": py_ok, "version": py_ver},
+        "ffmpeg": {"ok": bool(ffmpeg_path), "path": ffmpeg_path},
+        "cookies": {
+            "ok": cookies_ok,
+            "cookies_from_browser": browser,
+            "cookies_file": str(cookies_file) if cookies_file else None,
+            "cookies_file_exists": cookies_file_exists,
+        },
+        "api_keys": {
+            "ok": api_ok,
+            "primary_provider": primary,
+            "fallback_provider": fallback,
+            "groq_configured": groq_set,
+            "gemini_configured": gemini_set,
+        },
+        "vault": {
+            "ok": vault_writable,
+            "path": str(vault_dir),
+            "exists": vault_exists,
+            "writable": vault_writable,
+        },
+    }
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -187,10 +241,10 @@ def main(argv: list[str] | None = None) -> int:
 
         if args.command == "import-ig":
             result = import_ig_export(
-                cfg=cfg,
-                export_path=args.export_path,
-                reels_only=args.reels_only,
+                args.export_path,
+                vault=cfg.vault_path,
                 force=args.force,
+                include_posts=not args.reels_only,
             )
             _emit(
                 result,
@@ -199,7 +253,7 @@ def main(argv: list[str] | None = None) -> int:
                     f"IG export imported: found={result.get('found', 0)}, "
                     f"enqueued={result.get('enqueued', 0)}, "
                     f"duplicates={result.get('duplicates', 0)}, "
-                    f"filtered={result.get('filtered', 0)}"
+                    f"ignored={result.get('ignored', 0)}"
                 ],
             )
             return 0
@@ -210,7 +264,7 @@ def main(argv: list[str] | None = None) -> int:
                 limit=args.limit,
                 dry_run=args.dry_run,
                 retry_failed=args.retry_failed,
-                force=args.force,
+                re_extract=args.force,
             )
             _emit(
                 result,
@@ -263,6 +317,21 @@ def main(argv: list[str] | None = None) -> int:
                 ],
             )
             return 0
+
+        if args.command == "doctor":
+            result = run_doctor(cfg)
+            _emit(
+                result,
+                args.json_output,
+                [
+                    f"Python:   {result['python']['version']} ({'ok' if result['python']['ok'] else 'fail'})",
+                    f"ffmpeg:   {result['ffmpeg']['path'] or 'missing (optional unless audio/vision fallback runs)'}",
+                    f"Cookies:  {'ok' if result['cookies']['ok'] else 'missing (set cookies_from_browser or cookies_file)'}",
+                    f"API keys: primary={result['api_keys']['primary_provider']} ({'ok' if result['api_keys']['ok'] else 'missing'})",
+                    f"Vault:    {result['vault']['path']} ({'writable' if result['vault']['writable'] else 'not writable/missing'})",
+                ],
+            )
+            return 0 if result["ok"] else 1
 
         if args.command == "telegram":
             run_telegram_bot(cfg=cfg)

@@ -4,6 +4,7 @@ from __future__ import annotations
 import re
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import frontmatter
 
@@ -184,7 +185,7 @@ def write_synthesis(
             created = str(old.metadata.get("created") or created)
             status = str(old.metadata.get("status") or status)
 
-    meta = {
+    meta: dict[str, Any] = {
         "title": syn.title.strip(),
         "source_url": artifact.url,
         "creator": f"@{artifact.creator.lstrip('@')}" if artifact.creator else None,
