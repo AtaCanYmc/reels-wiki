@@ -29,3 +29,29 @@ Unknown keys in `config.yaml` are rejected at load time.
 ## Telegram Capture Bot
 
 The Telegram bot (`reels-sync telegram` or `reels-wiki-telegram`) only enqueues Instagram URLs from `TELEGRAM_ALLOWED_CHAT_ID` with `source="telegram"`. Messages from any other chat ID are ignored. It does not trigger `process`.
+
+## Examples
+
+### Minimal `config.yaml`
+
+```yaml
+vault_path: /Users/you/Documents/ObsidianVault
+llm_provider: groq
+whisper_provider: groq
+```
+
+### Minimal `.env`
+
+```dotenv
+GROQ_API_KEY=gsk_your_groq_key_here
+GEMINI_API_KEY=AIza_your_gemini_key_here
+TELEGRAM_BOT_TOKEN=123456:ABC-DEF_your_bot_token
+TELEGRAM_ALLOWED_CHAT_ID=987654321
+```
+
+### Override Config and Vault at Runtime
+
+```bash
+REELS_WIKI_VAULT=/tmp/test-vault reels-sync --config ./config.yaml stats
+```
+

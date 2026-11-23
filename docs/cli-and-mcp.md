@@ -27,6 +27,28 @@ reels-sync [--config PATH] [--vault PATH] [--json] [-v] <subcommand>
 | `telegram` | Start long-polling Telegram share capture bot | — |
 | `mcp` | Start MCP server over stdio | — |
 
+### Examples
+
+```bash
+# Enqueue a single Reel URL
+reels-sync ingest "https://www.instagram.com/reel/ABC12345678/?igsh=xyz"
+
+# Import saved posts from Instagram export (Reels only)
+reels-sync import-ig ~/Downloads/instagram-export/saved_posts.json --reels-only
+
+# Preview next 5 queued items without writing notes
+reels-sync process --limit 5 --dry-run
+
+# Process up to 10 items and retry previously failed ones
+reels-sync --json process --limit 10 --retry-failed
+
+# Re-synthesize a single stored artifact without re-downloading
+reels-sync reprocess ABC12345678
+
+# Check queue and index stats as JSON
+reels-sync --json stats
+```
+
 ## MCP Server (`reels-wiki-mcp`)
 
 Run via `reels-wiki-mcp` or `reels-sync mcp` over `stdio` transport.
