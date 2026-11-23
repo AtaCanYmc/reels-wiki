@@ -1,57 +1,79 @@
-"""FastMCP server exposing the pipeline as tools (stdio transport)."""
 from __future__ import annotations
 
-import asyncio
+from pathlib import Path
+from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from .config import load_config
-from .ig_export import import_ig_export as _import_ig_export
-from .pipeline import process_queue as _process_queue
-from .queue_manager import QueueManager
-
-mcp = FastMCP("reels-wiki")
+from .config import AppConfig, load_config
+from .ig_export import import_instagram_export
+from .pipeline import enqueue_url, get_stats, process_queue
 
 
-def _cfg():
-    return load_config()
+def create_mcp_server(default_cfg: AppConfig | None = None) -> FastMCP:
+    base_cfg = default_cfg or load_config()
+    mcp = FastMCP("reels-wiki")
+
+    def _resolve_cfg(vault_path: str | None = None) -> AppConfig:
+        override = Path(vault_path).expanduser() if vault_path else None
+        if override is None:
+            return base_cfg
+        return load_config(config_path=base_cfg.config_path, vault_override=override)
+
+    @mcp.tool()
+    def enqueue_reel(
+        url: str,
+        source: str = "mcp",
+        force: bool = False,
+        vault_path: str | None = None,
+    ) -> dict[str, Any]:
+        """Enqueue an Instagram Reel/post URL into the Obsidian vault queue with shortcode deduplication."""
+        cfg = _resolve_cfg(vault_path)
+        return enqueue_url(cfg=cfg, url=url, source=source, force=force)
+
+    @mcp.tool()
+    def import_ig_export(
+        export_path: str,
+        reels_only: bool = False,
+        force: bool = False,
+        vault_path: str | None = None,
+    ) -> dict[str, Any]:
+        """Bulk-import saved Instagram URLs from saved_posts.json or an export directory."""
+        cfg = _resolve_cfg(vault_path)
+        return import_instagram_export(
+            cfg=cfg,
+            export_path=Path(export_path).expanduser(),
+            reels_only=reels_only,
+            force=force,
+        )
+
+    @mcp.tool()
+    def process_reels_queue(
+        limit: int | None = 10,
+        dry_run: bool = False,
+        retry_failed: bool = False,
+        force: bool = False,
+        vault_path: str | None = None,
+    ) -> dict[str, Any]:
+        """Process queued Instagram Reels through waterfall extraction, LLM synthesis, and Obsidian note writing."""
+        cfg = _resolve_cfg(vault_path)
+        return process_queue(
+            cfg=cfg,
+            limit=limit,
+            dry_run=dry_run,
+            retry_failed=retry_failed,
+            force=force,
+        )
+
+    @mcp.tool()
+    def get_queue_stats(vault_path: str | None = None) -> dict[str, Any]:
+        """Return queue counts, index status breakdown, and raw artifact counts for the vault."""
+        cfg = _resolve_cfg(vault_path)
+        return get_stats(cfg=cfg)
+
+    return mcp
 
 
-@mcp.tool()
-async def enqueue_reel(url: str, source: str = "mcp", force: bool = False) -> dict:
-    """Queue one Instagram reel/post URL. Dedupes by shortcode unless force=True."""
-    cfg = _cfg()
-    return await asyncio.to_thread(QueueManager(cfg.vault_path).enqueue, url, source, force)
-
-
-@mcp.tool()
-async def import_ig_export(json_path: str, force: bool = False, include_posts: bool = True) -> dict:
-    """Bulk-enqueue saved reels from an Instagram data export (saved_posts.json or its folder)."""
-    cfg = _cfg()
-    return await asyncio.to_thread(
-        lambda: _import_ig_export(json_path, vault=cfg.vault_path, force=force, include_posts=include_posts)
-    )
-
-
-@mcp.tool()
-async def process_reels_queue(limit: int = 5, retry_failed: bool = False, dry_run: bool = False) -> dict:
-    """Extract, synthesize and write notes for pending queue items (slow: keep `limit` small)."""
-    cfg = _cfg()
-    return await asyncio.to_thread(
-        lambda: _process_queue(cfg, limit=limit, retry_failed=retry_failed, dry_run=dry_run)
-    )
-
-
-@mcp.tool()
-async def get_queue_stats() -> dict:
-    """Counts of queue items by status (pending/processing/processed/skipped/failed) and source."""
-    cfg = _cfg()
-    return await asyncio.to_thread(QueueManager(cfg.vault_path).stats)
-
-
-def main() -> None:
-    mcp.run()
-
-
-if __name__ == "__main__":
-    main()
+def run_mcp_server(cfg: AppConfig | None = None) -> None:
+    server = create_mcp_server(default_cfg=cfg)
+    server.run(transport="stdio")

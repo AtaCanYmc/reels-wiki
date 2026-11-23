@@ -1,154 +1,301 @@
-"""``reels-sync`` command line interface."""
 from __future__ import annotations
 
+import argparse
 import json
+import logging
+import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import Any
 
-import typer
+from .config import load_config
+from .ig_export import import_instagram_export
+from .mcp_server import run_mcp_server
+from .pipeline import enqueue_url, get_stats, process_queue, reprocess_items
+from .telegram_bot import run_telegram_bot
 
-from .config import Config, ConfigError, load_config
-
-app = typer.Typer(add_completion=False, no_args_is_help=True, help="Saved Instagram Reels -> Obsidian LLM Wiki atomic notes.")
-
-
-def _state(ctx: typer.Context) -> dict:
-    return ctx.obj or {}
+logger = logging.getLogger("reels_wiki.cli")
 
 
-def _cfg(ctx: typer.Context, *, require_vault: bool = True) -> Config:
-    st = _state(ctx)
+def _configure_logging(verbose: bool, json_mode: bool) -> None:
+    level = logging.DEBUG if verbose else logging.INFO
+    stream = sys.stderr if json_mode else sys.stdout
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        stream=stream,
+    )
+
+
+def _emit(payload: dict[str, Any], json_mode: bool, human_lines: list[str] | None = None) -> None:
+    if json_mode:
+        print(json.dumps(payload, ensure_ascii=False, indent=2, default=str))
+        return
+    if human_lines:
+        for line in human_lines:
+            print(line)
+    else:
+        print(json.dumps(payload, ensure_ascii=False, indent=2, default=str))
+
+
+def _build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="reels-sync",
+        description="Turn saved Instagram Reels into atomic Obsidian LLM Wiki notes.",
+    )
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=None,
+        help="Path to config.yaml (overrides REELS_WIKI_CONFIG and default search paths).",
+    )
+    parser.add_argument(
+        "--vault",
+        type=Path,
+        default=None,
+        help="Override Obsidian vault path (overrides REELS_WIKI_VAULT and config vault_path).",
+    )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        dest="json_output",
+        help="Emit machine-readable JSON output (place before subcommand).",
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Enable debug logging.",
+    )
+
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    # ingest
+    p_ingest = subparsers.add_parser("ingest", help="Enqueue a single Instagram Reel/post URL.")
+    p_ingest.add_argument("url", help="Instagram Reel, post, or TV URL.")
+    p_ingest.add_argument(
+        "--source",
+        default="cli",
+        help="Ingestion source label (default: cli).",
+    )
+    p_ingest.add_argument(
+        "--force",
+        action="store_true",
+        help="Re-enqueue even if shortcode already exists in index.",
+    )
+
+    # import-ig
+    p_import = subparsers.add_parser(
+        "import-ig",
+        help="Bulk-import URLs from Instagram data export (saved_posts.json or directory).",
+    )
+    p_import.add_argument("export_path", type=Path, help="Path to saved_posts.json or export folder.")
+    p_import.add_argument(
+        "--reels-only",
+        action="store_true",
+        help="Skip /p/ photo/carousel posts and keep only /reel/ or /reels/ links.",
+    )
+    p_import.add_argument(
+        "--force",
+        action="store_true",
+        help="Re-enqueue items already present in the index.",
+    )
+
+    # process
+    p_process = subparsers.add_parser(
+        "process",
+        help="Run waterfall extraction, LLM synthesis, and Obsidian note writing.",
+    )
+    p_process.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Maximum number of queue items to process in this run.",
+    )
+    p_process.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Preview what would be processed without writing notes or mutating state.",
+    )
+    p_process.add_argument(
+        "--retry-failed",
+        action="store_true",
+        help="Include previously failed items in addition to pending items.",
+    )
+    p_process.add_argument(
+        "--force",
+        action="store_true",
+        help="Re-process items and overwrite existing note_path if present.",
+    )
+
+    # reprocess
+    p_reprocess = subparsers.add_parser(
+        "reprocess",
+        help="Re-synthesize from stored sources/reels/<code>.json without downloading media.",
+    )
+    p_reprocess.add_argument(
+        "shortcode",
+        nargs="?",
+        default=None,
+        help="11-character Instagram shortcode to re-synthesize.",
+    )
+    p_reprocess.add_argument(
+        "--all",
+        action="store_true",
+        help="Re-synthesize all stored raw artifacts in sources/reels/.",
+    )
+    p_reprocess.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Preview re-synthesis without writing files.",
+    )
+
+    # stats
+    subparsers.add_parser("stats", help="Show queue counts, index status breakdown, and vault info.")
+
+    # telegram
+    subparsers.add_parser("telegram", help="Run long-polling Telegram share capture bot.")
+
+    # mcp
+    subparsers.add_parser("mcp", help="Run MCP server over stdio.")
+
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = _build_parser()
+    args = parser.parse_args(argv)
+    _configure_logging(verbose=args.verbose, json_mode=args.json_output)
+
     try:
-        return load_config(st.get("config"), vault_override=st.get("vault"), require_vault=require_vault)
-    except ConfigError as exc:
-        typer.secho(f"Config error: {exc}", fg=typer.colors.RED, err=True)
-        raise typer.Exit(2)
+        cfg = load_config(config_path=args.config, vault_override=args.vault)
+
+        if args.command == "ingest":
+            result = enqueue_url(
+                cfg=cfg,
+                url=args.url,
+                source=args.source,
+                force=args.force,
+            )
+            status_msg = "enqueued" if result.get("enqueued") else f"skipped ({result.get('reason', 'duplicate')})"
+            _emit(
+                result,
+                args.json_output,
+                [f"[{status_msg}] {result.get('shortcode', '?')} -> {result.get('url', args.url)}"],
+            )
+            return 0
+
+        if args.command == "import-ig":
+            result = import_instagram_export(
+                cfg=cfg,
+                export_path=args.export_path,
+                reels_only=args.reels_only,
+                force=args.force,
+            )
+            _emit(
+                result,
+                args.json_output,
+                [
+                    f"IG export imported: found={result.get('found', 0)}, "
+                    f"enqueued={result.get('enqueued', 0)}, "
+                    f"duplicates={result.get('duplicates', 0)}, "
+                    f"filtered={result.get('filtered', 0)}"
+                ],
+            )
+            return 0
+
+        if args.command == "process":
+            result = process_queue(
+                cfg=cfg,
+                limit=args.limit,
+                dry_run=args.dry_run,
+                retry_failed=args.retry_failed,
+                force=args.force,
+            )
+            _emit(
+                result,
+                args.json_output,
+                [
+                    f"Process complete (dry_run={args.dry_run}): "
+                    f"selected={result.get('selected', 0)}, "
+                    f"processed={result.get('processed', 0)}, "
+                    f"skipped={result.get('skipped', 0)}, "
+                    f"failed={result.get('failed', 0)}"
+                ],
+            )
+            return 0 if result.get("failed", 0) == 0 else 1
+
+        if args.command == "reprocess":
+            if not args.shortcode and not args.all:
+                parser.error("reprocess requires either a <shortcode> or --all.")
+            result = reprocess_items(
+                cfg=cfg,
+                shortcode=args.shortcode,
+                all_items=args.all,
+                dry_run=args.dry_run,
+            )
+            _emit(
+                result,
+                args.json_output,
+                [
+                    f"Reprocess complete (dry_run={args.dry_run}): "
+                    f"reprocessed={result.get('reprocessed', 0)}, "
+                    f"skipped={result.get('skipped', 0)}, "
+                    f"failed={result.get('failed', 0)}"
+                ],
+            )
+            return 0
+
+        if args.command == "stats":
+            result = get_stats(cfg=cfg)
+            counts = result.get("counts", {})
+            _emit(
+                result,
+                args.json_output,
+                [
+                    f"Vault: {result.get('vault_path')}",
+                    f"Index total: {result.get('total_indexed', 0)} | "
+                    f"pending={counts.get('pending', 0)}, "
+                    f"processing={counts.get('processing', 0)}, "
+                    f"processed={counts.get('processed', 0)}, "
+                    f"skipped={counts.get('skipped', 0)}, "
+                    f"failed={counts.get('failed', 0)}",
+                    f"Stored artifacts: {result.get('artifacts_count', 0)}",
+                ],
+            )
+            return 0
+
+        if args.command == "telegram":
+            run_telegram_bot(cfg=cfg)
+            return 0
+
+        if args.command == "mcp":
+            run_mcp_server(cfg=cfg)
+            return 0
+
+        parser.error(f"Unknown command: {args.command}")
+        return 2
+    except Exception as exc:
+        if args.json_output:
+            print(json.dumps({"error": str(exc), "type": type(exc).__name__}, ensure_ascii=False))
+        else:
+            print(f"Error: {exc}", file=sys.stderr)
+        logger.debug("CLI failure", exc_info=exc)
+        return 1
 
 
-def _emit(ctx: typer.Context, data: dict, human: str) -> None:
-    typer.echo(json.dumps(data, ensure_ascii=False, indent=2) if _state(ctx).get("json") else human)
+def mcp_main() -> int:
+    """Entry point for `reels-wiki-mcp` script."""
+    cfg = load_config()
+    run_mcp_server(cfg=cfg)
+    return 0
 
 
-@app.callback()
-def main(
-    ctx: typer.Context,
-    config: Optional[Path] = typer.Option(None, "--config", "-c", help="Path to config.yaml (or $REELS_WIKI_CONFIG)."),
-    vault: Optional[Path] = typer.Option(None, "--vault", help="Override vault_path (or $REELS_WIKI_VAULT)."),
-    json_output: bool = typer.Option(False, "--json", help="Machine-readable JSON output (for agents)."),
-) -> None:
-    ctx.obj = {"config": config, "vault": vault, "json": json_output}
-
-
-@app.command()
-def ingest(
-    ctx: typer.Context,
-    urls: List[str] = typer.Argument(..., help="Instagram reel/post URL(s)."),
-    source: str = typer.Option("manual", help="Source label stored in the queue."),
-    force: bool = typer.Option(False, "--force", help="Re-enqueue even if the shortcode is already known."),
-) -> None:
-    """Enqueue one or more Instagram URLs (deduplicated by shortcode)."""
-    from .queue_manager import QueueManager
-
-    queue = QueueManager(_cfg(ctx).vault_path)
-    results = [queue.enqueue(u, source=source, force=force) for u in urls]
-    lines = [f"[{r['result']}] {r.get('shortcode') or r['url']} — {r['message']}" for r in results]
-    _emit(ctx, {"results": results}, "\n".join(lines))
-    if any(r["result"] == "invalid" for r in results):
-        raise typer.Exit(1)
-
-
-@app.command("import-ig")
-def import_ig(
-    ctx: typer.Context,
-    path: Path = typer.Argument(..., exists=True, help="saved_posts.json (or the export folder containing it)."),
-    force: bool = typer.Option(False, "--force", help="Re-enqueue shortcodes that are already known."),
-    reels_only: bool = typer.Option(False, "--reels-only", help="Ignore /p/ post links."),
-) -> None:
-    """Bulk-enqueue everything from Instagram's official data export."""
-    from .ig_export import import_ig_export
-
-    try:
-        res = import_ig_export(path, vault=_cfg(ctx).vault_path, force=force, include_posts=not reels_only)
-    except (OSError, ValueError) as exc:
-        typer.secho(f"Import failed: {exc}", fg=typer.colors.RED, err=True)
-        raise typer.Exit(1)
-    _emit(ctx, res, f"{res['instagram_media_links']} Instagram links found -> {res['enqueued']} enqueued, "
-                    f"{res['duplicates']} duplicates, {res['ignored_links']} ignored")
-
-
-@app.command()
-def process(
-    ctx: typer.Context,
-    limit: Optional[int] = typer.Option(None, "--limit", "-n", help="Process at most N items."),
-    retry_failed: bool = typer.Option(False, "--retry-failed", help="Also retry items in 'failed' state."),
-    re_extract: bool = typer.Option(False, "--re-extract", help="Ignore stored artifacts and download again."),
-    dry_run: bool = typer.Option(False, "--dry-run", help="List what would be processed."),
-) -> None:
-    """Run the extraction -> synthesis -> write pipeline over pending queue items."""
-    from .pipeline import process_queue
-
-    cfg = _cfg(ctx)
-
-    def show(r: dict) -> None:
-        if not _state(ctx).get("json"):
-            detail = r.get("note_path") or r.get("skip_reason") or r.get("error") or ""
-            typer.echo(f"[{r['status']}] {r['shortcode']} {detail}")
-
-    res = process_queue(cfg, limit=limit, retry_failed=retry_failed, re_extract=re_extract, dry_run=dry_run, on_event=show)
-    if res.get("error"):
-        typer.secho(res["error"], fg=typer.colors.RED, err=True)
-        raise typer.Exit(1)
-    _emit(ctx, res, f"Done: {res['processed']} written, {res['skipped']} skipped, {res['failed']} failed "
-                    f"(of {res['selected']} selected)" + (" [dry run]" if dry_run else ""))
-    if res["failed"]:
-        raise typer.Exit(1)
-
-
-@app.command()
-def reprocess(
-    ctx: typer.Context,
-    shortcodes: Optional[List[str]] = typer.Argument(None, help="Shortcodes to re-synthesize from stored artifacts."),
-    all_items: bool = typer.Option(False, "--all", help="Re-synthesize every item that has a stored artifact."),
-) -> None:
-    """Re-run synthesis + writing from sources/reels/*.json (no downloads, no transcription)."""
-    from .pipeline import reprocess as run
-
-    if not shortcodes and not all_items:
-        typer.secho("Give one or more shortcodes, or --all.", fg=typer.colors.RED, err=True)
-        raise typer.Exit(2)
-    res = run(_cfg(ctx), shortcodes, all_items=all_items,
-              on_event=lambda r: None if _state(ctx).get("json") else typer.echo(f"[{r['status']}] {r['shortcode']} {r.get('note_path') or r.get('error') or r.get('skip_reason') or ''}"))
-    _emit(ctx, res, f"Done: {res['processed']} written, {res['skipped']} skipped, {res['failed']} failed")
-    if res["failed"]:
-        raise typer.Exit(1)
-
-
-@app.command()
-def stats(ctx: typer.Context) -> None:
-    """Show queue counts by status and source."""
-    from .queue_manager import QueueManager
-
-    s = QueueManager(_cfg(ctx).vault_path).stats()
-    sources = ", ".join(f"{k}={v}" for k, v in sorted(s["by_source"].items())) or "-"
-    _emit(ctx, s, (f"total={s['total']}  pending={s['pending']}  processing={s['processing']}  processed={s['processed']}  "
-                   f"skipped={s['skipped']}  failed={s['failed']}\nsources: {sources}"))
-
-
-@app.command()
-def telegram(ctx: typer.Context) -> None:
-    """Run the Telegram share-capture bot (long polling)."""
-    from .telegram_bot import run_bot
-
-    run_bot(_cfg(ctx))
-
-
-@app.command()
-def mcp(ctx: typer.Context) -> None:
-    """Run the MCP server over stdio."""
-    from .mcp_server import main as serve
-
-    serve()
+def telegram_main() -> int:
+    """Entry point for `reels-wiki-telegram` script."""
+    cfg = load_config()
+    run_telegram_bot(cfg=cfg)
+    return 0
 
 
 if __name__ == "__main__":
-    app()
+    sys.exit(main())

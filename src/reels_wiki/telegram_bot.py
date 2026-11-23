@@ -1,101 +1,157 @@
-"""Minimal Telegram long-polling bot: share an Instagram link to the bot -> it lands in the queue.
-
-Only messages from ``TELEGRAM_ALLOWED_CHAT_ID`` are honoured; everything else is silently ignored.
-"""
 from __future__ import annotations
 
+import json
 import logging
+import os
 import re
 import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from typing import Any
 
-import httpx
+from .config import AppConfig
+from .pipeline import enqueue_url
 
-from .config import Config, ConfigError, load_config
-from .queue_manager import QueueManager
+logger = logging.getLogger("reels_wiki.telegram_bot")
 
-log = logging.getLogger("reels_wiki.telegram")
-_URL_RE = re.compile(r"(?:https?://)?(?:www\.|m\.)?(?:instagram\.com|instagr\.am)/[^\s<>()\"']+", re.I)
-
-
-def extract_urls(message: dict) -> list[str]:
-    """URLs from message text/caption, including hidden ``text_link`` entities."""
-    text = message.get("text") or message.get("caption") or ""
-    urls = _URL_RE.findall(text)
-    for ent in (message.get("entities") or []) + (message.get("caption_entities") or []):
-        if ent.get("type") == "text_link" and ent.get("url") and _URL_RE.search(ent["url"]):
-            urls.append(ent["url"])
-    return [u.rstrip(".,;)") for u in dict.fromkeys(urls)]
+IG_URL_PATTERN = re.compile(
+    r"https?://(?:www\.|m\.)?instagram\.com/(?:[A-Za-z0-9._-]+/)?(?:reel|reels|p|tv)/[A-Za-z0-9_-]{11}/?(?:\?[^\s<>\"']*)?",
+    re.IGNORECASE,
+)
 
 
-def handle_update(update: dict, queue: QueueManager, allowed_chat_id: int) -> tuple[int, str] | None:
-    """Pure handler: returns ``(chat_id, reply_text)`` or ``None`` (ignore). Unit-testable without network."""
-    message = update.get("message") or update.get("channel_post")
-    if not message:
-        return None
-    chat_id = (message.get("chat") or {}).get("id")
-    text = (message.get("text") or "").strip()
-    if chat_id != allowed_chat_id:
-        log.warning("Ignored message from unauthorized chat %s", chat_id)
-        return None
-    if text.startswith("/stats"):
-        s = queue.stats()
-        return chat_id, (f"📊 total {s['total']} · pending {s['pending']} · processed {s['processed']} · "
-                         f"skipped {s['skipped']} · failed {s['failed']}")
-    if text.startswith(("/start", "/help")):
-        return chat_id, "Share or paste an Instagram reel link and I'll queue it. /stats shows queue counts."
-    urls = extract_urls(message)
-    if not urls:
-        return chat_id, "No Instagram link found in that message."
-    replies = []
-    for url in urls:
-        res = queue.enqueue(url, source="telegram")
-        if res["result"] == "enqueued":
-            replies.append(f"✅ Queued {res['shortcode']}")
-        elif res["result"] == "duplicate":
-            replies.append(f"♻️ Already known: {res['shortcode']} ({res['status']})")
-        else:
-            replies.append(f"⚠️ Not a valid Instagram reel/post link: {url}")
-    return chat_id, "\n".join(replies)
-
-
-def run_bot(cfg: Config) -> None:
-    token = cfg.telegram_bot_token
+def _get_authorized_chat_id() -> int:
+    token = (os.getenv("TELEGRAM_BOT_TOKEN") or "").strip()
     if not token:
-        raise ConfigError("TELEGRAM_BOT_TOKEN is not set")
-    if cfg.telegram_allowed_chat_id is None:
-        raise ConfigError("TELEGRAM_ALLOWED_CHAT_ID is not set; refusing to run an open bot")
-    queue = QueueManager(cfg.vault_path)
-    api = f"https://api.telegram.org/bot{token}"
-    offset, backoff = None, 1
-    log.info("Telegram bot started (allowed chat: %s)", cfg.telegram_allowed_chat_id)
-    with httpx.Client(timeout=70) as client:
-        while True:
-            try:
-                params: dict = {"timeout": 50, "allowed_updates": '["message","channel_post"]'}
-                if offset is not None:
-                    params["offset"] = offset
-                resp = client.get(f"{api}/getUpdates", params=params)
-                resp.raise_for_status()
-                backoff = 1
-                for update in resp.json().get("result", []):
-                    offset = update["update_id"] + 1
-                    reply = handle_update(update, queue, cfg.telegram_allowed_chat_id)
-                    if reply:
-                        client.post(f"{api}/sendMessage", json={"chat_id": reply[0], "text": reply[1],
-                                                                "disable_web_page_preview": True})
-            except (httpx.HTTPError, ValueError) as exc:
-                log.warning("Telegram polling error: %s (retry in %ss)", exc, backoff)
-                time.sleep(backoff)
-                backoff = min(backoff * 2, 60)
-            except KeyboardInterrupt:
-                log.info("Stopped")
-                return
+        raise RuntimeError("TELEGRAM_BOT_TOKEN is required to run the Telegram capture bot.")
+
+    raw_chat_id = (os.getenv("TELEGRAM_ALLOWED_CHAT_ID") or "").strip()
+    if not raw_chat_id:
+        raise RuntimeError(
+            "TELEGRAM_ALLOWED_CHAT_ID is required; refusing to start without an allowed chat id."
+        )
+    try:
+        return int(raw_chat_id)
+    except ValueError as exc:
+        raise RuntimeError(
+            f"TELEGRAM_ALLOWED_CHAT_ID must be a numeric chat ID, got: {raw_chat_id!r}"
+        ) from exc
 
 
-def main() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    run_bot(load_config())
+class TelegramBotClient:
+    def __init__(self, token: str, timeout: int = 35) -> None:
+        self.token = token
+        self.base_url = f"https://api.telegram.org/bot{token}"
+        self.timeout = timeout
+
+    def _request(self, method: str, params: dict[str, Any] | None = None, read_timeout: int | None = None) -> dict[str, Any]:
+        query = f"?{urllib.parse.urlencode(params)}" if params else ""
+        url = f"{self.base_url}/{method}{query}"
+        req = urllib.request.Request(url, method="GET")
+        effective_timeout = read_timeout if read_timeout is not None else self.timeout
+        with urllib.request.urlopen(req, timeout=effective_timeout) as resp:
+            payload = json.loads(resp.read().decode("utf-8"))
+        if not payload.get("ok"):
+            raise RuntimeError(f"Telegram API error on {method}: {payload}")
+        return payload
+
+    def get_updates(self, offset: int | None = None, poll_timeout: int = 25) -> list[dict[str, Any]]:
+        params: dict[str, Any] = {
+            "timeout": poll_timeout,
+            "allowed_updates": json.dumps(["message", "edited_message"]),
+        }
+        if offset is not None:
+            params["offset"] = offset
+        data = self._request("getUpdates", params=params, read_timeout=poll_timeout + 10)
+        return data.get("result", [])
+
+    def send_message(self, chat_id: int, text: str, reply_to_message_id: int | None = None) -> None:
+        params: dict[str, Any] = {
+            "chat_id": chat_id,
+            "text": text,
+            "disable_web_page_preview": "true",
+        }
+        if reply_to_message_id is not None:
+            params["reply_to_message_id"] = reply_to_message_id
+        self._request("sendMessage", params=params, read_timeout=15)
 
 
-if __name__ == "__main__":
-    main()
+def extract_instagram_urls(text: str) -> list[str]:
+    if not text:
+        return []
+    seen: list[str] = []
+    for match in IG_URL_PATTERN.findall(text):
+        cleaned = match.rstrip(").,]>\"'")
+        if cleaned not in seen:
+            seen.append(cleaned)
+    return seen
+
+
+def handle_update(
+    cfg: AppConfig,
+    client: TelegramBotClient,
+    update: dict[str, Any],
+    allowed_chat_id: int,
+) -> None:
+    msg = update.get("message") or update.get("edited_message")
+    if not isinstance(msg, dict):
+        return
+
+    chat = msg.get("chat") or {}
+    chat_id = chat.get("id")
+    if chat_id != allowed_chat_id:
+        logger.debug("Ignored message from unauthorized chat_id=%s", chat_id)
+        return
+
+    text = msg.get("text") or msg.get("caption") or ""
+    urls = extract_instagram_urls(text)
+    message_id = msg.get("message_id")
+
+    if not urls:
+        client.send_message(
+            chat_id=allowed_chat_id,
+            text="No Instagram Reel/post URL found in message.",
+            reply_to_message_id=message_id,
+        )
+        return
+
+    lines: list[str] = []
+    for url in urls:
+        res = enqueue_url(cfg=cfg, url=url, source="telegram")
+        code = res.get("shortcode", "?")
+        if res.get("enqueued"):
+            lines.append(f"Queued [{code}]: {res.get('url', url)}")
+        else:
+            reason = res.get("reason", "already indexed")
+            lines.append(f"Skipped [{code}] ({reason}): {res.get('url', url)}")
+
+    client.send_message(
+        chat_id=allowed_chat_id,
+        text="\n".join(lines),
+        reply_to_message_id=message_id,
+    )
+
+
+def run_telegram_bot(cfg: AppConfig) -> None:
+    token = (os.getenv("TELEGRAM_BOT_TOKEN") or "").strip()
+    allowed_chat_id = _get_authorized_chat_id()
+    client = TelegramBotClient(token=token)
+
+    logger.info("Starting Telegram share bot for authorized chat_id=%s", allowed_chat_id)
+    offset: int | None = None
+
+    while True:
+        try:
+            updates = client.get_updates(offset=offset, poll_timeout=25)
+            for upd in updates:
+                update_id = upd.get("update_id")
+                if isinstance(update_id, int):
+                    offset = update_id + 1
+                handle_update(cfg=cfg, client=client, update=upd, allowed_chat_id=allowed_chat_id)
+        except KeyboardInterrupt:
+            logger.info("Telegram bot stopped by user.")
+            break
+        except (urllib.error.URLError, TimeoutError, RuntimeError, json.JSONDecodeError) as exc:
+            logger.warning("Telegram polling error, retrying in 5s: %s", exc)
+            time.sleep(5)
