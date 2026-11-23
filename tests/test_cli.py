@@ -20,7 +20,7 @@ def test_cli_ingest_json(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> 
 
     with (
         patch("reels_wiki.cli.load_config", return_value=cfg),
-        patch("reels_wiki.cli.enqueue_url", return_value=expected) as mock_enq,
+        patch("reels_wiki.cli.enqueue", return_value=expected) as mock_enq,
     ):
         rc = cli.main(["--json", "ingest", "https://www.instagram.com/reel/ABC12345678/?igsh=1"])
 
@@ -42,7 +42,7 @@ def test_cli_stats_json(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> N
 
     with (
         patch("reels_wiki.cli.load_config", return_value=cfg),
-        patch("reels_wiki.cli.get_stats", return_value=expected),
+        patch("reels_wiki.cli.queue_stats", return_value=expected),
     ):
         rc = cli.main(["--json", "stats"])
 
@@ -66,6 +66,8 @@ def test_cli_process_returns_nonzero_on_failures(tmp_path: Path) -> None:
 
 
 def test_cli_reprocess_requires_target(tmp_path: Path) -> None:
-    with pytest.raises(SystemExit) as exc_info:
-        cli.main(["reprocess"])
+    cfg = _fake_cfg(tmp_path)
+    with patch("reels_wiki.cli.load_config", return_value=cfg):
+        with pytest.raises(SystemExit) as exc_info:
+            cli.main(["reprocess"])
     assert exc_info.value.code == 2
