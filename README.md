@@ -4,99 +4,288 @@
 
 # reels-wiki
 
-Local-first pipeline that turns **saved Instagram Reels** into **atomic idea notes** inside an existing 3-layer Obsidian LLM Wiki vault (`sources/` → atomic note → `_index.md` / `_log.md`), without duplicates and without breaking the vault's conventions.
+[![CI](https://github.com/AtaCanYmc/reels-secretary/actions/workflows/ci.yml/badge.svg)](https://github.com/AtaCanYmc/reels-secretary/actions/workflows/ci.yml)
 
-```
- Telegram share ─┐
- IG data export ─┼─► inbox/reels-queue.jsonl ─► waterfall extraction ─► LLM synthesis ─► <folder>/<slug>.md
- CLI / MCP / SDK ┘   sources/.reels_index.json   1 yt-dlp metadata        (noise filter)    _index.md + _log.md
-                     (dedupe by shortcode)       2 audio → Whisper                         sources/reels/<code>.json
-                                                 3 frames → Gemini OCR                     (re-synthesizable raw data)
-```
+Local-first pipeline that converts saved Instagram Reels into atomic Markdown notes inside an existing 3-layer Obsidian LLM Wiki vault without duplicates.
 
-Surfaces: **SDK** (`import reels_wiki`), **CLI** (`reels-sync`), **MCP server** (`reels-wiki-mcp`), **Agent Skill** (`SKILL.md`), **Telegram capture bot** (`reels-wiki-telegram`).
+Available interfaces: Python SDK (`reels_wiki`), CLI (`reels-sync`), MCP server (`reels-wiki-mcp`), Telegram capture bot (`reels-wiki-telegram`), and Agent Skill (`SKILL.md`).
 
-## Install
+## Table of Contents
 
-Requires Python ≥ 3.10 and `ffmpeg` on your PATH (only used by the audio/vision fallbacks).
+- [Quick Start](#quick-start)
+- [Usage](#usage)
+- [How It Works](#how-it-works)
+- [Repository Layout](#repository-layout)
+- [Documentation and Governance](#documentation-and-governance)
+- [Notes and Limits](#notes-and-limits)
+
+## Quick Start
+
+Prerequisites: Python 3.10 or newer and `ffmpeg` on your `PATH`. `ffmpeg` is only required when audio or frame fallbacks run.
+
+### Step 1: Clone and install
 
 ```bash
-git clone <this repo> && cd reels-to-obsidian
-python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"            # add ".[local]" for offline faster-whisper
-cp config.example.yaml config.yaml # set vault_path
-cp .env.example .env               # GROQ_API_KEY / GEMINI_API_KEY (+ Telegram vars if used)
-reels-sync stats                   # sanity check
+git clone https://github.com/AtaCanYmc/reels-secretary.git
+cd reels-secretary
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
 ```
 
-Config lookup order: `--config`, `$REELS_WIKI_CONFIG`, `./config.yaml`, `~/.config/reels-wiki/config.yaml`. `--vault` / `$REELS_WIKI_VAULT` override `vault_path`. Unknown keys in `config.yaml` are rejected (typo protection).
+To enable offline audio transcription with `faster-whisper`, include the `local` extra:
 
-### Instagram authentication
+```bash
+pip install -e ".[dev,local]"
+```
 
-Instagram blocks anonymous scraping. Configure **one** of (under `extraction:`):
+### Step 2: Configure your vault path
 
-- `cookies_from_browser: chrome` (or `firefox`, `"chrome:Profile 1"`) — yt-dlp reads your logged-in browser session, or
-- `cookies_file: ~/cookies.txt` — a Netscape-format export.
+Copy the example configuration and set `vault_path` to your Obsidian LLM Wiki root directory:
 
-Use a secondary account if you are cautious; keep `delay_seconds` ≥ 2 and process in batches. Keep yt-dlp current (`pip install -U yt-dlp`): Instagram changes often.
+```bash
+cp config.example.yaml config.yaml
+```
+
+`reels-wiki` searches for configuration files in this order:
+
+1. `--config <path>` CLI flag
+2. `$REELS_WIKI_CONFIG` environment variable
+3. `./config.yaml` in the current working directory
+4. `~/.config/reels-wiki/config.yaml`
+
+You can override `vault_path` at runtime with `--vault <path>` or `$REELS_WIKI_VAULT`. Unknown keys in `config.yaml` are rejected on load to catch typos early.
+
+### Step 3: Add API keys in `.env`
+
+Create a `.env` file in the project root with your provider credentials:
+
+```env
+GROQ_API_KEY=your_groq_api_key
+GEMINI_API_KEY=your_gemini_api_key
+
+# Optional: only required for the Telegram capture bot
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+TELEGRAM_ALLOWED_CHAT_ID=123456789
+```
+
+### Step 4: Set up Instagram authentication
+
+Instagram blocks anonymous scraping. Choose one authentication method under the `extraction:` section in `config.yaml`:
+
+- `cookies_from_browser: chrome`: reads your active browser session via `yt-dlp`. Also supports `firefox` or profile syntax such as `"chrome:Profile 1"`.
+- `cookies_file: ~/cookies.txt`: reads a Netscape-format cookie export file.
+
+Keep `delay_seconds` at `2.0` or higher, process items in small batches, and keep `yt-dlp` updated with `pip install -U yt-dlp`.
+
+### Step 5: Verify the installation
+
+Run the queue statistics command to verify configuration loading and vault access:
+
+```bash
+reels-sync stats
+```
 
 ## Usage
 
+### 1. Enqueue a single Reel
+
 ```bash
-reels-sync ingest "https://www.instagram.com/reel/DAbCdEfGhIj/?igsh=xyz"   # dedupes by shortcode
-reels-sync import-ig ~/Downloads/instagram-export/                          # saved_posts.json or its folder
-reels-sync process --limit 10          # extract → synthesize → write
-reels-sync process --dry-run           # what would run
+reels-sync ingest "https://www.instagram.com/reel/DAbCdEfGhIj/?igsh=xyz"
+```
+
+Duplicate shortcodes are skipped automatically unless `--force` is passed.
+
+### 2. Import an Instagram data export
+
+1. Open Instagram and go to **Accounts Center > Your information and permissions > Export your information**.
+2. Select **JSON** format and include **Saved** items.
+3. Pass the downloaded folder or `saved_posts.json` file to the importer:
+
+```bash
+reels-sync import-ig ~/Downloads/instagram-export/
+```
+
+### 3. Process the queue
+
+Preview pending items before spending LLM or transcription calls:
+
+```bash
+reels-sync process --dry-run
+```
+
+Run extraction, synthesis, and note writing in batches:
+
+```bash
+reels-sync process --limit 10
+```
+
+Retry previously failed items:
+
+```bash
 reels-sync process --retry-failed
-reels-sync reprocess DAbCdEfGhIj       # re-synthesize from stored artifact (no download, no Whisper)
+```
+
+### 4. Reprocess stored artifacts
+
+Re-run LLM synthesis from the saved `sources/reels/<shortcode>.json` artifact without downloading media or running Whisper again:
+
+```bash
+reels-sync reprocess DAbCdEfGhIj
 reels-sync reprocess --all
+```
+
+### 5. Inspect queue statistics
+
+```bash
 reels-sync stats
-reels-sync telegram                    # long-polling share bot
-reels-sync mcp                         # MCP server on stdio
-reels-sync --json stats                # JSON for agents/scripts (global flag goes before the subcommand)
+reels-sync --json stats
 ```
 
-**Instagram export**: Instagram → Accounts Center → *Your information and permissions* → *Export your information* → choose **JSON** and include saved items. The file is `saved_posts.json` (`saved_saved_media → string_map_data → "Saved on" → href`).
+When using `--json`, global flags must appear before the subcommand.
 
-**Telegram**: create a bot with @BotFather, put `TELEGRAM_BOT_TOKEN` and your numeric `TELEGRAM_ALLOWED_CHAT_ID` (ask @userinfobot) in `.env`, run `reels-sync telegram`, then use *Share → Telegram → your bot* on a Reel. The bot ignores every other chat and refuses to start without an allowed chat id. It only enqueues; run `reels-sync process` (cron/launchd) to digest.
+### Telegram Capture Bot
 
-**MCP** (Claude Desktop / Claude Code):
+1. Create a bot via `@BotFather` and retrieve your numeric chat ID via `@userinfobot`.
+2. Set `TELEGRAM_BOT_TOKEN` and `TELEGRAM_ALLOWED_CHAT_ID` in `.env`.
+3. Start the long-polling listener:
+
+```bash
+reels-sync telegram
+```
+
+Share a Reel to your bot from the Instagram mobile app. The bot rejects all other chat IDs and refuses to start without `TELEGRAM_ALLOWED_CHAT_ID`. It only enqueues URLs; schedule `reels-sync process` via cron or `launchd` to digest the queue.
+
+### MCP Server
+
+Add the server to your MCP client configuration:
+
 ```json
-{ "mcpServers": { "reels-wiki": { "command": "/path/to/.venv/bin/reels-wiki-mcp",
-                                   "env": { "REELS_WIKI_CONFIG": "/path/to/config.yaml" } } } }
+{
+  "mcpServers": {
+    "reels-wiki": {
+      "command": "/path/to/reels-secretary/.venv/bin/reels-wiki-mcp",
+      "env": {
+        "REELS_WIKI_CONFIG": "/path/to/reels-secretary/config.yaml"
+      }
+    }
+  }
+}
 ```
-Tools: `enqueue_reel`, `import_ig_export`, `process_reels_queue`, `get_queue_stats`.
 
-**SDK**:
+Exposed MCP tools: `enqueue_reel`, `import_ig_export`, `process_reels_queue`, `get_queue_stats`.
+
+### Python SDK
+
 ```python
-from reels_wiki import load_config, enqueue, process_queue
+from reels_wiki import enqueue, load_config, process_queue
+
 cfg = load_config()
 enqueue("https://www.instagram.com/reel/DAbCdEfGhIj/", "script", vault=cfg.vault_path)
 process_queue(cfg, limit=3)
 ```
 
-## How it works
+## How It Works
 
-**Deduplication.** Every URL form (`/reel/`, `/reels/`, `/p/`, `/tv/`, optional `/<user>/`, tracking params) is reduced to the 11-character shortcode and normalized to `https://www.instagram.com/reel/<shortcode>/`. `sources/.reels_index.json` (`shortcode → {status, url, note_path, updated_at}`) is the O(1) gate; nothing known is enqueued without `--force`. The queue (`inbox/reels-queue.jsonl`) is append-only: each state change appends a snapshot and the last line per shortcode wins. If the index is lost or corrupt it is rebuilt from the queue. Writes are atomic and guarded by a file lock; one `process` run per vault at a time, and items stuck in `processing` after a crash are reset automatically. A forced re-run keeps the previous `note_path`, so it **overwrites that note rather than creating a second one** (your edits to `status`/`created` survive).
+```mermaid
+flowchart LR
+    A["CLI / Telegram / MCP / IG Export"] --> B["Queue (inbox/reels-queue.jsonl)"]
+    B --> C{"Index Dedupe (sources/.reels_index.json)"}
+    C -->|"New Shortcode"| D["1. yt-dlp Metadata & Caption"]
+    D --> E["2. Audio -> Whisper Transcript"]
+    E --> F["3. Frames -> Gemini Vision OCR"]
+    F --> G["sources/reels/<shortcode>.json"]
+    G --> H{"LLM Synthesis (Noise Filter)"}
+    H -->|"should_keep = false"| I["Mark skipped"]
+    H -->|"should_keep = true"| J["Write <folder>/<slug>.md"]
+    J --> K["Update _index.md & _log.md"]
+```
 
-**Waterfall (cost-aware).**
-1. *Metadata* via the `yt_dlp` Python API (`extract_info(download=False)`): caption, creator, duration, date, subtitles if any. Free.
-2. *Audio → text* only if the caption is shorter than `min_caption_chars` (150) and no usable subtitles exist: audio is downloaded to a temp dir and transcribed with Groq `whisper-large-v3-turbo` or local `faster-whisper`.
-3. *Frames → Gemini* only if caption **and** transcript are both thin (`min_caption_chars` / `min_transcript_chars`): `vision_frames` (4) evenly spaced frames via ffmpeg are sent to `gemini-2.5-flash` to read on-screen text/code/diagrams.
+### Step 1: URL normalization and deduplication
 
-Step failures never abort the reel; they are recorded in the artifact's `warnings`. Reels with no text at all are skipped without spending an LLM call. Everything is saved to `sources/reels/<shortcode>.json`; no media ever touches the vault.
+Every incoming URL variant (`/reel/`, `/reels/`, `/p/`, `/tv/`, optional `/<user>/`, and tracking query parameters) is reduced to its 11-character shortcode and normalized to `https://www.instagram.com/reel/<shortcode>/`.
 
-**Vault compliance.** Before synthesis the vault is read: allowed folders (backticked `` `folder/` `` tokens in `_CLAUDE.md`/`_index.md`, else top-level directories; `sources/` and `inbox/` are never targets; `allowed_folders` in config overrides), tag taxonomy (`#tags` in those files plus note frontmatter), and existing note names/titles. The model's output is then *enforced*, not trusted: folder must be allowed (else `default_folder`), slug is re-slugified to ASCII (Turkish transliterated), tags are normalized, and `related_wikilinks` that don't match a real note are written as plain `(new note candidate) …` text, never as dangling links. Notes are written with `python-frontmatter`; the target path is checked to stay inside the vault. `_log.md` entries follow the style already in the file (`## [YYYY-MM-DD] ingest | …` or a bullet line); `_index.md` entries go under the heading matching the folder (created if missing) and are idempotent.
+`sources/.reels_index.json` acts as an O(1) lookup gate mapping each shortcode to `{status, url, note_path, updated_at}`. The queue at `inbox/reels-queue.jsonl` is append-only, where the last snapshot per shortcode determines the current state. If the index is lost or corrupted, it is rebuilt from the queue. All writes are atomic and guarded by a file lock. Items left in `processing` after a crash are automatically reset on the next run. A forced re-run reuses the existing `note_path` and preserves user edits to `status` and `created` frontmatter fields.
 
-**Noise filtering.** The synthesis schema (`AtomicNoteSynthesis`) has `should_keep`; memes, trends and insight-free content become `skipped` (with `skip_reason` in the index) and produce no note. Invalid JSON triggers repair retries, then the optional `fallback_provider`.
+### Step 2: Cost-aware 3-stage waterfall extraction
 
-## Layout
+1. **Metadata**: Calls `yt_dlp` Python API with `extract_info(download=False)` to retrieve the caption, creator, duration, upload date, and subtitles.
+2. **Audio transcription**: Runs only when the caption is shorter than `min_caption_chars` (default `150`) and no usable subtitles exist. Audio is downloaded to a temporary directory and transcribed with Groq `whisper-large-v3-turbo` or local `faster-whisper`.
+3. **Frame OCR**: Runs only when both caption and transcript fall below `min_caption_chars` and `min_transcript_chars` (default `40`). `vision_frames` (default `4`) evenly spaced frames are extracted via `ffmpeg` and read with `gemini-2.5-flash`.
 
-`src/reels_wiki/` implements the modules in the spec plus two small shared ones: `pipeline.py` (orchestration used by CLI/MCP) and `utils.py` (atomic writes, slugify). Tests are in `tests/` (`pytest`): queue/URL parsing/dedupe, IG export parsing, writer/vault-context behaviour, and synthesizer normalization/retry logic. Network and LLM calls are never made in tests.
+Failures in any stage are recorded in the artifact `warnings` list instead of aborting the pipeline. Reels with zero extracted text are marked `skipped` without spending an LLM synthesis call. Extracted payloads are stored in `sources/reels/<shortcode>.json`. No media files are saved inside the vault.
 
-## Notes & limits
+### Step 3: Vault discovery and strict enforcement
 
-- Shortcodes are validated as exactly 11 characters (`[A-Za-z0-9_-]`); Instagram `/share/...` redirect links are not resolved: open them once and copy the real URL.
-- Carousel/photo posts (`/p/`) are accepted; yt-dlp may fail on image-only posts, which are then marked `failed` with the reason (use `import-ig --reels-only` to skip them up front).
-- Titles are generated in Turkish for Turkish content and technical English otherwise.
-- Provider SDK surfaces (Groq, google-genai, yt-dlp) move quickly; if a call signature changes, the isolated provider functions in `extractor.py` / `synthesizer.py` are the only places to touch.
+Before synthesis, `reels-wiki` reads the vault to discover allowed folders from backticked folder tokens in `_CLAUDE.md` and `_index.md`, existing `#tags`, and existing note titles. `sources/` and `inbox/` are excluded as output destinations. You can override discovery with `allowed_folders` in `config.yaml`.
+
+Model output is validated before writing:
+
+- Invalid folders fall back to `default_folder`.
+- File slugs are transliterated to ASCII (including Turkish characters).
+- Tags are normalized against the vault taxonomy.
+- `related_wikilinks` that do not match an existing note are rendered as plain text `(new note candidate) ...` to prevent broken links.
+- Notes are written atomically inside the vault path using `python-frontmatter`.
+- `_index.md` entries are inserted idempotently under the matching folder heading, and `_log.md` entries match the file's existing format.
+
+### Step 4: Noise filtering and retries
+
+The `AtomicNoteSynthesis` schema includes a `should_keep` boolean. Memes, trends, and low-signal posts are marked `skipped` with `skip_reason` stored in the index. Malformed JSON responses trigger repair retries and then fall back to `fallback_provider` if configured.
+
+## Repository Layout
+
+```text
+reels-secretary/
+├── assets/
+│   └── logo.png
+├── docs/
+│   ├── architecture.md
+│   ├── cli-and-mcp.md
+│   └── configuration.md
+├── src/
+│   └── reels_wiki/
+│       ├── __init__.py
+│       ├── cli.py
+│       ├── config.py
+│       ├── extractor.py
+│       ├── ig_export.py
+│       ├── mcp_server.py
+│       ├── models.py
+│       ├── pipeline.py
+│       ├── queue_manager.py
+│       ├── synthesizer.py
+│       ├── telegram_bot.py
+│       ├── utils.py
+│       ├── vault_context.py
+│       └── writer.py
+├── tests/
+│   ├── test_cli.py
+│   ├── test_ig_export.py
+│   ├── test_queue_manager.py
+│   ├── test_synthesizer.py
+│   ├── test_telegram_bot.py
+│   └── test_writer.py
+├── config.example.yaml
+├── Makefile
+├── pyproject.toml
+└── SKILL.md
+```
+
+Tests run offline via `make test` (`pytest`) without making network or LLM API calls.
+
+## Documentation and Governance
+
+- [Architecture Guide](docs/architecture.md)
+- [CLI and MCP Reference](docs/cli-and-mcp.md)
+- [Configuration Reference](docs/configuration.md)
+- [Contributing Guide](CONTRIBUTING.md)
+- [Security Policy](SECURITY.md)
+- [Roadmap](ROADMAP.md)
+- [MIT License](LICENSE)
+
+## Notes and Limits
+
+- Shortcodes are validated as exactly 11 characters (`[A-Za-z0-9_-]`). Instagram `/share/...` redirect links are not resolved automatically; open them in a browser first and copy the canonical URL.
+- Carousel and photo posts (`/p/`) are accepted. `yt-dlp` may fail on image-only posts, which marks them `failed`. Use `import-ig --reels-only` to filter them out during bulk import.
+- Note titles are generated in Turkish for Turkish content and technical English otherwise.
+- Provider integrations for Groq, Google GenAI, and `yt-dlp` are isolated in `extractor.py` and `synthesizer.py` so upstream SDK changes only require edits in those two files.
