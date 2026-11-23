@@ -241,7 +241,9 @@ reels-secretary/
 ├── docs/
 │   ├── architecture.md
 │   ├── cli-and-mcp.md
-│   └── configuration.md
+│   ├── configuration.md
+│   ├── example-walkthrough.md
+│   └── step-by-step.md
 ├── src/
 │   └── reels_wiki/
 │       ├── __init__.py
@@ -276,6 +278,8 @@ Tests run offline via `make test` (`pytest`) without making network or LLM API c
 ## Documentation and Governance
 
 - [Architecture Guide](docs/architecture.md)
+- [Step-by-Step Guide](docs/step-by-step.md)
+- [Example Walkthrough](docs/example-walkthrough.md)
 - [CLI and MCP Reference](docs/cli-and-mcp.md)
 - [Configuration Reference](docs/configuration.md)
 - [Contributing Guide](CONTRIBUTING.md)
