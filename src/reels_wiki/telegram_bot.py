@@ -39,6 +39,10 @@ def _get_authorized_chat_id() -> int:
         ) from exc
 
 
+def _redact_token(message: str, token: str) -> str:
+    return message.replace(token, "<redacted>") if token else message
+
+
 class TelegramBotClient:
     def __init__(self, token: str, timeout: int = 35) -> None:
         self.token = token
@@ -50,10 +54,13 @@ class TelegramBotClient:
         url = f"{self.base_url}/{method}{query}"
         req = urllib.request.Request(url, method="GET")
         effective_timeout = read_timeout if read_timeout is not None else self.timeout
-        with urllib.request.urlopen(req, timeout=effective_timeout) as resp:
-            payload = json.loads(resp.read().decode("utf-8"))
+        try:
+            with urllib.request.urlopen(req, timeout=effective_timeout) as resp:
+                payload = json.loads(resp.read().decode("utf-8"))
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+            raise RuntimeError(f"Telegram request failed on {method}: {_redact_token(str(exc), self.token)}") from None
         if not payload.get("ok"):
-            raise RuntimeError(f"Telegram API error on {method}: {payload}")
+            raise RuntimeError(f"Telegram API error on {method}: {_redact_token(str(payload), self.token)}")
         return payload
 
     def get_updates(self, offset: int | None = None, poll_timeout: int = 25) -> list[dict[str, Any]]:
@@ -153,5 +160,5 @@ def run_telegram_bot(cfg: Config) -> None:
             logger.info("Telegram bot stopped by user.")
             break
         except (urllib.error.URLError, TimeoutError, RuntimeError, json.JSONDecodeError) as exc:
-            logger.warning("Telegram polling error, retrying in 5s: %s", exc)
+            logger.warning("Telegram polling error, retrying in 5s: %s", _redact_token(str(exc), token))
             time.sleep(5)

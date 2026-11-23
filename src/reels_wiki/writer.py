@@ -64,21 +64,23 @@ def _read_post(path: Path) -> frontmatter.Post | None:
 
 
 def _choose_path(ctx: VaultContext, syn: AtomicNoteSynthesis, artifact: RawReelArtifact, overwrite: str | Path | None) -> Path:
-    root = ctx.root
+    root = ctx.root.resolve()
+
+    def _ensure_in_vault(resolved: Path) -> Path:
+        try:
+            resolved.relative_to(root)
+        except ValueError as exc:
+            raise WriterError(f"Refusing to write outside the vault: {resolved}") from exc
+        return resolved
 
     def safe(folder: str, slug: str) -> Path:
-        target = (root / folder / f"{slug}.md").resolve()
-        try:
-            target.relative_to(root)
-        except ValueError as exc:
-            raise WriterError(f"Refusing to write outside the vault: {target}") from exc
-        return target
+        return _ensure_in_vault((root / folder / f"{slug}.md").resolve())
 
     if overwrite:
         p = Path(overwrite)
-        p = p if p.is_absolute() else root / p
-        if p.is_file():
-            return p.resolve()
+        resolved = _ensure_in_vault((p if p.is_absolute() else root / p).resolve())
+        if resolved.is_file():
+            return resolved
     target = safe(syn.target_folder or ctx.default_folder, syn.slug)
     if target.exists():
         post = _read_post(target)
