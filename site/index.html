@@ -1,0 +1,1606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <script>
+    try {
+      const saved = localStorage.getItem("color-scheme");
+      if (saved === "light" || saved === "dark") {
+        document.querySelector('meta[name="color-scheme"]').content = saved;
+      }
+    } catch {}
+  </script>
+  <title>reels-wiki | Saved Instagram Reels to Obsidian LLM Wiki</title>
+  <meta name="description" content="Local-first pipeline that converts saved Instagram Reels into deduplicated atomic Markdown notes inside a 3-layer Obsidian LLM Wiki vault." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      color-scheme: light dark;
+
+      --bg-page: light-dark(#fafaf9, #0c0d10);
+      --bg-surface: light-dark(#ffffff, #14161b);
+      --bg-subtle: light-dark(#f4f4f5, #1b1e25);
+      --bg-code: #111318;
+      --ink-primary: light-dark(#18181b, #f4f4f5);
+      --ink-secondary: light-dark(#52525b, #a1a1aa);
+      --ink-muted: light-dark(#71717a, #71717a);
+      --ink-code: #e4e4e7;
+      --border-default: light-dark(#e4e4e7, #272a33);
+      --border-strong: light-dark(#d4d4d8, #363a45);
+      --accent: light-dark(#b45309, #f59e0b);
+      --accent-ink: light-dark(#ffffff, #111318);
+      --accent-soft: light-dark(rgba(180, 83, 9, 0.08), rgba(245, 158, 11, 0.12));
+      --ok: light-dark(#15803d, #4ade80);
+      --skip: light-dark(#b91c1c, #f87171);
+
+      --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+    }
+
+    :root:has(> head > meta[name="color-scheme"][content="dark"]) {
+      color-scheme: dark;
+    }
+    :root:has(> head > meta[name="color-scheme"][content="light"]) {
+      color-scheme: light;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      font-family: var(--font-sans);
+      background-color: var(--bg-page);
+      color: var(--ink-primary);
+      line-height: 1.6;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100dvh;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    a:focus-visible,
+    button:focus-visible,
+    pre:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    code, pre {
+      font-family: var(--font-mono);
+    }
+
+    .container {
+      width: min(1120px, 100% - 2rem);
+      margin-inline: auto;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* Header */
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background-color: var(--bg-page);
+      border-bottom: 1px solid var(--border-default);
+    }
+
+    .nav-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      min-block-size: 64px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.625rem;
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: -0.01em;
+    }
+
+    .brand-logo {
+      display: block;
+      border-radius: var(--radius-sm);
+      object-fit: contain;
+    }
+
+    .brand-tag {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--ink-secondary);
+      border: 1px solid var(--border-default);
+      background: var(--bg-subtle);
+      padding: 0.125rem 0.5rem;
+      border-radius: var(--radius-sm);
+    }
+
+    .nav-links {
+      display: none;
+      align-items: center;
+      gap: 1.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--ink-secondary);
+    }
+
+    .nav-links a:hover {
+      color: var(--ink-primary);
+    }
+
+    @media (min-width: 768px) {
+      .nav-links {
+        display: flex;
+      }
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-inline-size: 38px;
+      min-block-size: 38px;
+      padding: 0.45rem;
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      background: var(--bg-surface);
+      color: var(--ink-primary);
+      cursor: pointer;
+    }
+
+    .icon-btn:hover {
+      border-color: var(--border-strong);
+      background: var(--bg-subtle);
+    }
+
+    /* Theme toggle icons bound cleanly to rendered scheme */
+    .theme-opt-light { display: none; }
+    .theme-opt-dark { display: inline-flex; }
+
+    :root:has(> head > meta[name="color-scheme"][content="dark"]) .theme-opt-light {
+      display: inline-flex;
+    }
+    :root:has(> head > meta[name="color-scheme"][content="dark"]) .theme-opt-dark {
+      display: none;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:has(> head > meta[name="color-scheme"][content="light dark"]) .theme-opt-light {
+        display: inline-flex;
+      }
+      :root:has(> head > meta[name="color-scheme"][content="light dark"]) .theme-opt-dark {
+        display: none;
+      }
+    }
+
+    .btn-github {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-block-size: 38px;
+      padding: 0.45rem 0.875rem;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-md);
+      background: var(--bg-surface);
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+
+    .btn-github:hover {
+      background: var(--bg-subtle);
+    }
+
+    /* Hero */
+    .hero {
+      padding-block: 4.5rem 3.5rem;
+      border-bottom: 1px solid var(--border-default);
+    }
+
+    .hero-grid {
+      display: grid;
+      gap: 2.5rem;
+      align-items: start;
+    }
+
+    @media (min-width: 900px) {
+      .hero-grid {
+        grid-template-columns: 1.15fr 0.85fr;
+      }
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.15rem, 4.5vw, 3.5rem);
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -0.025em;
+      text-wrap: balance;
+    }
+
+    .hero-lead {
+      margin: 1.25rem 0 0;
+      font-size: 1.0625rem;
+      color: var(--ink-secondary);
+      max-width: 58ch;
+    }
+
+    .hero-actions {
+      margin-top: 1.75rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-block-size: 42px;
+      padding: 0.6rem 1.125rem;
+      border-radius: var(--radius-md);
+      background: var(--accent);
+      color: var(--accent-ink);
+      font-size: 0.875rem;
+      font-weight: 700;
+      border: 1px solid transparent;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.06);
+    }
+
+    .install-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.625rem;
+      min-block-size: 42px;
+      padding: 0.35rem 0.5rem 0.35rem 0.875rem;
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      background: var(--bg-surface);
+      font-size: 0.8125rem;
+    }
+
+    .surface-strip {
+      margin-top: 1.75rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--ink-secondary);
+    }
+
+    .surface-chip {
+      padding: 0.25rem 0.55rem;
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-sm);
+      background: var(--bg-surface);
+    }
+
+    .hero-panel {
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-lg);
+      background: var(--bg-surface);
+      padding: 1.25rem;
+    }
+
+    .hero-panel-title {
+      margin: 0 0 0.875rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--ink-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .flow-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .flow-item {
+      display: grid;
+      grid-template-columns: 2.25rem 1fr;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      background: var(--bg-subtle);
+    }
+
+    .flow-num {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .flow-item strong {
+      display: block;
+      font-size: 0.875rem;
+    }
+
+    .flow-item span {
+      display: block;
+      font-size: 0.8125rem;
+      color: var(--ink-secondary);
+      margin-top: 0.15rem;
+    }
+
+    /* Sections */
+    .section {
+      padding-block: 3.75rem;
+      border-bottom: 1px solid var(--border-default);
+    }
+
+    .section-alt {
+      background: var(--bg-subtle);
+    }
+
+    .section-header {
+      max-width: 64ch;
+      margin-bottom: 2rem;
+    }
+
+    .section-kicker {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+    }
+
+    h2 {
+      margin: 0.4rem 0 0;
+      font-size: clamp(1.5rem, 3vw, 2.25rem);
+      font-weight: 700;
+      line-height: 1.18;
+      letter-spacing: -0.02em;
+      text-wrap: balance;
+    }
+
+    .section-desc {
+      margin: 0.65rem 0 0;
+      font-size: 0.95rem;
+      color: var(--ink-secondary);
+    }
+
+    /* Waterfall 3-tier layout */
+    .waterfall-grid {
+      display: grid;
+      gap: 1rem;
+    }
+
+    @media (min-width: 820px) {
+      .waterfall-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .tier-card {
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-lg);
+      background: var(--bg-surface);
+      padding: 1.35rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 1.25rem;
+    }
+
+    .tier-label {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--ink-secondary);
+    }
+
+    .tier-card h3 {
+      margin: 0.45rem 0 0.5rem;
+      font-size: 1.125rem;
+      font-weight: 700;
+    }
+
+    .tier-card p {
+      margin: 0;
+      font-size: 0.875rem;
+      color: var(--ink-secondary);
+    }
+
+    .tier-meta {
+      padding-top: 0.85rem;
+      border-top: 1px solid var(--border-default);
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--ink-secondary);
+    }
+
+    .tier-meta strong {
+      color: var(--ink-primary);
+    }
+
+    /* Copy Button & Live Region */
+    .copy {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .copy-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      min-inline-size: 24px;
+      min-block-size: 24px;
+      padding: 0.25rem 0.55rem;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      background: var(--bg-subtle);
+      color: var(--ink-primary);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .copy-button:hover {
+      border-color: var(--accent);
+    }
+
+    .copy-button-dark {
+      background: #1f222a;
+      border-color: #343946;
+      color: #f4f4f5;
+    }
+
+    .copy-button[data-copied] {
+      border-color: var(--ok);
+    }
+
+    .copy-button[data-failed] {
+      border-color: var(--skip);
+    }
+
+    .copy-icon-check {
+      display: none;
+    }
+
+    .copy-button[data-copied] .copy-icon-default {
+      display: none;
+    }
+
+    .copy-button[data-copied] .copy-icon-check {
+      display: inline;
+      color: var(--ok);
+    }
+
+    .copy-tip {
+      position: absolute;
+      inset-block-end: calc(100% + 6px);
+      inset-inline-end: 0;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--ink-primary);
+      color: var(--bg-page);
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    .copy-button[data-copied] + .copy-tip,
+    .copy-button[data-failed] + .copy-tip {
+      opacity: 1;
+    }
+
+    /* Interactive Sandbox */
+    .scenario-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .scenario-btn {
+      min-block-size: 36px;
+      padding: 0.45rem 0.85rem;
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      background: var(--bg-surface);
+      color: var(--ink-secondary);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .scenario-btn[aria-pressed="true"] {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--ink-primary);
+      font-weight: 600;
+    }
+
+    .sandbox-grid {
+      display: grid;
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    @media (min-width: 900px) {
+      .sandbox-grid {
+        grid-template-columns: 5fr 7fr;
+      }
+    }
+
+    .trace-stack {
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .trace-card {
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      background: var(--bg-surface);
+      padding: 0.9rem 1rem;
+    }
+
+    .trace-card[data-active="false"] {
+      opacity: 0.55;
+    }
+
+    .trace-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .trace-body {
+      margin: 0.35rem 0 0;
+      font-size: 0.8125rem;
+      color: var(--ink-secondary);
+      word-break: break-word;
+    }
+
+    .code-shell {
+      border: 1px solid #272a33;
+      border-radius: var(--radius-lg);
+      background: var(--bg-code);
+      color: var(--ink-code);
+      overflow: hidden;
+    }
+
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.65rem 1rem;
+      border-bottom: 1px solid #232630;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: #a1a1aa;
+    }
+
+    .code-body {
+      margin: 0;
+      padding: 1rem 1.15rem;
+      font-size: 0.8rem;
+      line-height: 1.55;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* Accessible Tabs (Five Native Surfaces) */
+    .tablist {
+      display: flex;
+      overflow-x: auto;
+      gap: 0.25rem;
+      border-bottom: 1px solid var(--border-default);
+      margin-bottom: 1rem;
+    }
+
+    .tablist [role="tab"] {
+      position: relative;
+      flex: none;
+      min-block-size: 42px;
+      padding: 0.55rem 0.95rem;
+      border: 0;
+      background: transparent;
+      color: var(--ink-secondary);
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .tablist [role="tab"]:hover {
+      color: var(--ink-primary);
+    }
+
+    .tablist [role="tab"][aria-selected="true"] {
+      color: var(--ink-primary);
+    }
+
+    .tablist [role="tab"][aria-selected="true"]::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      border-block-end: 3px solid var(--accent);
+    }
+
+    .tabpanels {
+      display: grid;
+    }
+
+    .tabpanels [role="tabpanel"] {
+      grid-area: 1 / 1;
+    }
+
+    /* Spec List (Vault Guardrails) */
+    .spec-grid {
+      display: grid;
+      gap: 1rem 2rem;
+    }
+
+    @media (min-width: 768px) {
+      .spec-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .spec-row {
+      padding-block: 1rem;
+      border-top: 1px solid var(--border-default);
+    }
+
+    .spec-row h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .spec-row p {
+      margin: 0.35rem 0 0;
+      font-size: 0.875rem;
+      color: var(--ink-secondary);
+    }
+
+    /* Quick Start */
+    .steps-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 1.25rem;
+    }
+
+    .step-card {
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-lg);
+      background: var(--bg-surface);
+      padding: 1.25rem;
+    }
+
+    .step-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+      font-weight: 700;
+      font-size: 1rem;
+    }
+
+    .step-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      inline-size: 26px;
+      block-size: 26px;
+      border-radius: var(--radius-sm);
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    /* Footer */
+    .site-footer {
+      padding-block: 2.25rem;
+      font-size: 0.8125rem;
+      color: var(--ink-secondary);
+    }
+
+    .footer-inner {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+    }
+
+    .footer-links a:hover {
+      color: var(--ink-primary);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+      .copy-tip {
+        transition: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav-bar">
+      <a href="#" class="brand">
+        <img
+          src="../assets/logo.png"
+          alt="reels-wiki logo"
+          width="28"
+          height="28"
+          fetchpriority="high"
+          class="brand-logo"
+          onerror="this.style.display='none';"
+        />
+        <span>reels-wiki</span>
+        <span class="brand-tag">v0.1.0</span>
+      </a>
+
+      <nav class="nav-links" aria-label="Primary sections">
+        <a href="#pipeline">Pipeline</a>
+        <a href="#sandbox">Interactive Sandbox</a>
+        <a href="#interfaces">Interfaces</a>
+        <a href="#guardrails">Vault Rules</a>
+        <a href="#quickstart">Quick Start</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button id="themeToggle" type="button" class="icon-btn" aria-live="off">
+          <span class="theme-opt-dark">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+            <span class="sr-only">Switch to dark theme</span>
+          </span>
+          <span class="theme-opt-light">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            <span class="sr-only">Switch to light theme</span>
+          </span>
+        </button>
+
+        <a
+          href="https://github.com/AtaCanYmc/reels-secretary"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn-github"
+        >
+          GitHub
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <h1>Saved Instagram Reels to Obsidian Atomic Notes</h1>
+          <p class="hero-lead">
+            A local-first pipeline that extracts captions, Whisper speech transcripts, and Gemini Vision frame OCR, writing deduplicated Markdown notes directly into an existing 3-layer Obsidian LLM Wiki vault.
+          </p>
+
+          <div class="hero-actions">
+            <a href="#sandbox" class="btn-primary">Inspect Live Sandbox</a>
+
+            <div class="install-box">
+              <code id="install-cmd">pip install -e ".[dev]"</code>
+              <span class="copy">
+                <button
+                  type="button"
+                  class="copy-button"
+                  command="--copy"
+                  commandfor="install-cmd"
+                  aria-label="Copy install command"
+                >
+                  <span class="copy-icon-default" aria-hidden="true">Copy</span>
+                  <span class="copy-icon-check" aria-hidden="true">Copied</span>
+                </button>
+                <span class="copy-tip" role="status"></span>
+              </span>
+            </div>
+          </div>
+
+          <div class="surface-strip" aria-label="Supported interfaces">
+            <span class="surface-chip">Python SDK: reels_wiki</span>
+            <span class="surface-chip">CLI: reels-sync</span>
+            <span class="surface-chip">MCP: reels-wiki-mcp</span>
+            <span class="surface-chip">Bot: reels-wiki-telegram</span>
+            <span class="surface-chip">Skill: SKILL.md</span>
+          </div>
+        </div>
+
+        <aside class="hero-panel" aria-label="Pipeline architecture summary">
+          <h2 class="hero-panel-title">4-Stage Pipeline</h2>
+          <ol class="flow-list">
+            <li class="flow-item">
+              <span class="flow-num">01</span>
+              <div>
+                <strong>O(1) Shortcode Gate</strong>
+                <span>Normalizes URLs to 11-char shortcodes; tracks state in <code>sources/.reels_index.json</code> and <code>inbox/reels-queue.jsonl</code>.</span>
+              </div>
+            </li>
+            <li class="flow-item">
+              <span class="flow-num">02</span>
+              <div>
+                <strong>Cost-Aware Waterfall</strong>
+                <span>Starts with <code>yt-dlp</code> metadata; runs Whisper or Gemini Vision only when extracted text falls below threshold.</span>
+              </div>
+            </li>
+            <li class="flow-item">
+              <span class="flow-num">03</span>
+              <div>
+                <strong>Noise Filter &amp; Synthesis</strong>
+                <span>Applies <code>AtomicNoteSynthesis</code>, drops low-signal clips, and repairs invalid JSON with optional fallback provider.</span>
+              </div>
+            </li>
+            <li class="flow-item">
+              <span class="flow-num">04</span>
+              <div>
+                <strong>Atomic Vault Write</strong>
+                <span>Enforces allowed folders, ASCII slugs, valid wikilinks, and idempotent updates to <code>_index.md</code> and <code>_log.md</code>.</span>
+              </div>
+            </li>
+          </ol>
+        </aside>
+      </div>
+    </section>
+
+    <section id="pipeline" class="section section-alt">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-kicker">Cost-Aware Extraction</span>
+          <h2>Escalates to audio and vision only when text is missing</h2>
+          <p class="section-desc">
+            Every item moves through a 3-stage waterfall. Extracted payloads are stored in <code>sources/reels/&lt;shortcode&gt;.json</code>, and raw media files never enter the vault.
+          </p>
+        </div>
+
+        <div class="waterfall-grid">
+          <article class="tier-card">
+            <div>
+              <span class="tier-label">STAGE 1 / METADATA</span>
+              <h3>yt-dlp Metadata &amp; Subtitles</h3>
+              <p>Calls <code>extract_info(download=False)</code> to fetch caption, creator, duration, upload date, and embedded subtitles without downloading video.</p>
+            </div>
+            <div class="tier-meta">
+              <span>Stop threshold</span>
+              <strong>caption &ge; 150 chars</strong>
+            </div>
+          </article>
+
+          <article class="tier-card">
+            <div>
+              <span class="tier-label">STAGE 2 / AUDIO FALLBACK</span>
+              <h3>Whisper Speech-to-Text</h3>
+              <p>Runs only when caption length is under <code>min_caption_chars</code> and no usable subtitles exist. Uses Groq <code>whisper-large-v3-turbo</code> or local <code>faster-whisper</code>.</p>
+            </div>
+            <div class="tier-meta">
+              <span>Stop threshold</span>
+              <strong>transcript &ge; 40 chars</strong>
+            </div>
+          </article>
+
+          <article class="tier-card">
+            <div>
+              <span class="tier-label">STAGE 3 / VISION OCR</span>
+              <h3>Gemini 2.5 Flash Frames</h3>
+              <p>Extracts 4 evenly spaced frames via <code>ffmpeg</code> when both caption and transcript remain short, then reads on-screen code, slides, or diagrams.</p>
+            </div>
+            <div class="tier-meta">
+              <span>Empty guard</span>
+              <strong>skip before LLM</strong>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="sandbox" class="section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-kicker">Verified Walkthroughs</span>
+          <h2>Trace real Reels through the pipeline</h2>
+          <p class="section-desc">
+            Select one of the three tested Instagram URLs from <code>docs/example-walkthrough.md</code> to inspect URL normalization, stage routing, and output behavior.
+          </p>
+        </div>
+
+        <div class="scenario-bar" role="group" aria-label="Sample Reel scenarios">
+          <button type="button" class="scenario-btn" data-scenario="df44" aria-pressed="true">1. Df44o7WhunQ (Long Caption)</button>
+          <button type="button" class="scenario-btn" data-scenario="df2j" aria-pressed="false">2. Df2jr_RN9gb (Short CTA)</button>
+          <button type="button" class="scenario-btn" data-scenario="ddyn" aria-pressed="false">3. DdYn6ekug5W (Headline Only)</button>
+        </div>
+
+        <div class="sandbox-grid">
+          <div class="trace-stack">
+            <div class="trace-card">
+              <div class="trace-label">
+                <span>Incoming URL</span>
+                <span id="simShortcode">Df44o7WhunQ</span>
+              </div>
+              <p class="trace-body"><code id="simRawUrl"></code></p>
+              <p class="trace-body">Canonical: <code id="simCanonicalUrl"></code></p>
+            </div>
+
+            <div id="traceStage1" class="trace-card" data-active="true">
+              <div class="trace-label">
+                <span>1. yt-dlp Metadata</span>
+                <span id="traceStage1Badge">EXECUTED</span>
+              </div>
+              <p id="traceStage1Text" class="trace-body"></p>
+            </div>
+
+            <div id="traceStage2" class="trace-card" data-active="false">
+              <div class="trace-label">
+                <span>2. Whisper Audio</span>
+                <span id="traceStage2Badge">SKIPPED</span>
+              </div>
+              <p id="traceStage2Text" class="trace-body"></p>
+            </div>
+
+            <div id="traceStage3" class="trace-card" data-active="false">
+              <div class="trace-label">
+                <span>3. Gemini Vision OCR</span>
+                <span id="traceStage3Badge">SKIPPED</span>
+              </div>
+              <p id="traceStage3Text" class="trace-body"></p>
+            </div>
+          </div>
+
+          <div class="code-shell">
+            <div class="code-header">
+              <span id="simOutputPath">sources/reels/Df44o7WhunQ.json</span>
+              <span class="copy">
+                <button
+                  type="button"
+                  class="copy-button copy-button-dark"
+                  command="--copy"
+                  commandfor="simOutputContent"
+                  aria-label="Copy sandbox output"
+                >
+                  <span class="copy-icon-default" aria-hidden="true">Copy</span>
+                  <span class="copy-icon-check" aria-hidden="true">Copied</span>
+                </button>
+                <span class="copy-tip" role="status"></span>
+              </span>
+            </div>
+            <pre class="code-body" tabindex="0"><code id="simOutputContent"></code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="interfaces" class="section section-alt">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-kicker">Five Interfaces</span>
+          <h2>Run from terminal, MCP client, Python script, or Telegram</h2>
+          <p class="section-desc">
+            Every entry point shares the same queue, deduplication index, and vault writer. Use arrow keys or click a tab to inspect each interface.
+          </p>
+        </div>
+
+        <div class="tabs">
+          <div class="tablist" role="tablist" aria-label="reels-wiki interfaces">
+            <button type="button" role="tab" id="tab-cli" aria-selected="true" tabindex="0">CLI (reels-sync)</button>
+            <button type="button" role="tab" id="tab-mcp" aria-selected="false" tabindex="-1">MCP Server</button>
+            <button type="button" role="tab" id="tab-sdk" aria-selected="false" tabindex="-1">Python SDK</button>
+            <button type="button" role="tab" id="tab-telegram" aria-selected="false" tabindex="-1">Telegram Bot</button>
+            <button type="button" role="tab" id="tab-skill" aria-selected="false" tabindex="-1">SKILL.md</button>
+          </div>
+
+          <div class="tabpanels">
+            <div role="tabpanel" id="panel-cli" aria-labelledby="tab-cli" tabindex="0">
+              <div class="code-shell">
+                <div class="code-header">
+                  <span>CLI commands (global flags appear before subcommand)</span>
+                  <span class="copy">
+                    <button type="button" class="copy-button copy-button-dark" command="--copy" commandfor="code-cli" aria-label="Copy CLI commands">
+                      <span class="copy-icon-default" aria-hidden="true">Copy</span>
+                      <span class="copy-icon-check" aria-hidden="true">Copied</span>
+                    </button>
+                    <span class="copy-tip" role="status"></span>
+                  </span>
+                </div>
+                <pre class="code-body" tabindex="0"><code id="code-cli"># Enqueue a single Reel (deduplicated by 11-char shortcode)
+reels-sync ingest "https://www.instagram.com/reel/DAbCdEfGhIj/?igsh=xyz"
+
+# Import saved_posts.json from an Instagram export
+reels-sync import-ig ~/Downloads/instagram-export/ --reels-only
+
+# Preview pending items without spending API calls
+reels-sync process --dry-run
+
+# Extract, synthesize, and update _index.md + _log.md
+reels-sync process --limit 10 --retry-failed
+
+# Re-synthesize from sources/reels/&lt;shortcode&gt;.json offline
+reels-sync reprocess DAbCdEfGhIj
+
+# Machine-readable JSON output for agents
+reels-sync --json stats</code></pre>
+              </div>
+            </div>
+
+            <div role="tabpanel" id="panel-mcp" aria-labelledby="tab-mcp" hidden="until-found">
+              <div class="code-shell">
+                <div class="code-header">
+                  <span>MCP server stdio configuration</span>
+                  <span class="copy">
+                    <button type="button" class="copy-button copy-button-dark" command="--copy" commandfor="code-mcp" aria-label="Copy MCP config">
+                      <span class="copy-icon-default" aria-hidden="true">Copy</span>
+                      <span class="copy-icon-check" aria-hidden="true">Copied</span>
+                    </button>
+                    <span class="copy-tip" role="status"></span>
+                  </span>
+                </div>
+                <pre class="code-body" tabindex="0"><code id="code-mcp">{
+  "mcpServers": {
+    "reels-wiki": {
+      "command": "/path/to/reels-secretary/.venv/bin/reels-wiki-mcp",
+      "env": {
+        "REELS_WIKI_CONFIG": "/path/to/reels-secretary/config.yaml"
+      }
+    }
+  }
+}
+
+// Tools: enqueue_reel, import_ig_export, process_reels_queue, get_queue_stats</code></pre>
+              </div>
+            </div>
+
+            <div role="tabpanel" id="panel-sdk" aria-labelledby="tab-sdk" hidden="until-found">
+              <div class="code-shell">
+                <div class="code-header">
+                  <span>Python SDK usage</span>
+                  <span class="copy">
+                    <button type="button" class="copy-button copy-button-dark" command="--copy" commandfor="code-sdk" aria-label="Copy Python SDK snippet">
+                      <span class="copy-icon-default" aria-hidden="true">Copy</span>
+                      <span class="copy-icon-check" aria-hidden="true">Copied</span>
+                    </button>
+                    <span class="copy-tip" role="status"></span>
+                  </span>
+                </div>
+                <pre class="code-body" tabindex="0"><code id="code-sdk">from reels_wiki import enqueue, load_config, process_queue
+
+cfg = load_config()
+enqueue("https://www.instagram.com/reel/DAbCdEfGhIj/", "script", vault=cfg.vault_path)
+summary = process_queue(cfg, limit=3)
+print(summary)</code></pre>
+              </div>
+            </div>
+
+            <div role="tabpanel" id="panel-telegram" aria-labelledby="tab-telegram" hidden="until-found">
+              <div class="code-shell">
+                <div class="code-header">
+                  <span>Telegram capture bot setup</span>
+                  <span class="copy">
+                    <button type="button" class="copy-button copy-button-dark" command="--copy" commandfor="code-telegram" aria-label="Copy Telegram bot commands">
+                      <span class="copy-icon-default" aria-hidden="true">Copy</span>
+                      <span class="copy-icon-check" aria-hidden="true">Copied</span>
+                    </button>
+                    <span class="copy-tip" role="status"></span>
+                  </span>
+                </div>
+                <pre class="code-body" tabindex="0"><code id="code-telegram"># Set TELEGRAM_BOT_TOKEN and numeric TELEGRAM_ALLOWED_CHAT_ID in .env
+reels-sync telegram
+
+# Mobile flow:
+# Share Reel -> Telegram -> Your bot
+# The bot rejects all other chat IDs, validates the shortcode,
+# and appends to inbox/reels-queue.jsonl without processing inline.
+# Run `reels-sync process --limit 10` on a schedule to digest.</code></pre>
+              </div>
+            </div>
+
+            <div role="tabpanel" id="panel-skill" aria-labelledby="tab-skill" hidden="until-found">
+              <div class="code-shell">
+                <div class="code-header">
+                  <span>SKILL.md operational guardrails</span>
+                  <span class="copy">
+                    <button type="button" class="copy-button copy-button-dark" command="--copy" commandfor="code-skill" aria-label="Copy SKILL.md rules">
+                      <span class="copy-icon-default" aria-hidden="true">Copy</span>
+                      <span class="copy-icon-check" aria-hidden="true">Copied</span>
+                    </button>
+                    <span class="copy-tip" role="status"></span>
+                  </span>
+                </div>
+                <pre class="code-body" tabindex="0"><code id="code-skill">1. Deduplicate by 11-character shortcode before queuing.
+2. Never copy video or audio files into the Obsidian vault.
+3. Read _CLAUDE.md and _index.md before synthesis to match folders and tags.
+4. Downgrade unmatched wikilinks to "(new note candidate) ..." plain text.
+5. Preserve user edits to status and created frontmatter on forced re-runs.</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="guardrails" class="section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-kicker">Vault Enforcement</span>
+          <h2>Validation guarantees before writing to disk</h2>
+          <p class="section-desc">
+            Model output is treated as untrusted input and normalized against your vault schema before any file is written.
+          </p>
+        </div>
+
+        <div class="spec-grid">
+          <div class="spec-row">
+            <h3>Dynamic Folder &amp; Tag Discovery</h3>
+            <p>Scans <code>_CLAUDE.md</code>, <code>_index.md</code>, and note frontmatter for allowed folders and <code>#tags</code>. Excludes <code>sources/</code> and <code>inbox/</code> as note destinations.</p>
+          </div>
+          <div class="spec-row">
+            <h3>Zero Dangling Wikilinks</h3>
+            <p>Checks <code>related_wikilinks</code> against real vault note titles and filenames. Unknown targets are rendered as plain text <code>(new note candidate) ...</code>.</p>
+          </div>
+          <div class="spec-row">
+            <h3>Crash-Safe Append Queue</h3>
+            <p>Writes snapshots to <code>inbox/reels-queue.jsonl</code> under an exclusive file lock. Stale <code>processing</code> entries auto-reset on the next run, and lost indexes rebuild from the queue.</p>
+          </div>
+          <div class="spec-row">
+            <h3>Bilingual Titles &amp; ASCII Slugs</h3>
+            <p>Generates Turkish titles for Turkish Reels and technical English otherwise, while transliterating Turkish characters into clean ASCII filenames.</p>
+          </div>
+          <div class="spec-row">
+            <h3>Zero-Download Reprocessing</h3>
+            <p>Persists extracted payloads in <code>sources/reels/&lt;shortcode&gt;.json</code> so <code>reels-sync reprocess --all</code> can regenerate notes without touching Instagram or Whisper.</p>
+          </div>
+          <div class="spec-row">
+            <h3>Offline Pytest Suite</h3>
+            <p>Covers URL parsing, Instagram export ingestion, writer idempotency, and JSON repair retries without making network or LLM calls.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="quickstart" class="section section-alt">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-kicker">Setup</span>
+          <h2>Quick Start</h2>
+          <p class="section-desc">
+            Requires Python 3.10 or newer and <code>ffmpeg</code> on your <code>PATH</code> for audio or frame fallbacks.
+          </p>
+        </div>
+
+        <ol class="steps-list">
+          <li class="step-card">
+            <div class="step-title">
+              <span class="step-badge">1</span>
+              <span>Clone repository and install package</span>
+            </div>
+            <div class="code-shell">
+              <div class="code-header">
+                <span>Shell</span>
+                <span class="copy">
+                  <button type="button" class="copy-button copy-button-dark" command="--copy" commandfor="qs-step-1" aria-label="Copy step 1 commands">
+                    <span class="copy-icon-default" aria-hidden="true">Copy</span>
+                    <span class="copy-icon-check" aria-hidden="true">Copied</span>
+                  </button>
+                  <span class="copy-tip" role="status"></span>
+                </span>
+              </div>
+              <pre class="code-body" tabindex="0"><code id="qs-step-1">git clone https://github.com/AtaCanYmc/reels-secretary.git
+cd reels-secretary
+python3 -m venv .venv &amp;&amp; source .venv/bin/activate
+pip install -e ".[dev]"</code></pre>
+            </div>
+          </li>
+
+          <li class="step-card">
+            <div class="step-title">
+              <span class="step-badge">2</span>
+              <span>Configure vault path and Instagram cookies</span>
+            </div>
+            <div class="code-shell">
+              <div class="code-header">
+                <span>config.yaml</span>
+                <span class="copy">
+                  <button type="button" class="copy-button copy-button-dark" command="--copy" commandfor="qs-step-2" aria-label="Copy step 2 commands">
+                    <span class="copy-icon-default" aria-hidden="true">Copy</span>
+                    <span class="copy-icon-check" aria-hidden="true">Copied</span>
+                  </button>
+                  <span class="copy-tip" role="status"></span>
+                </span>
+              </div>
+              <pre class="code-body" tabindex="0"><code id="qs-step-2">cp config.example.yaml config.yaml
+# Set vault_path to your Obsidian vault directory
+# Under extraction:, set cookies_from_browser: chrome (or cookies_file: ~/cookies.txt)</code></pre>
+            </div>
+          </li>
+
+          <li class="step-card">
+            <div class="step-title">
+              <span class="step-badge">3</span>
+              <span>Add API keys and verify configuration</span>
+            </div>
+            <div class="code-shell">
+              <div class="code-header">
+                <span>.env + verification</span>
+                <span class="copy">
+                  <button type="button" class="copy-button copy-button-dark" command="--copy" commandfor="qs-step-3" aria-label="Copy step 3 commands">
+                    <span class="copy-icon-default" aria-hidden="true">Copy</span>
+                    <span class="copy-icon-check" aria-hidden="true">Copied</span>
+                  </button>
+                  <span class="copy-tip" role="status"></span>
+                </span>
+              </div>
+              <pre class="code-body" tabindex="0"><code id="qs-step-3">cat &lt;&lt; 'EOF' &gt; .env
+GROQ_API_KEY=your_groq_api_key
+GEMINI_API_KEY=your_gemini_api_key
+EOF
+
+reels-sync stats</code></pre>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>reels-wiki · MIT License</div>
+      <div class="footer-links">
+        <a href="https://github.com/AtaCanYmc/reels-secretary/blob/main/docs/architecture.md" target="_blank" rel="noopener noreferrer">Architecture</a>
+        <a href="https://github.com/AtaCanYmc/reels-secretary/blob/main/docs/step-by-step.md" target="_blank" rel="noopener noreferrer">Step-by-Step</a>
+        <a href="https://github.com/AtaCanYmc/reels-secretary/blob/main/docs/example-walkthrough.md" target="_blank" rel="noopener noreferrer">Examples</a>
+        <a href="https://github.com/AtaCanYmc/reels-secretary/blob/main/docs/cli-and-mcp.md" target="_blank" rel="noopener noreferrer">CLI &amp; MCP</a>
+        <a href="https://github.com/AtaCanYmc/reels-secretary/blob/main/docs/configuration.md" target="_blank" rel="noopener noreferrer">Configuration</a>
+        <a href="https://github.com/AtaCanYmc/reels-secretary/blob/main/ROADMAP.md" target="_blank" rel="noopener noreferrer">Roadmap</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // 1. Color scheme toggle (system default -> literal opposite override; revert removes stored override)
+    (() => {
+      const meta = document.querySelector('meta[name="color-scheme"]');
+      const toggleBtn = document.getElementById('themeToggle');
+      const mediaDark = window.matchMedia('(prefers-color-scheme: dark)');
+
+      function getStored() {
+        try {
+          const val = localStorage.getItem('color-scheme');
+          return val === 'light' || val === 'dark' ? val : null;
+        } catch {
+          return null;
+        }
+      }
+
+      function getSystemScheme() {
+        return mediaDark.matches ? 'dark' : 'light';
+      }
+
+      function applyScheme(stored) {
+        meta.content = stored ?? 'light dark';
+      }
+
+      toggleBtn.addEventListener('click', () => {
+        const currentRendered = getStored() ?? getSystemScheme();
+        const target = currentRendered === 'dark' ? 'light' : 'dark';
+        const system = getSystemScheme();
+
+        try {
+          if (target === system) {
+            localStorage.removeItem('color-scheme');
+            applyScheme(null);
+          } else {
+            localStorage.setItem('color-scheme', target);
+            applyScheme(target);
+          }
+        } catch {
+          applyScheme(target === system ? null : target);
+        }
+      });
+
+      window.addEventListener('storage', (event) => {
+        if (event.key === 'color-scheme') {
+          applyScheme(event.newValue === 'light' || event.newValue === 'dark' ? event.newValue : null);
+        }
+      });
+    })();
+
+    // 2. Declarative Copy Buttons (Invoker Commands + click fallback + Async Clipboard API)
+    (() => {
+      const timers = new WeakMap();
+      let lastMessage = '';
+
+      function legacyCopy(text) {
+        const previousFocus = document.activeElement;
+        const field = Object.assign(document.createElement('textarea'), { value: text });
+        field.setAttribute('readonly', '');
+        field.style.cssText = 'position:fixed;inset-block-start:0;opacity:0';
+        document.body.append(field);
+        field.select();
+        try {
+          return document.execCommand('copy');
+        } finally {
+          field.remove();
+          previousFocus?.focus({ preventScroll: true });
+        }
+      }
+
+      function report(button, ok) {
+        const tip = button.nextElementSibling;
+        clearTimeout(timers.get(button));
+        button.removeAttribute('data-copied');
+        button.removeAttribute('data-failed');
+
+        let message = ok ? 'Copied' : 'Copy failed';
+        if (message === lastMessage) message += '\u00A0';
+        lastMessage = message;
+
+        tip.textContent = '';
+        void button.offsetWidth;
+        button.setAttribute(ok ? 'data-copied' : 'data-failed', '');
+        requestAnimationFrame(() => {
+          tip.textContent = message;
+        });
+
+        timers.set(button, setTimeout(() => {
+          button.removeAttribute('data-copied');
+          button.removeAttribute('data-failed');
+          tip.textContent = '';
+        }, 2000));
+      }
+
+      async function copyTarget(button, target) {
+        const text = target.matches('input, textarea') ? target.value : target.innerText.trim();
+        if (!text) return;
+        try {
+          await navigator.clipboard.writeText(text);
+          report(button, true);
+        } catch {
+          try {
+            if (!legacyCopy(text)) throw new Error('Copy failed');
+            report(button, true);
+          } catch {
+            report(button, false);
+          }
+        }
+      }
+
+      if ('CommandEvent' in window) {
+        document.addEventListener('command', (event) => {
+          if (event.command === '--copy' && event.target) {
+            copyTarget(event.source, event.target);
+          }
+        }, true);
+      } else {
+        document.addEventListener('click', (event) => {
+          if (event.defaultPrevented) return;
+          const button = event.target.closest('button[command="--copy"]');
+          if (!button) return;
+          const target = document.getElementById(button.getAttribute('commandfor'));
+          if (target) copyTarget(button, target);
+        });
+      }
+    })();
+
+    // 3. Verified Walkthrough Sandbox (real examples from docs/example-walkthrough.md)
+    (() => {
+      const SCENARIOS = {
+        df44: {
+          shortcode: 'Df44o7WhunQ',
+          rawUrl: 'https://www.instagram.com/p/Df44o7WhunQ/?hl=tr',
+          canonicalUrl: 'https://www.instagram.com/reel/Df44o7WhunQ/',
+          stage1: { badge: 'EXECUTED', active: true, text: 'Caption length exceeds min_caption_chars (150). Creator: Atalay KARAHAN (@krhnatalay).' },
+          stage2: { badge: 'SKIPPED', active: false, text: 'Skipped because Stage 1 caption met the text threshold.' },
+          stage3: { badge: 'SKIPPED', active: false, text: 'Skipped because Stage 1 caption met the text threshold.' },
+          outputPath: 'sources/reels/Df44o7WhunQ.json (verified extraction output)',
+          outputContent: JSON.stringify({
+            shortcode: 'Df44o7WhunQ',
+            url: 'https://www.instagram.com/p/Df44o7WhunQ/?hl=tr',
+            creator: 'Atalay KARAHAN',
+            title: 'Video by krhnatalay',
+            caption: 'Claude limitin bitiyorsa bu 2 skill\u2019i kur: RTK ve Caveman. 20 dolarl\u0131k abonelik su gibi bitiyorsa ikisini Claude Code\u2019a ekle, token harcamas\u0131n\u0131 azalts\u0131n.\n\nYay\u0131n\u0131n tamam\u0131 YouTube\u2019da: @krhnatalay\n\n#claude #claudecode #yapayzeka #yaz\u0131l\u0131m',
+            upload_date: '20261118',
+            steps_used: ['metadata'],
+            warnings: []
+          }, null, 2)
+        },
+        df2j: {
+          shortcode: 'Df2jr_RN9gb',
+          rawUrl: 'https://www.instagram.com/p/Df2jr_RN9gb/?hl=tr',
+          canonicalUrl: 'https://www.instagram.com/reel/Df2jr_RN9gb/',
+          stage1: { badge: 'EXECUTED', active: true, text: 'Caption is 35 chars ("juri yaz sana baglantiyi gondereyim") < 150. Creator: Ahmet Demirci (@ahmetbuilder).' },
+          stage2: { badge: 'TRIGGERED', active: true, text: 'Downloads audio to temp dir and transcribes speech via Whisper.' },
+          stage3: { badge: 'CONDITIONAL', active: true, text: 'Runs Gemini 2.5 Flash on 4 frames if transcript remains under 40 chars.' },
+          outputPath: 'sources/reels/Df2jr_RN9gb.json (Stage 1 verified payload)',
+          outputContent: JSON.stringify({
+            shortcode: 'Df2jr_RN9gb',
+            url: 'https://www.instagram.com/p/Df2jr_RN9gb/?hl=tr',
+            creator: 'Ahmet Demirci',
+            title: 'Video by ahmetbuilder',
+            caption: 'juri yaz sana ba\u011flant\u0131y\u0131 g\u00f6ndereyim',
+            upload_date: '20261117',
+            steps_used: ['metadata'],
+            warnings: []
+          }, null, 2)
+        },
+        ddyn: {
+          shortcode: 'DdYn6ekug5W',
+          rawUrl: 'https://www.instagram.com/p/DdYn6ekug5W/?hl=tr',
+          canonicalUrl: 'https://www.instagram.com/reel/DdYn6ekug5W/',
+          stage1: { badge: 'EXECUTED', active: true, text: 'Caption is 85 chars (< 150) and omits repository name. Creator: Bart\u0131n Taha Bak\u0131c\u0131 (@beathabest.tech).' },
+          stage2: { badge: 'TRIGGERED', active: true, text: 'Extracts spoken repository name and prompt details via Whisper.' },
+          stage3: { badge: 'BYPASSED', active: false, text: 'Skipped once spoken transcript meets min_transcript_chars (40).' },
+          outputPath: 'sources/reels/DdYn6ekug5W.json (Stage 1 verified payload)',
+          outputContent: JSON.stringify({
+            shortcode: 'DdYn6ekug5W',
+            url: 'https://www.instagram.com/p/DdYn6ekug5W/?hl=tr',
+            creator: 'Bart\u0131n Taha Bak\u0131c\u0131',
+            title: 'Video by beathabest.tech',
+            caption: 'Bir T\u00fcrk\u2019\u00fcn 170 bin y\u0131ld\u0131zl\u0131 reposu: 2169 haz\u0131r promt! #ai #github #chatgpt #developer',
+            upload_date: '20260917',
+            steps_used: ['metadata'],
+            warnings: []
+          }, null, 2)
+        }
+      };
+
+      const buttons = document.querySelectorAll('.scenario-btn');
+
+      function selectScenario(key) {
+        const s = SCENARIOS[key];
+        document.getElementById('simShortcode').textContent = s.shortcode;
+        document.getElementById('simRawUrl').textContent = s.rawUrl;
+        document.getElementById('simCanonicalUrl').textContent = s.canonicalUrl;
+
+        [1, 2, 3].forEach((n) => {
+          const data = s[`stage${n}`];
+          const card = document.getElementById(`traceStage${n}`);
+          card.dataset.active = String(data.active);
+          document.getElementById(`traceStage${n}Badge`).textContent = data.badge;
+          document.getElementById(`traceStage${n}Text`).textContent = data.text;
+        });
+
+        document.getElementById('simOutputPath').textContent = s.outputPath;
+        document.getElementById('simOutputContent').textContent = s.outputContent;
+
+        buttons.forEach((btn) => {
+          btn.setAttribute('aria-pressed', String(btn.dataset.scenario === key));
+        });
+      }
+
+      buttons.forEach((btn) => {
+        btn.addEventListener('click', () => selectScenario(btn.dataset.scenario));
+      });
+
+      selectScenario('df44');
+    })();
+
+    // 4. Accessible Tabbed Interface (roving tabindex, arrow keys, hidden="until-found", beforematch)
+    (() => {
+      const tablist = document.querySelector('[role="tablist"]');
+      const tabs = Array.from(tablist.querySelectorAll('[role="tab"]'));
+      const panels = Array.from(document.querySelectorAll('[role="tabpanel"]'));
+
+      function activateTab(tab, moveFocus = false) {
+        const index = tabs.indexOf(tab);
+        tabs.forEach((t, i) => {
+          const selected = i === index;
+          t.setAttribute('aria-selected', String(selected));
+          t.tabIndex = selected ? 0 : -1;
+          const panel = panels[i];
+          if (selected) {
+            panel.removeAttribute('hidden');
+            panel.tabIndex = 0;
+          } else {
+            panel.setAttribute('hidden', 'until-found');
+            panel.removeAttribute('tabindex');
+          }
+        });
+        tab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        if (moveFocus) tab.focus();
+      }
+
+      tabs.forEach((tab) => {
+        tab.addEventListener('click', () => activateTab(tab, false));
+      });
+
+      tablist.addEventListener('keydown', (event) => {
+        const current = tabs.indexOf(document.activeElement);
+        if (current === -1) return;
+
+        let next = null;
+        if (event.key === 'ArrowRight') next = (current + 1) % tabs.length;
+        else if (event.key === 'ArrowLeft') next = (current - 1 + tabs.length) % tabs.length;
+        else if (event.key === 'Home') next = 0;
+        else if (event.key === 'End') next = tabs.length - 1;
+
+        if (next !== null) {
+          event.preventDefault();
+          activateTab(tabs[next], true);
+        }
+      });
+
+      panels.forEach((panel, idx) => {
+        panel.addEventListener('beforematch', () => activateTab(tabs[idx], false));
+      });
+    })();
+  </script>
+</body>
+</html>
