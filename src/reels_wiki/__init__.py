@@ -6,7 +6,7 @@ SDK entry points (all importable without side effects):
 """
 from __future__ import annotations
 
-__version__ = "0.1.1"  # x-release-please-version
+__version__ = "0.1.2"  # x-release-please-version
 
 from .config import Config, ConfigError, load_config
 from .ig_export import import_ig_export

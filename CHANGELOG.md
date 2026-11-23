@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.2](https://github.com/AtaCanYmc/reels-wiki/compare/v0.1.1...v0.1.2) (2026-11-23)
+
+
+### Features
+
+* enhance CLI output with Rich UI for various commands and add JSON mode support ([8ed0f13](https://github.com/AtaCanYmc/reels-wiki/commit/8ed0f133d186a0b3a6ff0f17a54678d44a88a3d3))
+* implement v0.2.0 quality gates, doctor CLI, tests, and troubleshooting docs ([0d1f3b6](https://github.com/AtaCanYmc/reels-wiki/commit/0d1f3b65300b8f7b80b2d33c9481fc2755464a02))
+
 ## [0.1.1](https://github.com/AtaCanYmc/reels-wiki/compare/v0.1.0...v0.1.1) (2026-11-23)
 
 
