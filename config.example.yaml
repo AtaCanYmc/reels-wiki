@@ -1,0 +1,34 @@
+# Copy to config.yaml and edit. Secrets (API keys, bot token) belong in .env, not here.
+
+vault_path: ~/Documents/ObsidianVault   # root of the 3-layer LLM Wiki vault (contains _CLAUDE.md, _index.md)
+
+# Optional: override what is auto-discovered from _CLAUDE.md / _index.md
+allowed_folders: null        # e.g. [ideas, projects, tools, learning]
+default_folder: null         # used when the LLM picks a folder that is not allowed
+
+delay_seconds: 2.0           # pause between network extractions (be gentle with Instagram)
+
+extraction:
+  min_caption_chars: 150     # below this -> audio transcript fallback
+  min_transcript_chars: 40   # caption AND transcript below their thresholds -> vision fallback
+  enable_whisper_fallback: true
+  whisper_provider: groq     # groq | local
+  groq_whisper_model: whisper-large-v3-turbo
+  local_whisper_model: small # faster-whisper model size (pip install "reels-wiki[local]")
+  whisper_language: null     # e.g. tr, en; null = auto-detect
+  enable_vision_fallback: true
+  vision_frames: 4
+  vision_model: gemini-2.5-flash
+  # Instagram usually needs a logged-in session. Pick ONE:
+  cookies_file: null         # Netscape cookies.txt exported from your browser
+  cookies_from_browser: null # e.g. chrome, firefox, "chrome:Profile 1"
+  ffmpeg_path: ffmpeg
+
+synthesis:
+  provider: groq             # groq | gemini
+  groq_model: llama-3.3-70b-versatile
+  gemini_model: gemini-2.5-flash
+  fallback_provider: gemini  # tried if the primary provider fails; null to disable
+  max_retries: 3
+  temperature: 0.2
+  max_input_chars: 12000

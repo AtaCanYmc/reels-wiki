@@ -1,0 +1,26 @@
+name: Bug Report
+description: Report a reproducible bug in reels-wiki
+title: "fix: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened vs. what you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction Steps
+      description: Exact CLI command or Python call that triggers the issue.
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python Version
+      placeholder: "3.11"
+    validations:
+      required: true
