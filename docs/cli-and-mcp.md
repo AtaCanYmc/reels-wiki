@@ -23,9 +23,15 @@ reels-sync [--config PATH] [--vault PATH] [--json] [-v] <subcommand>
 | `import-ig <path>` | Bulk-import from `saved_posts.json` or export folder | `--reels-only`, `--force` |
 | `process` | Run waterfall extraction, synthesis, and note writing | `--limit N`, `--dry-run`, `--retry-failed`, `--force` |
 | `reprocess [shortcode]` | Re-synthesize from `sources/reels/<code>.json` | `--all`, `--dry-run` |
-| `stats` | Show index counts by status and artifact count | — |
-| `telegram` | Start long-polling Telegram share capture bot | — |
-| `mcp` | Start MCP server over stdio | — |
+| `stats` | Show index counts by status and artifact count | None |
+| `doctor` | Verify Python, `ffmpeg`, cookies, API keys, and vault permissions | None |
+| `telegram` | Start long-polling Telegram share capture bot | None |
+| `mcp` | Start MCP server over stdio | None |
+
+### Output Modes
+
+- **Default (Terminal UI)**: Renders Rich panels, tables, and live per-item progress rows during `process` and `reprocess`.
+- **Machine-Readable (`--json`)**: Emits pure JSON to stdout and sends logs to stderr, bypassing Rich formatting.
 
 ### Examples
 
@@ -47,6 +53,10 @@ reels-sync reprocess ABC12345678
 
 # Check queue and index stats as JSON
 reels-sync --json stats
+
+# Run runtime diagnostics in human-readable or JSON format
+reels-sync doctor
+reels-sync --json doctor
 ```
 
 ## MCP Server (`reels-wiki-mcp`)

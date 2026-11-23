@@ -27,6 +27,7 @@ dependencies = [
   "pyyaml>=6.0",
   "python-dotenv>=1.0",
   "typer>=0.12",
+  "rich>=13.0",
   "yt-dlp>=2025.1.1",
   "python-frontmatter>=1.1.0",
   "filelock>=3.13",

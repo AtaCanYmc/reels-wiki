@@ -90,7 +90,7 @@ typecheck: ## Run mypy type checker on src/reels_wiki
 
 check-docs: ## Verify README links exist and polished docs have no em-dashes
 	@$(PYTHON) -c 'import pathlib, re; \
-		docs = [pathlib.Path(p) for p in ["README.md", "docs/step-by-step.md", "docs/example-walkthrough.md", "docs/troubleshooting.md"]]; \
+		docs = [pathlib.Path("README.md")] + sorted(pathlib.Path("docs").glob("*.md")); \
 		[(_ for _ in ()).throw(AssertionError(f"Em-dash found in {p}")) for p in docs if "—" in p.read_text()]; \
 		readme = pathlib.Path("README.md").read_text(); \
 		links = re.findall(r"\]\(([^)#http][^)]*)\)", readme) + re.findall(r"src=\"([^\"]+)\"", readme); \

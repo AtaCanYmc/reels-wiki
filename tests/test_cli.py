@@ -131,3 +131,73 @@ def test_cli_doctor_returns_nonzero_when_vault_missing(
     assert rc == 1
     out = capsys.readouterr().out
     assert "vault" in out.lower()
+
+
+def test_cli_rich_human_ui_outputs(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    cfg = SimpleNamespace(
+        vault_path=tmp_path,
+        config_path=None,
+        extraction=SimpleNamespace(ffmpeg_path="ffmpeg", cookies_from_browser="chrome", cookies_file=None),
+        synthesis=SimpleNamespace(provider="groq", fallback_provider=None),
+        groq_api_key="gsk_secret_hidden",
+        gemini_api_key=None,
+    )
+
+    with (
+        patch("reels_wiki.cli.load_config", return_value=cfg),
+        patch(
+            "reels_wiki.cli.enqueue",
+            return_value={"enqueued": True, "shortcode": "DAbCdEfGhIj", "url": "https://www.instagram.com/reel/DAbCdEfGhIj/"},
+        ),
+    ):
+        assert cli.main(["ingest", "https://www.instagram.com/reel/DAbCdEfGhIj/"]) == 0
+    ingest_out = capsys.readouterr().out
+    assert "ENQUEUED" in ingest_out
+    assert "DAbCdEfGhIj" in ingest_out
+
+    with (
+        patch("reels_wiki.cli.load_config", return_value=cfg),
+        patch(
+            "reels_wiki.cli.queue_stats",
+            return_value={
+                "vault_path": str(tmp_path),
+                "total_indexed": 4,
+                "counts": {"pending": 1, "processing": 0, "processed": 2, "skipped": 1, "failed": 0},
+                "artifacts_count": 3,
+            },
+        ),
+    ):
+        assert cli.main(["stats"]) == 0
+    stats_out = capsys.readouterr().out
+    assert "Vault Stats" in stats_out
+    assert "Processed" in stats_out
+
+    with (
+        patch("reels_wiki.cli.load_config", return_value=cfg),
+        patch(
+            "reels_wiki.cli.process_queue",
+            return_value={
+                "selected": 1,
+                "processed": 1,
+                "skipped": 0,
+                "failed": 0,
+                "results": [{"shortcode": "DAbCdEfGhIj", "status": "processed", "note_path": "ideas/test.md"}],
+            },
+        ),
+    ):
+        assert cli.main(["process", "--limit", "1"]) == 0
+    proc_out = capsys.readouterr().out
+    assert "Process Summary" in proc_out
+    assert "ideas/test.md" in proc_out
+
+    with (
+        patch("reels_wiki.cli.load_config", return_value=cfg),
+        patch("reels_wiki.cli.shutil.which", return_value="/opt/homebrew/bin/ffmpeg"),
+    ):
+        assert cli.main(["doctor"]) == 0
+    doc_out = capsys.readouterr().out
+    assert "Diagnostics" in doc_out
+    assert "PASS" in doc_out
+    assert "gsk_secret_hidden" not in doc_out

@@ -9,6 +9,15 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from .cli_ui import (
+    make_progress_callback,
+    render_doctor,
+    render_error,
+    render_import_ig,
+    render_ingest,
+    render_process_summary,
+    render_stats,
+)
 from .config import Config, load_config
 from .ig_export import import_ig_export
 from .mcp_server import run_mcp_server
@@ -29,15 +38,8 @@ def _configure_logging(verbose: bool, json_mode: bool) -> None:
     )
 
 
-def _emit(payload: dict[str, Any], json_mode: bool, human_lines: list[str] | None = None) -> None:
-    if json_mode:
-        print(json.dumps(payload, ensure_ascii=False, indent=2, default=str))
-        return
-    if human_lines:
-        for line in human_lines:
-            print(line)
-    else:
-        print(json.dumps(payload, ensure_ascii=False, indent=2, default=str))
+def _emit_json(payload: dict[str, Any]) -> None:
+    print(json.dumps(payload, ensure_ascii=False, indent=2, default=str))
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -231,12 +233,10 @@ def main(argv: list[str] | None = None) -> int:
                 vault=cfg.vault_path,
                 force=args.force,
             )
-            status_msg = "enqueued" if result.get("enqueued") else f"skipped ({result.get('reason', 'duplicate')})"
-            _emit(
-                result,
-                args.json_output,
-                [f"[{status_msg}] {result.get('shortcode', '?')} -> {result.get('url', args.url)}"],
-            )
+            if args.json_output:
+                _emit_json(result)
+            else:
+                render_ingest(result, args.url)
             return 0
 
         if args.command == "import-ig":
@@ -246,91 +246,58 @@ def main(argv: list[str] | None = None) -> int:
                 force=args.force,
                 include_posts=not args.reels_only,
             )
-            _emit(
-                result,
-                args.json_output,
-                [
-                    f"IG export imported: found={result.get('found', 0)}, "
-                    f"enqueued={result.get('enqueued', 0)}, "
-                    f"duplicates={result.get('duplicates', 0)}, "
-                    f"ignored={result.get('ignored', 0)}"
-                ],
-            )
+            if args.json_output:
+                _emit_json(result)
+            else:
+                render_import_ig(result)
             return 0
 
         if args.command == "process":
+            progress_cb = None if (args.json_output or args.dry_run) else make_progress_callback()
             result = process_queue(
                 cfg=cfg,
                 limit=args.limit,
                 dry_run=args.dry_run,
                 retry_failed=args.retry_failed,
                 re_extract=args.force,
+                on_event=progress_cb,
             )
-            _emit(
-                result,
-                args.json_output,
-                [
-                    f"Process complete (dry_run={args.dry_run}): "
-                    f"selected={result.get('selected', 0)}, "
-                    f"processed={result.get('processed', 0)}, "
-                    f"skipped={result.get('skipped', 0)}, "
-                    f"failed={result.get('failed', 0)}"
-                ],
-            )
+            if args.json_output:
+                _emit_json(result)
+            else:
+                render_process_summary(result, title="Process Summary", dry_run=args.dry_run)
             return 0 if result.get("failed", 0) == 0 else 1
 
         if args.command == "reprocess":
             if not args.shortcode and not args.all:
                 parser.error("reprocess requires either a <shortcode> or --all.")
+            progress_cb = None if args.json_output else make_progress_callback()
             result = reprocess(
                 cfg=cfg,
                 shortcodes=[args.shortcode] if args.shortcode else None,
                 all_items=args.all,
+                on_event=progress_cb,
             )
-            _emit(
-                result,
-                args.json_output,
-                [
-                    f"Reprocess complete (dry_run={args.dry_run}): "
-                    f"reprocessed={result.get('reprocessed', 0)}, "
-                    f"skipped={result.get('skipped', 0)}, "
-                    f"failed={result.get('failed', 0)}"
-                ],
-            )
-            return 0
+            if args.json_output:
+                _emit_json(result)
+            else:
+                render_process_summary(result, title="Reprocess Summary", dry_run=args.dry_run)
+            return 0 if result.get("failed", 0) == 0 else 1
 
         if args.command == "stats":
             result = queue_stats(vault=cfg.vault_path)
-            counts = result.get("counts", {})
-            _emit(
-                result,
-                args.json_output,
-                [
-                    f"Vault: {result.get('vault_path')}",
-                    f"Index total: {result.get('total_indexed', 0)} | "
-                    f"pending={counts.get('pending', 0)}, "
-                    f"processing={counts.get('processing', 0)}, "
-                    f"processed={counts.get('processed', 0)}, "
-                    f"skipped={counts.get('skipped', 0)}, "
-                    f"failed={counts.get('failed', 0)}",
-                    f"Stored artifacts: {result.get('artifacts_count', 0)}",
-                ],
-            )
+            if args.json_output:
+                _emit_json(result)
+            else:
+                render_stats(result)
             return 0
 
         if args.command == "doctor":
             result = run_doctor(cfg)
-            _emit(
-                result,
-                args.json_output,
-                [
-                    f"Python:   {result['python']['version']} ({'ok' if result['python']['ok'] else 'fail'})",
-                    f"ffmpeg:   {result['ffmpeg']['path'] or 'missing (optional unless audio/vision fallback runs)'}",
-                    f"Cookies:  {'ok' if result['cookies']['ok'] else 'missing (set cookies_from_browser or cookies_file)'}",
-                    f"API keys: primary={result['api_keys']['primary_provider']} ({'ok' if result['api_keys']['ok'] else 'missing'})",
-                    f"Vault:    {result['vault']['path']} ({'writable' if result['vault']['writable'] else 'not writable/missing'})",
-                ],
-            )
+            if args.json_output:
+                _emit_json(result)
+            else:
+                render_doctor(result)
             return 0 if result["ok"] else 1
 
         if args.command == "telegram":
@@ -347,7 +314,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.json_output:
             print(json.dumps({"error": str(exc), "type": type(exc).__name__}, ensure_ascii=False))
         else:
-            print(f"Error: {exc}", file=sys.stderr)
+            render_error(exc)
         logger.debug("CLI failure", exc_info=exc)
         return 1
 
