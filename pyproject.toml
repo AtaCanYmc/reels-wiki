@@ -9,6 +9,19 @@ description = "Local-first pipeline: saved Instagram Reels -> atomic notes in an
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
+authors = [{ name = "Atacan YMC", email = "atacanymc@gmail.com" }]
+keywords = ["instagram", "reels", "obsidian", "llm", "wiki", "mcp", "whisper", "yt-dlp"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: End Users/Desktop",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Utilities",
+]
 dependencies = [
   "pydantic>=2.6",
   "pyyaml>=6.0",
@@ -27,10 +40,16 @@ dependencies = [
 local = ["faster-whisper>=1.0"]
 dev = ["pytest>=8.0"]
 
+[project.urls]
+Homepage = "https://atacanymc.github.io/reels-secretary/"
+Repository = "https://github.com/AtaCanYmc/reels-secretary"
+Issues = "https://github.com/AtaCanYmc/reels-secretary/issues"
+Changelog = "https://github.com/AtaCanYmc/reels-secretary/blob/main/CHANGELOG.md"
+
 [project.scripts]
-reels-sync = "reels_wiki.cli:app"
-reels-wiki-mcp = "reels_wiki.mcp_server:main"
-reels-wiki-telegram = "reels_wiki.telegram_bot:main"
+reels-sync = "reels_wiki.cli:main"
+reels-wiki-mcp = "reels_wiki.cli:mcp_main"
+reels-wiki-telegram = "reels_wiki.cli:telegram_main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/reels_wiki"]
