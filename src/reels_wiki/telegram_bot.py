@@ -10,8 +10,8 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
-from .config import AppConfig
-from .pipeline import enqueue_url
+from .config import Config
+from .queue_manager import enqueue
 
 logger = logging.getLogger("reels_wiki.telegram_bot")
 
@@ -89,7 +89,7 @@ def extract_instagram_urls(text: str) -> list[str]:
 
 
 def handle_update(
-    cfg: AppConfig,
+    cfg: Config,
     client: TelegramBotClient,
     update: dict[str, Any],
     allowed_chat_id: int,
@@ -118,7 +118,7 @@ def handle_update(
 
     lines: list[str] = []
     for url in urls:
-        res = enqueue_url(cfg=cfg, url=url, source="telegram")
+        res = enqueue(url=url, source="telegram", vault=cfg.vault_path)
         code = res.get("shortcode", "?")
         if res.get("enqueued"):
             lines.append(f"Queued [{code}]: {res.get('url', url)}")
@@ -133,7 +133,7 @@ def handle_update(
     )
 
 
-def run_telegram_bot(cfg: AppConfig) -> None:
+def run_telegram_bot(cfg: Config) -> None:
     token = (os.getenv("TELEGRAM_BOT_TOKEN") or "").strip()
     allowed_chat_id = _get_authorized_chat_id()
     client = TelegramBotClient(token=token)

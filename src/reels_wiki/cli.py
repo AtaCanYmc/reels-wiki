@@ -8,9 +8,10 @@ from pathlib import Path
 from typing import Any
 
 from .config import load_config
-from .ig_export import import_instagram_export
+from .ig_export import import_ig_export
 from .mcp_server import run_mcp_server
-from .pipeline import enqueue_url, get_stats, process_queue, reprocess_items
+from .pipeline import process_queue, reprocess
+from .queue_manager import enqueue, queue_stats
 from .telegram_bot import run_telegram_bot
 
 logger = logging.getLogger("reels_wiki.cli")
@@ -167,13 +168,13 @@ def main(argv: list[str] | None = None) -> int:
     _configure_logging(verbose=args.verbose, json_mode=args.json_output)
 
     try:
-        cfg = load_config(config_path=args.config, vault_override=args.vault)
+        cfg = load_config(path=args.config, vault_override=args.vault)
 
         if args.command == "ingest":
-            result = enqueue_url(
-                cfg=cfg,
+            result = enqueue(
                 url=args.url,
                 source=args.source,
+                vault=cfg.vault_path,
                 force=args.force,
             )
             status_msg = "enqueued" if result.get("enqueued") else f"skipped ({result.get('reason', 'duplicate')})"
@@ -185,7 +186,7 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "import-ig":
-            result = import_instagram_export(
+            result = import_ig_export(
                 cfg=cfg,
                 export_path=args.export_path,
                 reels_only=args.reels_only,
@@ -227,11 +228,10 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "reprocess":
             if not args.shortcode and not args.all:
                 parser.error("reprocess requires either a <shortcode> or --all.")
-            result = reprocess_items(
+            result = reprocess(
                 cfg=cfg,
-                shortcode=args.shortcode,
+                shortcodes=[args.shortcode] if args.shortcode else None,
                 all_items=args.all,
-                dry_run=args.dry_run,
             )
             _emit(
                 result,
@@ -246,7 +246,7 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "stats":
-            result = get_stats(cfg=cfg)
+            result = queue_stats(vault=cfg.vault_path)
             counts = result.get("counts", {})
             _emit(
                 result,

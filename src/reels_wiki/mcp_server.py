@@ -3,22 +3,26 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP
+try:
+    from mcp.server.mcpserver import MCPServer as FastMCP
+except ImportError:
+    from mcp.server.fastmcp import FastMCP
 
-from .config import AppConfig, load_config
-from .ig_export import import_instagram_export
-from .pipeline import enqueue_url, get_stats, process_queue
+from .config import Config, load_config
+from .ig_export import import_ig_export
+from .pipeline import process_queue
+from .queue_manager import enqueue, queue_stats
 
 
-def create_mcp_server(default_cfg: AppConfig | None = None) -> FastMCP:
+def create_mcp_server(default_cfg: Config | None = None) -> FastMCP:
     base_cfg = default_cfg or load_config()
     mcp = FastMCP("reels-wiki")
 
-    def _resolve_cfg(vault_path: str | None = None) -> AppConfig:
+    def _resolve_cfg(vault_path: str | None = None) -> Config:
         override = Path(vault_path).expanduser() if vault_path else None
         if override is None:
             return base_cfg
-        return load_config(config_path=base_cfg.config_path, vault_override=override)
+        return load_config(path=getattr(base_cfg, "config_path", None), vault_override=override)
 
     @mcp.tool()
     def enqueue_reel(
@@ -29,7 +33,7 @@ def create_mcp_server(default_cfg: AppConfig | None = None) -> FastMCP:
     ) -> dict[str, Any]:
         """Enqueue an Instagram Reel/post URL into the Obsidian vault queue with shortcode deduplication."""
         cfg = _resolve_cfg(vault_path)
-        return enqueue_url(cfg=cfg, url=url, source=source, force=force)
+        return enqueue(url=url, source=source, vault=cfg.vault_path, force=force)
 
     @mcp.tool()
     def import_ig_export(
@@ -40,7 +44,7 @@ def create_mcp_server(default_cfg: AppConfig | None = None) -> FastMCP:
     ) -> dict[str, Any]:
         """Bulk-import saved Instagram URLs from saved_posts.json or an export directory."""
         cfg = _resolve_cfg(vault_path)
-        return import_instagram_export(
+        return import_ig_export(
             cfg=cfg,
             export_path=Path(export_path).expanduser(),
             reels_only=reels_only,
@@ -69,11 +73,11 @@ def create_mcp_server(default_cfg: AppConfig | None = None) -> FastMCP:
     def get_queue_stats(vault_path: str | None = None) -> dict[str, Any]:
         """Return queue counts, index status breakdown, and raw artifact counts for the vault."""
         cfg = _resolve_cfg(vault_path)
-        return get_stats(cfg=cfg)
+        return queue_stats(vault=cfg.vault_path)
 
     return mcp
 
 
-def run_mcp_server(cfg: AppConfig | None = None) -> None:
+def run_mcp_server(cfg: Config | None = None) -> None:
     server = create_mcp_server(default_cfg=cfg)
     server.run(transport="stdio")
