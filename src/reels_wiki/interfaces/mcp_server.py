@@ -8,10 +8,10 @@ try:
 except ImportError:
     from mcp.server.fastmcp import FastMCP  # type: ignore[no-redef,attr-defined]
 
-from .config import Config, load_config
-from .ig_export import import_ig_export as _import_ig_export
-from .pipeline import process_queue
-from .queue_manager import enqueue, queue_stats
+from ..core.config import Config, load_config
+from ..ingestion.ig_export import import_ig_export as _import_ig_export
+from ..ingestion.queue_manager import enqueue, queue_stats
+from ..pipeline.runner import process_queue
 
 
 def create_mcp_server(default_cfg: Config | None = None) -> FastMCP:

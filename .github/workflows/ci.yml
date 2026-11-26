@@ -32,7 +32,7 @@ jobs:
       - name: Entrypoint smoke checks
         run: |
           reels-sync --help
-          python -c "from reels_wiki.cli import main, mcp_main, telegram_main"
+          python -c "from reels_wiki.interfaces.cli import main, mcp_main, telegram_main"
 
       - name: Lint with ruff
         run: ruff check src tests

@@ -6,13 +6,13 @@ from typing import Callable
 
 from filelock import FileLock, Timeout
 
-from .config import Config
+from ..core.config import Config
+from ..core.models import QueueItem
+from ..ingestion.queue_manager import QueueManager
+from ..vault.context import VaultContext
+from ..vault.writer import write_synthesis
 from .extractor import ExtractionError, artifact_path, extract_reel, load_artifact, save_artifact
-from .models import QueueItem
-from .queue_manager import QueueManager
 from .synthesizer import synthesize
-from .vault_context import VaultContext
-from .writer import write_synthesis
 
 Progress = Callable[[dict], None]
 

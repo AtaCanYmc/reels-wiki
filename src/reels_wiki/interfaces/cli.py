@@ -13,6 +13,11 @@ import yaml
 from dotenv import load_dotenv
 from rich.prompt import Confirm, Prompt
 
+from ..core.config import Config, load_config
+from ..core.utils import atomic_write_text
+from ..ingestion.ig_export import import_ig_export
+from ..ingestion.queue_manager import enqueue, queue_stats
+from ..pipeline.runner import process_queue, reprocess
 from .cli_ui import (
     make_progress_callback,
     render_doctor,
@@ -22,13 +27,8 @@ from .cli_ui import (
     render_process_summary,
     render_stats,
 )
-from .config import Config, load_config
-from .ig_export import import_ig_export
 from .mcp_server import run_mcp_server
-from .pipeline import process_queue, reprocess
-from .queue_manager import enqueue, queue_stats
 from .telegram_bot import run_telegram_bot
-from .utils import atomic_write_text
 
 logger = logging.getLogger("reels_wiki.cli")
 

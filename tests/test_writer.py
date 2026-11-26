@@ -3,10 +3,10 @@ from datetime import datetime
 import frontmatter
 import pytest
 
-from reels_wiki.models import AtomicNoteSynthesis, RawReelArtifact
-from reels_wiki.queue_manager import QueueManager
-from reels_wiki.vault_context import VaultContext
-from reels_wiki.writer import WriterError, _choose_path, update_index, write_synthesis
+from reels_wiki.core.models import AtomicNoteSynthesis, RawReelArtifact
+from reels_wiki.ingestion.queue_manager import QueueManager
+from reels_wiki.vault.context import VaultContext
+from reels_wiki.vault.writer import WriterError, _choose_path, update_index, write_synthesis
 
 SC = "DAbCdEfGhIj"
 URL = f"https://www.instagram.com/reel/{SC}/"

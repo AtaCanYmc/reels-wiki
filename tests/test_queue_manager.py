@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from reels_wiki.queue_manager import QueueManager, enqueue, extract_shortcode, normalize_url
+from reels_wiki.ingestion.queue_manager import QueueManager, enqueue, extract_shortcode, normalize_url
 
 SC = "DAbCdEfGhIj"  # 11 chars
 CANON = f"https://www.instagram.com/reel/{SC}/"

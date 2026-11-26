@@ -5,8 +5,8 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
-from reels_wiki.config import Config
-from reels_wiki.mcp_server import create_mcp_server
+from reels_wiki.core.config import Config
+from reels_wiki.interfaces.mcp_server import create_mcp_server
 
 
 def _call_tool_json(server, name: str, args: dict) -> dict:
@@ -29,12 +29,12 @@ def test_mcp_server_registers_expected_tools(tmp_path: Path) -> None:
 def test_mcp_tools_delegate_and_return_json(tmp_path: Path) -> None:
     server = create_mcp_server(Config(vault_path=tmp_path))
 
-    with patch("reels_wiki.mcp_server.enqueue", return_value={"enqueued": True, "shortcode": "ABC12345678"}):
+    with patch("reels_wiki.interfaces.mcp_server.enqueue", return_value={"enqueued": True, "shortcode": "ABC12345678"}):
         enq = _call_tool_json(server, "enqueue_reel", {"url": "https://www.instagram.com/reel/ABC12345678/"})
     assert enq["enqueued"] is True
 
     with patch(
-        "reels_wiki.mcp_server._import_ig_export",
+        "reels_wiki.interfaces.mcp_server._import_ig_export",
         return_value={"found": 2, "enqueued": 2, "duplicates": 0, "ignored": 0},
     ) as mock_imp:
         imp = _call_tool_json(server, "import_ig_export", {"export_path": str(tmp_path / "saved_posts.json")})
@@ -42,7 +42,7 @@ def test_mcp_tools_delegate_and_return_json(tmp_path: Path) -> None:
     assert imp["enqueued"] == 2
 
     with patch(
-        "reels_wiki.mcp_server.process_queue",
+        "reels_wiki.interfaces.mcp_server.process_queue",
         return_value={"selected": 1, "processed": 1, "skipped": 0, "failed": 0},
     ) as mock_proc:
         proc = _call_tool_json(server, "process_reels_queue", {"limit": 1, "force": True})
@@ -50,6 +50,6 @@ def test_mcp_tools_delegate_and_return_json(tmp_path: Path) -> None:
     assert mock_proc.call_args.kwargs["re_extract"] is True
     assert proc["processed"] == 1
 
-    with patch("reels_wiki.mcp_server.queue_stats", return_value={"total_indexed": 5}):
+    with patch("reels_wiki.interfaces.mcp_server.queue_stats", return_value={"total_indexed": 5}):
         stats = _call_tool_json(server, "get_queue_stats", {})
     assert stats["total_indexed"] == 5

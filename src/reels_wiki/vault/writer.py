@@ -8,10 +8,10 @@ from typing import Any
 
 import frontmatter
 
-from .models import AtomicNoteSynthesis, RawReelArtifact
-from .queue_manager import QueueManager
-from .utils import atomic_write_text, normalize_key, one_line
-from .vault_context import VaultContext
+from ..core.models import AtomicNoteSynthesis, RawReelArtifact
+from ..core.utils import atomic_write_text, normalize_key, one_line
+from ..ingestion.queue_manager import QueueManager
+from .context import VaultContext
 
 _HEADING_RE = re.compile(r"^(#{1,6})\s+(.*?)\s*#*\s*$")
 _LOG_HEADING_STYLE_RE = re.compile(r"^##\s+\[\d{4}-\d{2}-\d{2}\]", re.M)

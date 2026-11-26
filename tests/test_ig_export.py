@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from reels_wiki.ig_export import import_ig_export, parse_export
-from reels_wiki.queue_manager import QueueManager
+from reels_wiki.ingestion.ig_export import import_ig_export, parse_export
+from reels_wiki.ingestion.queue_manager import QueueManager
 
 A, B, C = "AAAAAAAAAAA", "BBBBBBBBBBB", "CCCCCCCCCCC"
 

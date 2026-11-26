@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from reels_wiki import cli
+from reels_wiki.interfaces import cli
 
 
 def _fake_cfg(tmp_path: Path) -> SimpleNamespace:
@@ -19,8 +19,8 @@ def test_cli_ingest_json(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> 
     expected = {"enqueued": True, "shortcode": "ABC12345678", "url": "https://www.instagram.com/reel/ABC12345678/"}
 
     with (
-        patch("reels_wiki.cli.load_config", return_value=cfg),
-        patch("reels_wiki.cli.enqueue", return_value=expected) as mock_enq,
+        patch("reels_wiki.interfaces.cli.load_config", return_value=cfg),
+        patch("reels_wiki.interfaces.cli.enqueue", return_value=expected) as mock_enq,
     ):
         rc = cli.main(["--json", "ingest", "https://www.instagram.com/reel/ABC12345678/?igsh=1"])
 
@@ -41,8 +41,8 @@ def test_cli_stats_json(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> N
     }
 
     with (
-        patch("reels_wiki.cli.load_config", return_value=cfg),
-        patch("reels_wiki.cli.queue_stats", return_value=expected),
+        patch("reels_wiki.interfaces.cli.load_config", return_value=cfg),
+        patch("reels_wiki.interfaces.cli.queue_stats", return_value=expected),
     ):
         rc = cli.main(["--json", "stats"])
 
@@ -57,8 +57,8 @@ def test_cli_process_returns_nonzero_on_failures(tmp_path: Path) -> None:
     expected = {"selected": 2, "processed": 1, "skipped": 0, "failed": 1}
 
     with (
-        patch("reels_wiki.cli.load_config", return_value=cfg),
-        patch("reels_wiki.cli.process_queue", return_value=expected),
+        patch("reels_wiki.interfaces.cli.load_config", return_value=cfg),
+        patch("reels_wiki.interfaces.cli.process_queue", return_value=expected),
     ):
         rc = cli.main(["process", "--limit", "2"])
 
@@ -67,7 +67,7 @@ def test_cli_process_returns_nonzero_on_failures(tmp_path: Path) -> None:
 
 def test_cli_reprocess_requires_target(tmp_path: Path) -> None:
     cfg = _fake_cfg(tmp_path)
-    with patch("reels_wiki.cli.load_config", return_value=cfg):
+    with patch("reels_wiki.interfaces.cli.load_config", return_value=cfg):
         with pytest.raises(SystemExit) as exc_info:
             cli.main(["reprocess"])
     assert exc_info.value.code == 2
@@ -89,8 +89,8 @@ def test_cli_doctor_json_reports_diagnostics(
     monkeypatch.setenv("GROQ_API_KEY", "gsk_secret_test")
 
     with (
-        patch("reels_wiki.cli.load_config", return_value=cfg),
-        patch("reels_wiki.cli.shutil.which", return_value="/opt/homebrew/bin/ffmpeg"),
+        patch("reels_wiki.interfaces.cli.load_config", return_value=cfg),
+        patch("reels_wiki.interfaces.cli.shutil.which", return_value="/opt/homebrew/bin/ffmpeg"),
     ):
         rc = cli.main(["--json", "doctor"])
 
@@ -123,8 +123,8 @@ def test_cli_doctor_returns_nonzero_when_vault_missing(
     )
 
     with (
-        patch("reels_wiki.cli.load_config", return_value=cfg),
-        patch("reels_wiki.cli.shutil.which", return_value=None),
+        patch("reels_wiki.interfaces.cli.load_config", return_value=cfg),
+        patch("reels_wiki.interfaces.cli.shutil.which", return_value=None),
     ):
         rc = cli.main(["doctor"])
 
@@ -146,9 +146,9 @@ def test_cli_rich_human_ui_outputs(
     )
 
     with (
-        patch("reels_wiki.cli.load_config", return_value=cfg),
+        patch("reels_wiki.interfaces.cli.load_config", return_value=cfg),
         patch(
-            "reels_wiki.cli.enqueue",
+            "reels_wiki.interfaces.cli.enqueue",
             return_value={"enqueued": True, "shortcode": "DAbCdEfGhIj", "url": "https://www.instagram.com/reel/DAbCdEfGhIj/"},
         ),
     ):
@@ -158,9 +158,9 @@ def test_cli_rich_human_ui_outputs(
     assert "DAbCdEfGhIj" in ingest_out
 
     with (
-        patch("reels_wiki.cli.load_config", return_value=cfg),
+        patch("reels_wiki.interfaces.cli.load_config", return_value=cfg),
         patch(
-            "reels_wiki.cli.queue_stats",
+            "reels_wiki.interfaces.cli.queue_stats",
             return_value={
                 "vault_path": str(tmp_path),
                 "total_indexed": 4,
@@ -175,9 +175,9 @@ def test_cli_rich_human_ui_outputs(
     assert "Processed" in stats_out
 
     with (
-        patch("reels_wiki.cli.load_config", return_value=cfg),
+        patch("reels_wiki.interfaces.cli.load_config", return_value=cfg),
         patch(
-            "reels_wiki.cli.process_queue",
+            "reels_wiki.interfaces.cli.process_queue",
             return_value={
                 "selected": 1,
                 "processed": 1,
@@ -193,8 +193,8 @@ def test_cli_rich_human_ui_outputs(
     assert "ideas/test.md" in proc_out
 
     with (
-        patch("reels_wiki.cli.load_config", return_value=cfg),
-        patch("reels_wiki.cli.shutil.which", return_value="/opt/homebrew/bin/ffmpeg"),
+        patch("reels_wiki.interfaces.cli.load_config", return_value=cfg),
+        patch("reels_wiki.interfaces.cli.shutil.which", return_value="/opt/homebrew/bin/ffmpeg"),
     ):
         assert cli.main(["doctor"]) == 0
     doc_out = capsys.readouterr().out
@@ -211,9 +211,9 @@ def test_cli_init_creates_config_and_env(tmp_path: Path) -> None:
 
     prompt_answers = iter([str(vault), "chrome", "groq", "gsk_test_123", ""])
     with (
-        patch("reels_wiki.cli.Prompt.ask", side_effect=lambda *a, **kw: next(prompt_answers)),
-        patch("reels_wiki.cli.Confirm.ask", return_value=False),
-        patch("reels_wiki.cli.shutil.which", return_value="/usr/bin/ffmpeg"),
+        patch("reels_wiki.interfaces.cli.Prompt.ask", side_effect=lambda *a, **kw: next(prompt_answers)),
+        patch("reels_wiki.interfaces.cli.Confirm.ask", return_value=False),
+        patch("reels_wiki.interfaces.cli.shutil.which", return_value="/usr/bin/ffmpeg"),
     ):
         rc = cli.main(["--config", str(cfg_path), "init", "--env-path", str(env_path)])
 
@@ -234,7 +234,7 @@ def test_cli_init_respects_existing_without_force(tmp_path: Path) -> None:
     env_path = tmp_path / ".env"
     cfg_path.write_text("vault_path: /existing\n", encoding="utf-8")
 
-    with patch("reels_wiki.cli.Confirm.ask", return_value=False):
+    with patch("reels_wiki.interfaces.cli.Confirm.ask", return_value=False):
         rc = cli.main(["--config", str(cfg_path), "init", "--env-path", str(env_path)])
 
     assert rc == 0
@@ -257,8 +257,8 @@ def test_cli_doctor_passes_with_ollama_without_cloud_keys(
     )
 
     with (
-        patch("reels_wiki.cli.load_config", return_value=cfg),
-        patch("reels_wiki.cli.shutil.which", return_value="/opt/homebrew/bin/ffmpeg"),
+        patch("reels_wiki.interfaces.cli.load_config", return_value=cfg),
+        patch("reels_wiki.interfaces.cli.shutil.which", return_value="/opt/homebrew/bin/ffmpeg"),
     ):
         rc = cli.main(["--json", "doctor"])
 

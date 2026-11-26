@@ -5,10 +5,10 @@ from unittest.mock import patch
 
 from filelock import FileLock
 
-from reels_wiki.config import Config
-from reels_wiki.models import AtomicNoteSynthesis, RawReelArtifact
-from reels_wiki.pipeline import process_item, process_queue
-from reels_wiki.queue_manager import QueueManager
+from reels_wiki.core.config import Config
+from reels_wiki.core.models import AtomicNoteSynthesis, RawReelArtifact
+from reels_wiki.ingestion.queue_manager import QueueManager
+from reels_wiki.pipeline.runner import process_item, process_queue
 
 
 def test_process_queue_lock_contention_returns_error(tmp_path: Path) -> None:
@@ -62,11 +62,11 @@ def test_process_item_happy_path_and_failure_recording(tmp_path: Path) -> None:
     expected_write = {"status": "processed", "shortcode": "DAbCdEfGhIj", "note_path": "ideas/test-note.md"}
 
     with (
-        patch("reels_wiki.pipeline.extract_reel", return_value=fake_artifact),
-        patch("reels_wiki.pipeline.save_artifact"),
-        patch("reels_wiki.pipeline._ctx"),
-        patch("reels_wiki.pipeline.synthesize", return_value=fake_syn),
-        patch("reels_wiki.pipeline.write_synthesis", return_value=dict(expected_write)),
+        patch("reels_wiki.pipeline.runner.extract_reel", return_value=fake_artifact),
+        patch("reels_wiki.pipeline.runner.save_artifact"),
+        patch("reels_wiki.pipeline.runner._ctx"),
+        patch("reels_wiki.pipeline.runner.synthesize", return_value=fake_syn),
+        patch("reels_wiki.pipeline.runner.write_synthesis", return_value=dict(expected_write)),
     ):
         ok_res = process_item(cfg, queue, item)
 
@@ -76,7 +76,7 @@ def test_process_item_happy_path_and_failure_recording(tmp_path: Path) -> None:
 
     queue.enqueue("https://www.instagram.com/reel/XyZ987LmNoP/", source="cli")
     bad_item = queue.pending()[0]
-    with patch("reels_wiki.pipeline.extract_reel", side_effect=RuntimeError("yt-dlp blocked")):
+    with patch("reels_wiki.pipeline.runner.extract_reel", side_effect=RuntimeError("yt-dlp blocked")):
         fail_res = process_item(cfg, queue, bad_item)
 
     assert fail_res["status"] == "failed"

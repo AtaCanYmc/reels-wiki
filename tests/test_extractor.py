@@ -3,8 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import patch
 
-from reels_wiki.config import Config, ExtractionConfig
-from reels_wiki.extractor import extract_reel
+from reels_wiki.core.config import Config, ExtractionConfig
+from reels_wiki.pipeline.extractor import extract_reel
 
 
 def _cfg(tmp_path: Path, **ext_kwargs) -> Config:
@@ -22,10 +22,10 @@ def test_extract_reel_long_caption_skips_whisper_and_vision(tmp_path: Path) -> N
     }
 
     with (
-        patch("reels_wiki.extractor._fetch_metadata", return_value=info),
-        patch("reels_wiki.extractor._fetch_subtitles", return_value=""),
-        patch("reels_wiki.extractor._transcribe") as mock_transcribe,
-        patch("reels_wiki.extractor._vision_notes") as mock_vision,
+        patch("reels_wiki.pipeline.extractor._fetch_metadata", return_value=info),
+        patch("reels_wiki.pipeline.extractor._fetch_subtitles", return_value=""),
+        patch("reels_wiki.pipeline.extractor._transcribe") as mock_transcribe,
+        patch("reels_wiki.pipeline.extractor._vision_notes") as mock_vision,
     ):
         art = extract_reel("https://www.instagram.com/reel/DAbCdEfGhIj/", "DAbCdEfGhIj", _cfg(tmp_path))
 
@@ -41,10 +41,10 @@ def test_extract_reel_short_caption_triggers_whisper(tmp_path: Path) -> None:
     transcript = "Spoken technical explanation exceeding forty characters easily."
 
     with (
-        patch("reels_wiki.extractor._fetch_metadata", return_value=info),
-        patch("reels_wiki.extractor._fetch_subtitles", return_value=""),
-        patch("reels_wiki.extractor._transcribe", return_value=(transcript, "groq")) as mock_transcribe,
-        patch("reels_wiki.extractor._vision_notes") as mock_vision,
+        patch("reels_wiki.pipeline.extractor._fetch_metadata", return_value=info),
+        patch("reels_wiki.pipeline.extractor._fetch_subtitles", return_value=""),
+        patch("reels_wiki.pipeline.extractor._transcribe", return_value=(transcript, "groq")) as mock_transcribe,
+        patch("reels_wiki.pipeline.extractor._vision_notes") as mock_vision,
     ):
         art = extract_reel("https://www.instagram.com/reel/DAbCdEfGhIj/", "DAbCdEfGhIj", _cfg(tmp_path))
 
@@ -59,10 +59,10 @@ def test_extract_reel_thin_caption_and_transcript_triggers_vision(tmp_path: Path
     info = {"description": "Watch this", "uploader": "creator_three", "duration": 15}
 
     with (
-        patch("reels_wiki.extractor._fetch_metadata", return_value=info),
-        patch("reels_wiki.extractor._fetch_subtitles", return_value=""),
-        patch("reels_wiki.extractor._transcribe", return_value=("", "groq")) as mock_transcribe,
-        patch("reels_wiki.extractor._vision_notes", return_value="On-screen CLI flags") as mock_vision,
+        patch("reels_wiki.pipeline.extractor._fetch_metadata", return_value=info),
+        patch("reels_wiki.pipeline.extractor._fetch_subtitles", return_value=""),
+        patch("reels_wiki.pipeline.extractor._transcribe", return_value=("", "groq")) as mock_transcribe,
+        patch("reels_wiki.pipeline.extractor._vision_notes", return_value="On-screen CLI flags") as mock_vision,
     ):
         art = extract_reel("https://www.instagram.com/reel/DAbCdEfGhIj/", "DAbCdEfGhIj", _cfg(tmp_path))
 
@@ -77,10 +77,10 @@ def test_extract_reel_whisper_failure_degrades_gracefully_to_vision(tmp_path: Pa
     info = {"description": "Hi", "uploader": "creator_four", "duration": 12}
 
     with (
-        patch("reels_wiki.extractor._fetch_metadata", return_value=info),
-        patch("reels_wiki.extractor._fetch_subtitles", return_value=""),
-        patch("reels_wiki.extractor._transcribe", side_effect=RuntimeError("Groq down")),
-        patch("reels_wiki.extractor._vision_notes", return_value="Slide text") as mock_vision,
+        patch("reels_wiki.pipeline.extractor._fetch_metadata", return_value=info),
+        patch("reels_wiki.pipeline.extractor._fetch_subtitles", return_value=""),
+        patch("reels_wiki.pipeline.extractor._transcribe", side_effect=RuntimeError("Groq down")),
+        patch("reels_wiki.pipeline.extractor._vision_notes", return_value="Slide text") as mock_vision,
     ):
         art = extract_reel("https://www.instagram.com/reel/DAbCdEfGhIj/", "DAbCdEfGhIj", _cfg(tmp_path))
 

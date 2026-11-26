@@ -10,11 +10,11 @@ from typing import Any, Callable
 import httpx
 from pydantic import ValidationError
 
-from .config import Config, ConfigError
-from .models import AtomicNoteSynthesis, RawReelArtifact
-from .prompts import render_prompt
-from .utils import slugify
-from .vault_context import VaultContext
+from ..core.config import Config, ConfigError
+from ..core.models import AtomicNoteSynthesis, RawReelArtifact
+from ..core.utils import slugify
+from ..prompts import render_prompt
+from ..vault.context import VaultContext
 
 
 class SynthesisError(RuntimeError):

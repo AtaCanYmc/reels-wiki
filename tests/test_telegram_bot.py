@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from reels_wiki.telegram_bot import (
+from reels_wiki.interfaces.telegram_bot import (
     TelegramBotClient,
     _get_authorized_chat_id,
     extract_instagram_urls,
@@ -67,7 +67,7 @@ def test_handle_update_enqueues_valid_url(tmp_path: Path) -> None:
     }
 
     with patch(
-        "reels_wiki.telegram_bot.enqueue",
+        "reels_wiki.interfaces.telegram_bot.enqueue",
         return_value={"enqueued": True, "shortcode": "ABC12345678", "url": "https://www.instagram.com/reel/ABC12345678/"},
     ) as mock_enq:
         handle_update(cfg=cfg, client=client, update=update, allowed_chat_id=123)

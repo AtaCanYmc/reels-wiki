@@ -10,8 +10,8 @@ from urllib.parse import urlparse
 
 from filelock import FileLock
 
-from .models import QueueItem, QueueStatus, utcnow_iso
-from .utils import atomic_write_text
+from ..core.models import QueueItem, QueueStatus, utcnow_iso
+from ..core.utils import atomic_write_text
 
 IG_HOSTS = {"instagram.com", "www.instagram.com", "m.instagram.com", "instagr.am"}
 _PATH_RE = re.compile(r"(?:^|/)(reels?|p|tv)/([A-Za-z0-9_-]{11})(?=/|$)")
@@ -257,7 +257,7 @@ class QueueManager:
 def _resolve_vault(vault: Path | str | None) -> Path:
     if vault:
         return Path(vault)
-    from .config import load_config
+    from ..core.config import load_config
 
     return load_config().vault_path
 

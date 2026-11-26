@@ -10,8 +10,8 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
-from .config import Config
-from .queue_manager import enqueue
+from ..core.config import Config
+from ..ingestion.queue_manager import enqueue
 
 logger = logging.getLogger("reels_wiki.telegram_bot")
 

@@ -13,10 +13,10 @@ from typing import Any
 
 import httpx
 
-from .config import Config, ConfigError, ExtractionConfig
-from .models import RawReelArtifact
-from .prompts import render_prompt
-from .utils import atomic_write_text
+from ..core.config import Config, ConfigError, ExtractionConfig
+from ..core.models import RawReelArtifact
+from ..core.utils import atomic_write_text
+from ..prompts import render_prompt
 
 GROQ_MAX_BYTES = 24 * 1024 * 1024
 _AUTH_HINTS = ("login", "log in", "cookies", "rate-limit", "rate limit", "empty media response", "private", "403", "401")

@@ -55,9 +55,9 @@ Issues = "https://github.com/AtaCanYmc/reels-secretary/issues"
 Changelog = "https://github.com/AtaCanYmc/reels-secretary/blob/main/CHANGELOG.md"
 
 [project.scripts]
-reels-sync = "reels_wiki.cli:main"
-reels-wiki-mcp = "reels_wiki.cli:mcp_main"
-reels-wiki-telegram = "reels_wiki.cli:telegram_main"
+reels-sync = "reels_wiki.interfaces.cli:main"
+reels-wiki-mcp = "reels_wiki.interfaces.cli:mcp_main"
+reels-wiki-telegram = "reels_wiki.interfaces.cli:telegram_main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/reels_wiki"]

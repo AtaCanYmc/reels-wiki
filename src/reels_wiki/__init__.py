@@ -8,9 +8,9 @@ from __future__ import annotations
 
 __version__ = "0.1.2"  # x-release-please-version
 
-from .config import Config, ConfigError, load_config
-from .ig_export import import_ig_export
-from .queue_manager import QueueManager, enqueue, extract_shortcode, normalize_url, queue_stats
+from .core.config import Config, ConfigError, load_config
+from .ingestion.ig_export import import_ig_export
+from .ingestion.queue_manager import QueueManager, enqueue, extract_shortcode, normalize_url, queue_stats
 
 __all__ = [
     "Config",
@@ -29,7 +29,7 @@ __all__ = [
 
 def __getattr__(name: str):  # lazy: pipeline pulls in heavy optional deps only when used
     if name in {"process_queue", "reprocess"}:
-        from . import pipeline
+        from .pipeline import runner
 
-        return getattr(pipeline, name)
+        return getattr(runner, name)
     raise AttributeError(name)

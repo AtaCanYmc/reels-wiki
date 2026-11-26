@@ -2,12 +2,12 @@ import json
 
 import pytest
 
-from reels_wiki import synthesizer
-from reels_wiki.config import Config
-from reels_wiki.models import AtomicNoteSynthesis, RawReelArtifact
-from reels_wiki.synthesizer import SynthesisError, normalize_synthesis, parse_json_object, synthesize
-from reels_wiki.utils import slugify
-from reels_wiki.vault_context import VaultContext
+from reels_wiki.core.config import Config
+from reels_wiki.core.models import AtomicNoteSynthesis, RawReelArtifact
+from reels_wiki.core.utils import slugify
+from reels_wiki.pipeline import synthesizer
+from reels_wiki.pipeline.synthesizer import SynthesisError, normalize_synthesis, parse_json_object, synthesize
+from reels_wiki.vault.context import VaultContext
 
 
 @pytest.fixture
@@ -97,7 +97,7 @@ def test_kept_note_requires_title_and_insight():
 
 
 def test_ollama_provider_synthesizes_offline(tmp_path, ctx, monkeypatch):
-    from reels_wiki.config import Config
+    from reels_wiki.core.config import Config
 
     cfg = Config(vault_path=tmp_path, synthesis={"provider": "ollama", "ollama_model": "llama3.1:8b"})
     payload = {
