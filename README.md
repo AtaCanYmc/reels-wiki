@@ -339,6 +339,7 @@ reels-secretary/
 │   └── popup.js
 ├── site/
 │   ├── architecture-diagram.html
+│   ├── architecture-diagram.svg
 │   ├── favicon.ico
 │   ├── favicon.png
 │   ├── index.css
