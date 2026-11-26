@@ -2,6 +2,39 @@
 
 For frozen v1 schemas (`config.yaml`, `sources/reels/<shortcode>.json`, `inbox/reels-queue.jsonl`, `reels_wiki.__all__`), deprecation notices, and upgrade/rollback procedures, see [Migration & Backward-Compatibility Policy](docs/migration.md).
 
+## [0.1.4](https://github.com/AtaCanYmc/reels-wiki/compare/v0.1.3...v0.1.4) (2026-11-26)
+
+
+### Features
+
+* add architecture diagram SVG and update references in HTML and README ([762cce4](https://github.com/AtaCanYmc/reels-wiki/commit/762cce4bd8df7892605bce8380c83c734e3e87d0))
+* add documentation section with guides and references; update index and sitemap ([40f99ce](https://github.com/AtaCanYmc/reels-wiki/commit/40f99ce6cc41d3bd26c79a99980d1b4808a8da4e))
+* add interactive review command for inbox notes; implement tagging and promotion actions ([b1d3eda](https://github.com/AtaCanYmc/reels-wiki/commit/b1d3eda1b0b76de5ec7d070a0b7a8f4d7545e899))
+* add language selection feature; implement i18n support and update navigation links ([0d1ee9f](https://github.com/AtaCanYmc/reels-wiki/commit/0d1ee9f76b216108d51c2559a4d5aab253c54d8f))
+* add privacy policy and Chrome Web Store submission documentation for reels-wiki Capture ([dde0f59](https://github.com/AtaCanYmc/reels-wiki/commit/dde0f5914a2c05cb917fe4d98369e04db0a9a9ec))
+* add support for YouTube Shorts and TikTok URLs; implement weekly digest generation ([c16fa3c](https://github.com/AtaCanYmc/reels-wiki/commit/c16fa3c998d93f0b6d2720a91afd54745beeaca4))
+* enhance architecture documentation for multi-platform URL normalization; update CLI commands and configuration details ([218c003](https://github.com/AtaCanYmc/reels-wiki/commit/218c003450b39693117163c0fbe3bf55817aebd6))
+* enhance example walkthrough and documentation for YouTube Shorts and TikTok support; update normalization and enqueue logic ([6542100](https://github.com/AtaCanYmc/reels-wiki/commit/65421002a0108a67e04dee83ebe1d91f11cb1507))
+* enhance Makefile with new commands for local server, Docker processes, and site validation ([bf0119a](https://github.com/AtaCanYmc/reels-wiki/commit/bf0119aad918cf11a6ee4bdff3c5f4e64ddf87c4))
+* enhance search and curation features; add local hybrid search, interactive inbox review, and update documentation ([9e00c39](https://github.com/AtaCanYmc/reels-wiki/commit/9e00c39a728f7c0d9ab1b8602d7aae29742da969))
+* enhance share URL resolution to safely handle redirects and reject offhost URLs ([dd6f97a](https://github.com/AtaCanYmc/reels-wiki/commit/dd6f97af4641cc1105e181b648f5f959fc39c7c4))
+* implement HTTP ingest server and browser extension for capturing Instagram Reels ([9ee1380](https://github.com/AtaCanYmc/reels-wiki/commit/9ee1380b4f849c440232f794392c1a6da7557773))
+* implement local semantic search with hybrid keyword and embedding support; add CLI and MCP commands for searching vault notes ([63278a0](https://github.com/AtaCanYmc/reels-wiki/commit/63278a062af390904ed6e5eef53e3e3c28488087))
+* implement migration policy and deprecation warnings for configuration; enhance changelog and documentation ([f035a1a](https://github.com/AtaCanYmc/reels-wiki/commit/f035a1a6ec5457620eac103be72afb4672a6baa2))
+* implement Obsidian plugin with sidebar view; add health check, URL enqueueing, reprocessing, and digest generation features ([2afb4e7](https://github.com/AtaCanYmc/reels-wiki/commit/2afb4e71915c2a428658debbf1684cbba27660d5))
+* implement offline queue for saving Instagram URLs and enhance popup UI for syncing and exporting ([e8faa46](https://github.com/AtaCanYmc/reels-wiki/commit/e8faa460dc7f89967517b434561618b98b3fbc6e))
+* update architecture documentation and add diagram for core pipeline; enhance README with visual representation ([1c83534](https://github.com/AtaCanYmc/reels-wiki/commit/1c835344b991f6c64323281ebc3adddf647f886d))
+* update metadata and documentation to support YouTube Shorts and TikTok; add weekly digest feature ([fd2b8de](https://github.com/AtaCanYmc/reels-wiki/commit/fd2b8dea4c4d1412a86c1f7efcbb022fef5888cc))
+* update README with demo video and local HTTP ingest details; add brag-output to .gitignore ([aaed360](https://github.com/AtaCanYmc/reels-wiki/commit/aaed360048703c353d20786da89308056422bfed))
+* update roadmap for v0.5.0 with multi-platform support, weekly digest, and extension auto-sync plans ([d50f3e0](https://github.com/AtaCanYmc/reels-wiki/commit/d50f3e01bc6d27981b486eb29492868372a84521))
+* update roadmap with planned features for multi-vault profiles, long-form chunking, and near-duplicate concept deduplication ([1e5b0ec](https://github.com/AtaCanYmc/reels-wiki/commit/1e5b0ecc2f65f399295cc93ad05560200fca7ff4))
+* update roadmap with planned features for v1.1.0, v1.2.0, and v1.3.0; enhance exit criteria and focus areas ([f90e2b6](https://github.com/AtaCanYmc/reels-wiki/commit/f90e2b6ebd06509be51b4023c77031fea3963806))
+
+
+### Bug Fixes
+
+* **security:** eliminate polynomial regex in share URL parser ([3cbfd5c](https://github.com/AtaCanYmc/reels-wiki/commit/3cbfd5cf7a0d5e8f473f0750588aa22419c4a0da))
+
 ## [0.1.3](https://github.com/AtaCanYmc/reels-wiki/compare/v0.1.2...v0.1.3) (2026-11-26)
 
 

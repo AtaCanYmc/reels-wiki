@@ -1,7 +1,7 @@
 {
   "id": "reels-wiki",
   "name": "reels-wiki",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "minAppVersion": "1.4.0",
   "description": "Capture Reels, Shorts, and TikTok URLs, inspect queue health, reprocess active notes, and generate digests via local reels-sync serve.",
   "author": "Atacan YMC",
