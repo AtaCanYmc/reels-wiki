@@ -10,7 +10,7 @@ Technical reference and operational guides for `reels-wiki`.
 | [Saved Posts Workflow](saved-posts-workflow.md) | Official Instagram JSON export backfill and Telegram bot workflow for saved posts |
 | [Telegram Bot Setup](telegram-bot.md) | Creating a bot with `@BotFather`, retrieving chat IDs, and running `reels-sync telegram` |
 | [Deployment and Scheduling](deployment.md) | Docker Compose, macOS `launchd`, Linux `systemd`, package installs, and custom templates |
-| [Apple Shortcuts & Browser Extension](shortcuts-and-extension.md) | Direct HTTP capture via `reels-sync serve`, iOS/macOS Share Sheet, and Chrome/Firefox extension |
+| [Apple Shortcuts & Browser Extension](shortcuts-and-extension.md) | Direct HTTP capture via `reels-sync serve`, Shortcuts, Chrome/Firefox/Safari extension, `obsidian-plugin/`, and `bruno/` tests |
 | [Architecture Guide](architecture.md) | Data flow, queue invariants, 3-stage extraction waterfall, and vault context rules |
 | [CLI and MCP Reference](cli-and-mcp.md) | `reels-sync` flags, subcommands, Rich/JSON output modes, and `reels-wiki-mcp` tools |
 | [Search, Curation & Digests](search-and-curation.md) | Hybrid search (`sources/.embeddings.sqlite`), `reels-sync review`, topic digests, backlinks, and `--workers` |

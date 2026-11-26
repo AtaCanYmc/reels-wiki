@@ -1,0 +1,28 @@
+meta {
+  name: Ingest Instagram Reel
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/ingest
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "url": "https://www.instagram.com/reel/DAbCdEfGhIj/",
+    "source": "bruno"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.ok: eq true
+  res.body.shortcode: eq DAbCdEfGhIj
+}

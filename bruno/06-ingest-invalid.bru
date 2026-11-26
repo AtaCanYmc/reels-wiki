@@ -1,0 +1,28 @@
+meta {
+  name: Ingest Invalid URL
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/ingest
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "url": "https://example.com/unsupported",
+    "source": "bruno"
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.ok: eq false
+  res.body.result: eq invalid
+}

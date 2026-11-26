@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "reels-wiki",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

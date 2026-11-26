@@ -1,0 +1,21 @@
+meta {
+  name: Queue Stats
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/stats
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.total: isNumber
+  res.body.pending: isNumber
+}

@@ -1,0 +1,26 @@
+meta {
+  name: Reprocess Shortcode
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/reprocess
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "shortcode": "DAbCdEfGhIj"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.selected: eq 1
+}

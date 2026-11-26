@@ -39,6 +39,16 @@ reels-sync serve --host 0.0.0.0 --port 8765
 | `/reprocess` | `POST` | JSON `{"shortcode": "..."}` or `{"all": true}` + optional Bearer token | Re-synthesizes stored JSON artifact offline |
 | `/digest` | `POST` | JSON `{"days": 7, "tag": null, "dry_run": false}` + optional Bearer token | Generates weekly or topic-scoped digest note |
 
+### HTTP Endpoint Tests (`bruno/`)
+
+Run the included Bruno API collection against a running `reels-sync serve` instance:
+
+```bash
+cd bruno && bru run -r --env local
+```
+
+(Pass `--env-var token=<your_REELS_WIKI_HTTP_TOKEN>` when binding non-loopback or testing with token auth.)
+
 ---
 
 ## 2. iOS / macOS Apple Shortcuts Setup

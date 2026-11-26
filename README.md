@@ -292,6 +292,18 @@ reels-secretary/
 │   ├── promo-local-sync.jpg
 │   ├── promo-never-lose.jpg
 │   └── promo-offline-vault.jpg
+├── bruno/
+│   ├── environments/
+│   │   └── local.bru
+│   ├── 01-health.bru
+│   ├── 02-stats.bru
+│   ├── 03-ingest-instagram.bru
+│   ├── 04-ingest-youtube-short.bru
+│   ├── 05-ingest-tiktok.bru
+│   ├── 06-ingest-invalid.bru
+│   ├── 07-reprocess.bru
+│   ├── 08-digest.bru
+│   └── bruno.json
 ├── docs/
 │   ├── README.md
 │   ├── architecture.md
@@ -389,7 +401,7 @@ reels-secretary/
 └── SKILL.md
 ```
 
-Tests run offline via `make test` (`pytest`) without making network or LLM API calls.
+Tests run offline via `make test` (`pytest`) without making network or LLM API calls. You can also verify the live HTTP ingest server endpoints using the Bruno collection (`cd bruno && bru run -r --env local`).
 
 ## Documentation and Governance
 
