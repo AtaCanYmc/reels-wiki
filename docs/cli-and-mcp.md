@@ -28,6 +28,7 @@ reels-sync [--config PATH] [--vault PATH] [--json] [-v] <subcommand>
 | `init` | Interactively scaffold `config.yaml`, `.env`, and run `doctor` | `--env-path PATH`, `--force` |
 | `telegram` | Start long-polling Telegram share capture bot | None |
 | `mcp` | Start MCP server over stdio | None |
+| `serve` | Start HTTP ingest server for Shortcuts and browser extensions | `--host`, `--port` |
 
 ### Output Modes
 

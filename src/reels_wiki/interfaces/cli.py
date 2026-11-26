@@ -27,6 +27,7 @@ from .cli_ui import (
     render_process_summary,
     render_stats,
 )
+from .http_server import run_http_server
 from .mcp_server import run_mcp_server
 from .telegram_bot import run_telegram_bot
 
@@ -184,6 +185,14 @@ def _build_parser() -> argparse.ArgumentParser:
 
     # mcp
     subparsers.add_parser("mcp", help="Run MCP server over stdio.")
+
+    # serve
+    p_serve = subparsers.add_parser(
+        "serve",
+        help="Run local HTTP ingest server for Apple Shortcuts and browser extensions.",
+    )
+    p_serve.add_argument("--host", default="127.0.0.1", help="Bind address (default: 127.0.0.1).")
+    p_serve.add_argument("--port", type=int, default=8765, help="Bind port (default: 8765).")
 
     return parser
 
@@ -405,6 +414,10 @@ def main(argv: list[str] | None = None) -> int:
 
         if args.command == "mcp":
             run_mcp_server(cfg=cfg)
+            return 0
+
+        if args.command == "serve":
+            run_http_server(cfg=cfg, host=args.host, port=args.port)
             return 0
 
         parser.error(f"Unknown command: {args.command}")

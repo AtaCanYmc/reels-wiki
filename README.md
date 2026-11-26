@@ -270,6 +270,7 @@ reels-secretary/
 │   ├── example-walkthrough.md
 │   ├── providers.md
 │   ├── saved-posts-workflow.md
+│   ├── shortcuts-and-extension.md
 │   ├── step-by-step.md
 │   ├── telegram-bot.md
 │   └── troubleshooting.md
@@ -289,6 +290,7 @@ reels-secretary/
 │       │   ├── __init__.py
 │       │   ├── cli.py
 │       │   ├── cli_ui.py
+│       │   ├── http_server.py
 │       │   ├── mcp_server.py
 │       │   └── telegram_bot.py
 │       ├── pipeline/
@@ -305,6 +307,13 @@ reels-secretary/
 │           ├── __init__.py
 │           ├── context.py
 │           └── writer.py
+├── extension/
+│   ├── icons/
+│   ├── background.js
+│   ├── manifest.json
+│   ├── popup.css
+│   ├── popup.html
+│   └── popup.js
 ├── site/
 │   ├── favicon.ico
 │   ├── favicon.png
@@ -317,6 +326,7 @@ reels-secretary/
 ├── tests/
 │   ├── test_cli.py
 │   ├── test_extractor.py
+│   ├── test_http_server.py
 │   ├── test_ig_export.py
 │   ├── test_mcp_server.py
 │   ├── test_pipeline.py
@@ -341,6 +351,7 @@ Tests run offline via `make test` (`pytest`) without making network or LLM API c
 - [Saved Posts Workflow](docs/saved-posts-workflow.md)
 - [Telegram Bot Setup](docs/telegram-bot.md)
 - [Deployment and Scheduling](docs/deployment.md)
+- [Apple Shortcuts & Browser Extension](docs/shortcuts-and-extension.md)
 - [Example Walkthrough](docs/example-walkthrough.md)
 - [CLI and MCP Reference](docs/cli-and-mcp.md)
 - [Configuration Reference](docs/configuration.md)
