@@ -78,13 +78,20 @@ Supports **Instagram** (Reels and posts), **YouTube Shorts**, and **TikTok** URL
 
 ### Safari (macOS + Xcode)
 
-Since `extension/` targets Manifest V3, convert it into a local Safari Web Extension with Xcode command-line tools:
+Since `extension/` targets Manifest V3, generate a local Safari Web Extension Xcode project under `dist/safari-extension` via `make`:
+
+```bash
+make build-safari-extension
+```
+
+Or invoke Apple's converter directly:
 
 ```bash
 xcrun safari-web-extension-converter extension/ \
+  --project-location dist/safari-extension \
   --app-name "reels-wiki Capture" \
   --bundle-identifier com.atacanymc.reels-wiki \
-  --macos-only
+  --macos-only --force --no-open --no-prompt
 ```
 
 1. Open the generated Xcode project and build/run once (**Run** / `Cmd+R`).

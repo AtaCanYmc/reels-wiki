@@ -24,7 +24,7 @@ GLOBAL_FLAGS := $(if $(CONFIG),--config "$(CONFIG)",) $(if $(VAULT),--vault "$(V
 .PHONY: help venv install install-dev install-local install-all update-yt-dlp init-config init doctor \
         test test-fast test-match test-cov lint typecheck check-docs check-release check-site verify \
         stats stats-json ingest import-ig process-dry process retry-failed reprocess reprocess-all telegram mcp serve \
-        docker-build docker-process docker-telegram build build-extension build-obsidian-plugin clean clean-all
+        docker-build docker-process docker-telegram build build-extension build-obsidian-plugin build-safari-extension clean clean-all
 
 help: ## Show available targets grouped by category
 	@echo "reels-wiki Makefile targets"
@@ -194,6 +194,15 @@ build-obsidian-plugin: ## Package native Obsidian plugin ZIP into dist/
 	@mkdir -p dist
 	@cd obsidian-plugin && rm -f ../dist/reels-wiki-obsidian-plugin.zip && zip -q -r -X ../dist/reels-wiki-obsidian-plugin.zip manifest.json main.js styles.css README.md -x "*.DS_Store"
 	@echo "Built dist/reels-wiki-obsidian-plugin.zip"
+
+build-safari-extension: ## Generate Safari Web Extension Xcode project into dist/safari-extension
+	@mkdir -p dist
+	@xcrun safari-web-extension-converter extension/ \
+		--project-location dist/safari-extension \
+		--app-name "reels-wiki Capture" \
+		--bundle-identifier com.atacanymc.reels-wiki \
+		--macos-only --force --no-open --no-prompt
+	@echo "Generated dist/safari-extension"
 
 clean: ## Remove build artifacts and Python caches
 	rm -rf build/ dist/ *.egg-info .pytest_cache
