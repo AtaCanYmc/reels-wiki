@@ -20,7 +20,14 @@ def test_mcp_server_registers_expected_tools(tmp_path: Path) -> None:
     tools = asyncio.run(server.list_tools())
     names = {t.name for t in tools}
 
-    assert names == {"enqueue_reel", "import_ig_export", "process_reels_queue", "get_queue_stats"}
+    assert names == {
+        "enqueue_reel",
+        "import_ig_export",
+        "process_reels_queue",
+        "get_queue_stats",
+        "reprocess_reel",
+        "search_vault_notes",
+    }
     for tool in tools:
         schema = getattr(tool, "input_schema", None) or getattr(tool, "inputSchema", None)
         assert schema["type"] == "object"
@@ -53,3 +60,19 @@ def test_mcp_tools_delegate_and_return_json(tmp_path: Path) -> None:
     with patch("reels_wiki.interfaces.mcp_server.queue_stats", return_value={"total_indexed": 5}):
         stats = _call_tool_json(server, "get_queue_stats", {})
     assert stats["total_indexed"] == 5
+
+    with patch(
+        "reels_wiki.interfaces.mcp_server.reprocess",
+        return_value={"selected": 1, "processed": 1, "skipped": 0, "failed": 0},
+    ) as mock_rep:
+        rep = _call_tool_json(server, "reprocess_reel", {"shortcode": "ABC12345678"})
+    mock_rep.assert_called_once()
+    assert rep["processed"] == 1
+
+    (tmp_path / "ideas").mkdir()
+    (tmp_path / "sources").mkdir()
+    (tmp_path / "ideas" / "cache-tip.md").write_text("# Cache Tip\nUse content hash.", encoding="utf-8")
+    (tmp_path / "sources" / "ignored.md").write_text("Use content hash.", encoding="utf-8")
+    search = _call_tool_json(server, "search_vault_notes", {"query": "content hash"})
+    assert search["count"] == 1
+    assert search["matches"][0]["path"] == "ideas/cache-tip.md"

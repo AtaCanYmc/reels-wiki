@@ -15,6 +15,10 @@ Unknown keys in `config.yaml` are rejected at load time.
 
 `--vault <path>` and `$REELS_WIKI_VAULT` override `vault_path` from `config.yaml`.
 
+## Custom Note Template (`template_path`)
+
+Set `template_path` in `config.yaml` to render custom Markdown bodies via a sandboxed Jinja2 environment while keeping required frontmatter (`status`, `created`) and `_index.md` / `_log.md` invariants intact. See [Deployment and Scheduling](deployment.md#5-custom-note-templates-template_path) for available template variables.
+
 ## Environment Variables
 
 | Variable | Required For | Description |

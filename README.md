@@ -19,14 +19,24 @@ Available interfaces: Python SDK (`reels_wiki`), CLI (`reels-sync`), MCP server 
 
 ## Table of Contents
 
-- [Quick Start](#quick-start)
+- [Quick Start (Docker)](#quick-start-docker)
+- [Quick Start (Local)](#quick-start-local)
 - [Usage](#usage)
 - [How It Works](#how-it-works)
 - [Repository Layout](#repository-layout)
 - [Documentation and Governance](#documentation-and-governance)
 - [Notes and Limits](#notes-and-limits)
 
-## Quick Start
+## Quick Start (Docker)
+
+```bash
+cp config.example.yaml config.yaml && cp .env.example .env
+docker compose build
+docker compose run --rm reels-process
+docker compose up -d reels-telegram
+```
+
+## Quick Start (Local)
 
 Prerequisites: Python 3.10 or newer and `ffmpeg` on your `PATH`. `ffmpeg` is only required when audio or frame fallbacks run.
 
@@ -186,7 +196,7 @@ Add the server to your MCP client configuration:
 }
 ```
 
-Exposed MCP tools: `enqueue_reel`, `import_ig_export`, `process_reels_queue`, `get_queue_stats`.
+Exposed MCP tools: `enqueue_reel`, `import_ig_export`, `process_reels_queue`, `get_queue_stats`, `reprocess_reel`, `search_vault_notes`.
 
 ### Python SDK
 
@@ -256,6 +266,7 @@ reels-secretary/
 │   ├── architecture.md
 │   ├── cli-and-mcp.md
 │   ├── configuration.md
+│   ├── deployment.md
 │   ├── example-walkthrough.md
 │   ├── providers.md
 │   ├── saved-posts-workflow.md
@@ -294,6 +305,15 @@ reels-secretary/
 │           ├── __init__.py
 │           ├── context.py
 │           └── writer.py
+├── site/
+│   ├── favicon.ico
+│   ├── favicon.png
+│   ├── index.css
+│   ├── index.html
+│   ├── index.js
+│   ├── llms.txt
+│   ├── robots.txt
+│   └── sitemap.xml
 ├── tests/
 │   ├── test_cli.py
 │   ├── test_extractor.py
@@ -305,6 +325,8 @@ reels-secretary/
 │   ├── test_telegram_bot.py
 │   └── test_writer.py
 ├── config.example.yaml
+├── docker-compose.yml
+├── Dockerfile
 ├── Makefile
 ├── pyproject.toml
 └── SKILL.md
@@ -318,6 +340,7 @@ Tests run offline via `make test` (`pytest`) without making network or LLM API c
 - [Step-by-Step Guide](docs/step-by-step.md)
 - [Saved Posts Workflow](docs/saved-posts-workflow.md)
 - [Telegram Bot Setup](docs/telegram-bot.md)
+- [Deployment and Scheduling](docs/deployment.md)
 - [Example Walkthrough](docs/example-walkthrough.md)
 - [CLI and MCP Reference](docs/cli-and-mcp.md)
 - [Configuration Reference](docs/configuration.md)

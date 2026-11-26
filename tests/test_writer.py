@@ -241,3 +241,18 @@ def test_write_synthesis_skips_rewrite_when_content_hash_unchanged(vault):
     assert changed["unchanged"] is False
     assert changed["updated_existing"] is True
     assert changed["content_hash"] != first["content_hash"]
+
+
+def test_write_synthesis_custom_template_preserves_frontmatter(vault, tmp_path):
+    q, ctx = _setup(vault)
+    tmpl = tmp_path / "custom.j2"
+    tmpl.write_text("# Custom: {{ title }}\n\nInsight: {{ core_insight }}\n", encoding="utf-8")
+
+    syn = _syn()
+    res = write_synthesis(q, ctx, _artifact(), syn, template_path=tmpl, now=NOW)
+    assert res["status"] == "processed"
+    post = frontmatter.load(vault / res["note_path"])
+    assert post["status"] == "inbox"
+    assert post["created"] == f"{NOW:%Y-%m-%d}"
+    assert f"# Custom: {syn.title}" in post.content
+    assert f"Insight: {syn.core_insight}" in post.content

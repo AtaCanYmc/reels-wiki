@@ -45,7 +45,14 @@ def process_item(
         syn = synthesize(artifact, ctx, cfg)
         if artifact.synthesis_metrics is not None:
             save_artifact(cfg.vault_path, artifact)
-        result = write_synthesis(queue, ctx, artifact, syn, overwrite_path=item.note_path)
+        result = write_synthesis(
+            queue,
+            ctx,
+            artifact,
+            syn,
+            overwrite_path=item.note_path,
+            template_path=cfg.template_path,
+        )
         result["warnings"] = artifact.warnings
         result["steps"] = artifact.steps_used
         result["downloaded"] = downloaded

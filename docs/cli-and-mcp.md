@@ -70,3 +70,5 @@ Run via `reels-wiki-mcp` or `reels-sync mcp` over `stdio` transport.
 | `import_ig_export` | `export_path`, `reels_only=False`, `force=False`, `vault_path=None` | Bulk-import Instagram data export |
 | `process_reels_queue` | `limit=10`, `dry_run=False`, `retry_failed=False`, `force=False`, `vault_path=None` | Process pending queue items |
 | `get_queue_stats` | `vault_path=None` | Return index status counts and artifact count |
+| `reprocess_reel` | `shortcode=None`, `all_items=False`, `vault_path=None` | Re-synthesize from stored `sources/reels/<code>.json` artifacts |
+| `search_vault_notes` | `query`, `limit=10`, `vault_path=None` | Search Markdown notes inside the vault (excluding `sources/` and `inbox/`) |

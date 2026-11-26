@@ -9,7 +9,7 @@ Product and engineering milestones for `reels-wiki`, grouped by SemVer releases 
 | `v0.1.0` | Core pipeline, 5 interfaces, governance, release automation | Completed |
 | `v0.2.0` | Reliability, static analysis, coverage gates, `init` wizard, PyPI publishing | Completed |
 | `v0.3.0` | Extraction fidelity, local LLM synthesis, observability | Completed |
-| `v0.4.0` | Background scheduling, container packaging, ecosystem distribution | Planned |
+| `v0.4.0` | Background scheduling, container packaging, ecosystem distribution | Completed |
 | `v1.0.0` | Frozen schemas, public SDK contract, E2E fixture suite | Future |
 
 ## v0.1.0 (Completed)
@@ -51,18 +51,18 @@ Focus: Reduce failed extractions on edge-case Instagram posts, enable 100% offli
 
 **Exit Criteria**: A sample batch can run end-to-end offline using `faster-whisper` + local LLM without external API calls, and stage metrics appear in `reels-sync --json stats`.
 
-## v0.4.0 (Automation, Scheduling, and Ecosystem)
+## v0.4.0 (Completed - Automation, Scheduling, and Ecosystem)
 
 Focus: Unattended background execution, containerized deployment, and broader package distribution.
 
-- **Unattended Scheduling & Containers**:
-  - Ship copy-pasteable macOS `launchd` plist and Linux `systemd` user timer examples for scheduled `reels-sync process` and `reels-sync telegram` execution.
+- [x] **Unattended Scheduling & Containers**:
+  - Ship copy-pasteable macOS `launchd` plist and Linux `systemd` user timer examples in `docs/deployment.md` for scheduled `reels-sync process` and `reels-sync telegram` execution.
   - Add a minimal `Dockerfile` and `docker-compose.yml` bundling Python and `ffmpeg` for headless server runs.
-- **Custom Note Templates & Vault Profiles (`writer.py`, `config.py`)**:
+- [x] **Custom Note Templates & Vault Profiles (`vault/writer.py`, `core/config.py`)**:
   - Support an optional `template_path` in `config.yaml` while preserving required frontmatter (`status`, `created`) and `_index.md` / `_log.md` invariants.
-- **Package Manager Distribution**:
-  - Publish a Homebrew formula and verify `pipx install` / `uv tool install` workflows.
-- **MCP Server Expansion (`mcp_server.py`)**:
+- [x] **Package Manager Distribution**:
+  - Publish a Homebrew formula and verify `pipx install` / `uv tool install` workflows in `docs/deployment.md`.
+- [x] **MCP Server Expansion (`interfaces/mcp_server.py`)**:
   - Expose `reprocess_reel` and `search_vault_notes` tools so MCP agents can inspect existing vault notes and trigger targeted re-synthesis.
 
 **Exit Criteria**: Containerized `reels-sync process` and `launchd`/`systemd` schedules run unattended against a mounted vault with zero manual intervention.

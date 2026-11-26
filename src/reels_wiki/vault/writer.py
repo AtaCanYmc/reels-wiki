@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 import frontmatter
+from jinja2.sandbox import SandboxedEnvironment
 
 from ..core.models import AtomicNoteSynthesis, RawReelArtifact
 from ..core.utils import atomic_write_text, normalize_key, one_line
@@ -156,6 +157,28 @@ def update_index(vault: Path, folder: str, slug: str, title: str, summary: str) 
 
 
 # ---------------------------------------------------------------------- main entry point
+def render_custom_body(
+    template_path: Path,
+    artifact: RawReelArtifact,
+    syn: AtomicNoteSynthesis,
+    existing_links: list[str],
+    candidates: list[str],
+) -> str:
+    env = SandboxedEnvironment(autoescape=False, trim_blocks=True, lstrip_blocks=True)
+    tmpl = env.from_string(template_path.read_text(encoding="utf-8"))
+    return tmpl.render(
+        title=syn.title.strip(),
+        core_insight=syn.core_insight.strip(),
+        for_future_agent=syn.for_future_agent,
+        actionable_next_step=syn.actionable_next_step.strip(),
+        related_links=existing_links,
+        candidate_links=candidates,
+        artifact=artifact,
+        syn=syn,
+        tags=list(syn.tags),
+    ).rstrip() + "\n"
+
+
 def write_synthesis(
     queue: QueueManager,
     ctx: VaultContext,
@@ -163,6 +186,7 @@ def write_synthesis(
     syn: AtomicNoteSynthesis,
     *,
     overwrite_path: str | Path | None = None,
+    template_path: Path | None = None,
     now: datetime | None = None,
 ) -> dict:
     """Apply a synthesis: skip (status only) or write note + log + index + status. Idempotent."""
@@ -196,7 +220,12 @@ def write_synthesis(
         "status": status,
         "tags": list(syn.tags),
     }
-    post = frontmatter.Post(render_body(artifact, syn, existing_links, candidates), **meta)
+    body = (
+        render_custom_body(template_path, artifact, syn, existing_links, candidates)
+        if template_path
+        else render_body(artifact, syn, existing_links, candidates)
+    )
+    post = frontmatter.Post(body, **meta)
     rendered = frontmatter.dumps(post, sort_keys=False).rstrip("\n") + "\n"
     new_hash = hashlib.sha256(rendered.encode("utf-8")).hexdigest()
     rel = path.relative_to(ctx.root).as_posix()

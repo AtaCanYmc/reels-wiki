@@ -56,6 +56,7 @@ class Config(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     vault_path: Path
+    template_path: Path | None = None
     allowed_folders: list[str] | None = None
     default_folder: str | None = None
     delay_seconds: float = Field(2.0, ge=0)
@@ -72,6 +73,11 @@ class Config(BaseModel):
     @classmethod
     def _expand_vault(cls, v: Path) -> Path:
         return v.expanduser().resolve()
+
+    @field_validator("template_path")
+    @classmethod
+    def _expand_template(cls, v: Path | None) -> Path | None:
+        return v.expanduser().resolve() if v else v
 
     def require_key(self, provider: str) -> str:
         if provider == "ollama":
