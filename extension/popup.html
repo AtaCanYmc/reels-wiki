@@ -24,6 +24,15 @@
   <input id="token" type="password" placeholder="REELS_WIKI_HTTP_TOKEN" />
 
   <button id="saveBtn" type="button">Save to Queue</button>
+
+  <section id="pendingBar" class="pending-bar" hidden>
+    <span id="pendingCount">Offline queue: 0</span>
+    <div class="pending-actions">
+      <button id="syncBtn" type="button" class="btn-secondary">Sync</button>
+      <button id="exportBtn" type="button" class="btn-secondary">Export JSON</button>
+    </div>
+  </section>
+
   <div id="status" role="status"></div>
 
   <script src="popup.js"></script>

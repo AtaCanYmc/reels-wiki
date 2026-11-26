@@ -15,6 +15,15 @@ function setBadge(text, color, tabId) {
   setTimeout(() => chrome.action.setBadgeText({ text: "", tabId }), 2500);
 }
 
+async function queueOffline(url) {
+  const { pendingQueue = [] } = await chrome.storage.local.get(["pendingQueue"]);
+  if (!pendingQueue.includes(url)) {
+    pendingQueue.push(url);
+    await chrome.storage.local.set({ pendingQueue });
+  }
+  return pendingQueue.length;
+}
+
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId !== "save-to-reels-wiki") return;
   const targetUrl = info.linkUrl || (tab && tab.url) || "";
@@ -41,6 +50,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       setBadge("DUP", "#f59e0b", tabId);
     }
   } catch {
-    setBadge("OFF", "#ef4444", tabId);
+    await queueOffline(targetUrl);
+    setBadge("SAVED", "#f59e0b", tabId);
   }
 });

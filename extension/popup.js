@@ -4,6 +4,10 @@ const tokenInput = document.getElementById("token");
 const saveBtn = document.getElementById("saveBtn");
 const statusEl = document.getElementById("status");
 const healthBadge = document.getElementById("healthBadge");
+const pendingBar = document.getElementById("pendingBar");
+const pendingCount = document.getElementById("pendingCount");
+const syncBtn = document.getElementById("syncBtn");
+const exportBtn = document.getElementById("exportBtn");
 
 const IG_URL_RE = /^https?:\/\/(?:www\.|m\.)?(?:instagram\.com|instagr\.am)\//i;
 
@@ -12,39 +16,73 @@ function setStatus(text, cls) {
   statusEl.className = cls || "";
 }
 
+function cleanEndpoint() {
+  return endpointInput.value.trim().replace(/\/+$/, "");
+}
+
+async function renderPending() {
+  const { pendingQueue = [] } = await chrome.storage.local.get(["pendingQueue"]);
+  pendingBar.hidden = pendingQueue.length === 0;
+  pendingCount.textContent = `Offline queue: ${pendingQueue.length}`;
+  return pendingQueue;
+}
+
+async function queueOffline(url) {
+  const { pendingQueue = [] } = await chrome.storage.local.get(["pendingQueue"]);
+  if (!pendingQueue.includes(url)) {
+    pendingQueue.push(url);
+    await chrome.storage.local.set({ pendingQueue });
+  }
+  await renderPending();
+  return pendingQueue.length;
+}
+
 async function checkHealth(endpoint) {
   try {
     const resp = await fetch(`${endpoint}/health`);
     if (resp.ok) {
       healthBadge.textContent = "online";
       healthBadge.className = "pill pill-on";
-      return;
+      return true;
     }
   } catch {
     // ignore connection errors; badge reports offline
   }
   healthBadge.textContent = "offline";
   healthBadge.className = "pill pill-off";
+  return false;
+}
+
+async function sendUrl(endpoint, token, url) {
+  const headers = { "Content-Type": "application/json" };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const resp = await fetch(`${endpoint}/ingest`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ url, source: "extension" }),
+  });
+  const data = await resp.json();
+  return { resp, data };
 }
 
 async function init() {
   const stored = await chrome.storage.local.get(["endpoint", "token"]);
   if (stored.endpoint) endpointInput.value = stored.endpoint;
   if (stored.token) tokenInput.value = stored.token;
-  const endpoint = endpointInput.value.trim().replace(/\/+$/, "");
-  checkHealth(endpoint);
+  checkHealth(cleanEndpoint());
+  renderPending();
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   urlInput.value = (tab && tab.url) || "";
 }
 
 endpointInput.addEventListener("change", () => {
-  checkHealth(endpointInput.value.trim().replace(/\/+$/, ""));
+  checkHealth(cleanEndpoint());
 });
 
 saveBtn.addEventListener("click", async () => {
   const url = urlInput.value.trim();
-  const endpoint = endpointInput.value.trim().replace(/\/+$/, "");
+  const endpoint = cleanEndpoint();
   const token = tokenInput.value.trim();
   if (!url || !IG_URL_RE.test(url)) {
     setStatus("Enter a valid Instagram URL.", "err");
@@ -56,15 +94,7 @@ saveBtn.addEventListener("click", async () => {
   await chrome.storage.local.set({ endpoint, token });
 
   try {
-    const headers = { "Content-Type": "application/json" };
-    if (token) headers.Authorization = `Bearer ${token}`;
-
-    const resp = await fetch(`${endpoint}/ingest`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ url, source: "extension" }),
-    });
-    const data = await resp.json();
+    const { resp, data } = await sendUrl(endpoint, token, url);
     if (!resp.ok) {
       setStatus(data.error || `Error ${resp.status}`, "err");
     } else if (data.result === "enqueued") {
@@ -73,13 +103,68 @@ saveBtn.addEventListener("click", async () => {
       setStatus(`SKIPPED (${data.result || "duplicate"}) [${data.shortcode}]`, "warn");
     }
     checkHealth(endpoint);
-  } catch (err) {
-    setStatus(`Connection failed: ${err.message}. Run 'reels-sync serve'.`, "err");
+  } catch {
+    const count = await queueOffline(url);
+    setStatus(`SAVED OFFLINE (${count} queued). Use Sync or Export JSON later.`, "warn");
     healthBadge.textContent = "offline";
     healthBadge.className = "pill pill-off";
   } finally {
     saveBtn.disabled = false;
   }
+});
+
+syncBtn.addEventListener("click", async () => {
+  const queue = await renderPending();
+  if (!queue.length) return;
+  const endpoint = cleanEndpoint();
+  const token = tokenInput.value.trim();
+
+  syncBtn.disabled = true;
+  setStatus("Syncing offline queue...", "");
+  const remaining = [];
+  let sent = 0;
+
+  for (const url of queue) {
+    try {
+      const { resp } = await sendUrl(endpoint, token, url);
+      if (resp.ok || resp.status === 400) {
+        sent += 1;
+      } else {
+        remaining.push(url);
+      }
+    } catch {
+      remaining.push(url);
+    }
+  }
+
+  await chrome.storage.local.set({ pendingQueue: remaining });
+  await renderPending();
+  checkHealth(endpoint);
+  setStatus(
+    remaining.length
+      ? `Synced ${sent}; ${remaining.length} still pending (check server/token).`
+      : `Synced ${sent} queued item(s).`,
+    remaining.length ? "warn" : "ok"
+  );
+  syncBtn.disabled = false;
+});
+
+exportBtn.addEventListener("click", async () => {
+  const queue = await renderPending();
+  if (!queue.length) return;
+  const payload = {
+    saved_saved_media: queue.map((href) => ({
+      string_map_data: { "Saved on": { href } },
+    })),
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = "reels-wiki-saved.json";
+  link.click();
+  URL.revokeObjectURL(objectUrl);
+  setStatus(`Exported ${queue.length} URL(s). Run: reels-sync import-ig ~/Downloads/reels-wiki-saved.json`, "ok");
 });
 
 init();
