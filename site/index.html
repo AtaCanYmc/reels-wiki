@@ -408,7 +408,7 @@ reels-sync ingest "https://www.youtube.com/shorts/dQw4w9WgXcQ"
 # Import saved_posts.json from an Instagram export
 reels-sync import-ig ~/Downloads/instagram-export/ --reels-only
 
-# Start local HTTP ingest daemon for Shortcuts &amp; Chrome/Firefox extension
+# Start 8-endpoint HTTP daemon (/health, /stats, /queue, /search, /ingest, /process, /reprocess, /digest)
 reels-sync serve
 
 # Preview pending items without spending API calls
@@ -694,7 +694,7 @@ reels-sync stats</code></pre>
           <div class="spec-row">
             <h3>Shortcuts &amp; Browser Extension</h3>
             <p>
-              Capture Instagram, YouTube Shorts, and TikTok via <code>reels-sync serve</code> with 5-minute <code>chrome.alarms</code> offline auto-sync.
+              Capture and process Instagram, YouTube Shorts, and TikTok via <code>reels-sync serve</code> (8 endpoints), with popup queue stats, immediate processing, retry failed, vault search, and offline auto-sync.
               <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/shortcuts-and-extension.md" target="_blank" rel="noopener noreferrer" style="color: var(--accent); font-weight: 600;">Shortcuts &amp; Extension</a> ·
               <a href="privacy.html" style="color: var(--accent); font-weight: 600;">Extension Privacy</a>
             </p>

@@ -48,11 +48,14 @@ The Telegram bot (`reels-sync telegram` or `reels-wiki-telegram`) enqueues Insta
 | `ollama_api_key` | `ollama` | Bearer token sent to the OpenAI-compatible local endpoint |
 | `folder_prompts` | `{}` | Mapping of folder names (e.g. `tools`, `learning`) to synthesis guidance appended to the prompt |
 
-## Vault Link Options
+## Top-Level Vault & HTTP Options
 
 | Top-Level Key | Default | Description |
 | :--- | :--- | :--- |
+| `allowed_folders` | `null` | Folder whitelist (accepts a YAML list or comma-separated string; `null` uses auto-discovery) |
+| `default_folder` | `null` | Fallback folder used when the LLM chooses a folder outside `allowed_folders` |
 | `enable_backlinks` | `false` | When `true`, append reciprocal `- [[source_slug|source_title]]` links into related existing notes |
+| `http_access_logs` | `true` | Emit `reels_wiki.http` INFO access logs for incoming requests in `reels-sync serve` |
 
 ## Examples
 

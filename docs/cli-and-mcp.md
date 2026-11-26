@@ -25,10 +25,10 @@ reels-sync [--config PATH] [--vault PATH] [--json] [-v] <subcommand>
 | `reprocess [shortcode]` | Re-synthesize from `sources/reels/<code>.json` | `--all`, `--dry-run` |
 | `stats` | Show queue counts, artifact count, extraction `stages`, and `llm_usage` token/retry metrics | None |
 | `doctor` | Verify Python, `ffmpeg`, cookies, API keys, and vault permissions | None |
-| `init` | Interactively scaffold `config.yaml`, `.env`, and run `doctor` | `--env-path PATH`, `--force` |
+| `init` | Run 4-step wizard (vault/folders, extraction/fallbacks, synthesis/keys, Telegram) and `doctor` | `--env-path PATH`, `--force` |
 | `telegram` | Start long-polling Telegram share capture bot | None |
 | `mcp` | Start MCP server over stdio | None |
-| `serve` | Start HTTP ingest server for Shortcuts and browser extensions | `--host`, `--port` |
+| `serve` | Start 8-endpoint HTTP server (`/health`, `/stats`, `/queue`, `/search`, `/ingest` with optional `process: true`, `/process`, `/reprocess`, `/digest`) | `--host`, `--port` |
 | `digest` | Generate summary note grouping recent vault notes by tag | `--days N`, `--tag TAG`, `--dry-run` |
 | `search <query>` | Search vault notes via hybrid keyword + local embeddings (`sources/.embeddings.sqlite`) | `--limit N`, `--backend`, `--reindex` |
 | `review` | Interactively promote, retag, or archive `status: inbox` vault notes | `--limit N` |
