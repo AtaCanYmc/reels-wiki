@@ -9,6 +9,10 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import yaml
+from dotenv import load_dotenv
+from rich.prompt import Confirm, Prompt
+
 from .cli_ui import (
     make_progress_callback,
     render_doctor,
@@ -24,6 +28,7 @@ from .mcp_server import run_mcp_server
 from .pipeline import process_queue, reprocess
 from .queue_manager import enqueue, queue_stats
 from .telegram_bot import run_telegram_bot
+from .utils import atomic_write_text
 
 logger = logging.getLogger("reels_wiki.cli")
 
@@ -160,6 +165,20 @@ def _build_parser() -> argparse.ArgumentParser:
     # doctor
     subparsers.add_parser("doctor", help="Verify runtime dependencies, cookies, API keys, and vault permissions.")
 
+    # init
+    p_init = subparsers.add_parser("init", help="Interactive setup wizard for config.yaml and .env.")
+    p_init.add_argument(
+        "--env-path",
+        type=Path,
+        default=None,
+        help="Path to .env file (default: <config_dir>/.env).",
+    )
+    p_init.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite existing config.yaml and .env without confirmation.",
+    )
+
     # telegram
     subparsers.add_parser("telegram", help="Run long-polling Telegram share capture bot.")
 
@@ -218,12 +237,92 @@ def run_doctor(cfg: Config) -> dict[str, Any]:
     }
 
 
+def run_init(
+    config_path: Path,
+    env_path: Path,
+    *,
+    vault_default: Path | None = None,
+    force: bool = False,
+) -> dict[str, Any]:
+    """Interactively create config.yaml and .env, then run diagnostics."""
+    if config_path.exists() and not force:
+        if not Confirm.ask(f"{config_path} already exists. Overwrite?", default=False):
+            return {"written": False, "config_path": str(config_path), "env_path": str(env_path)}
+
+    vault_str = Prompt.ask(
+        "Obsidian vault path",
+        default=str(vault_default) if vault_default else "~/Obsidian/Vault",
+    )
+    cookie_mode = Prompt.ask(
+        "Instagram cookies source",
+        choices=["chrome", "firefox", "file", "skip"],
+        default="chrome",
+    )
+    extraction_cfg: dict[str, Any] = {}
+    if cookie_mode in ("chrome", "firefox"):
+        extraction_cfg["cookies_from_browser"] = cookie_mode
+    elif cookie_mode == "file":
+        extraction_cfg["cookies_file"] = Prompt.ask("Netscape cookies file path", default="~/cookies.txt")
+
+    provider = Prompt.ask("Primary LLM provider", choices=["groq", "gemini"], default="groq")
+    groq_key = Prompt.ask("GROQ_API_KEY (leave blank to skip)", password=True, default="")
+    gemini_key = Prompt.ask("GEMINI_API_KEY (leave blank to skip)", password=True, default="")
+
+    tg_token = ""
+    tg_chat_id = ""
+    if Confirm.ask("Configure Telegram capture bot?", default=False):
+        tg_token = Prompt.ask("TELEGRAM_BOT_TOKEN", password=True, default="")
+        tg_chat_id = Prompt.ask("TELEGRAM_ALLOWED_CHAT_ID", default="")
+
+    cfg_data: dict[str, Any] = {
+        "vault_path": vault_str,
+        "synthesis": {"provider": provider},
+    }
+    if extraction_cfg:
+        cfg_data["extraction"] = extraction_cfg
+
+    atomic_write_text(config_path, yaml.safe_dump(cfg_data, sort_keys=False))
+
+    if not env_path.exists() or force or Confirm.ask(f"{env_path} already exists. Overwrite?", default=False):
+        env_lines = [
+            f"GROQ_API_KEY={groq_key or 'your_groq_api_key'}",
+            f"GEMINI_API_KEY={gemini_key or 'your_gemini_api_key'}",
+            f"TELEGRAM_BOT_TOKEN={tg_token or 'your_telegram_bot_token'}",
+        ]
+        if tg_chat_id.strip():
+            env_lines.append(f"TELEGRAM_ALLOWED_CHAT_ID={tg_chat_id.strip()}")
+        else:
+            env_lines.append("# TELEGRAM_ALLOWED_CHAT_ID=123456789")
+        atomic_write_text(env_path, "\n".join(env_lines) + "\n")
+        os.chmod(env_path, 0o600)
+
+    load_dotenv(env_path, override=True)
+    cfg = load_config(path=config_path, require_vault=False)
+    doctor_res = run_doctor(cfg)
+    return {
+        "written": True,
+        "config_path": str(config_path),
+        "env_path": str(env_path),
+        "doctor": doctor_res,
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
     _configure_logging(verbose=args.verbose, json_mode=args.json_output)
 
     try:
+        if args.command == "init":
+            cfg_path = args.config.expanduser() if args.config else Path.cwd() / "config.yaml"
+            env_path = args.env_path.expanduser() if args.env_path else cfg_path.parent / ".env"
+            result = run_init(cfg_path, env_path, vault_default=args.vault, force=args.force)
+            if args.json_output:
+                _emit_json(result)
+            elif result.get("doctor"):
+                render_doctor(result["doctor"])
+            return 0
+
         cfg = load_config(path=args.config, vault_override=args.vault)
 
         if args.command == "ingest":

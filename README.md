@@ -253,6 +253,7 @@ reels-secretary/
 │   ├── example-walkthrough.md
 │   ├── saved-posts-workflow.md
 │   ├── step-by-step.md
+│   ├── telegram-bot.md
 │   └── troubleshooting.md
 ├── src/
 │   └── reels_wiki/
@@ -294,6 +295,7 @@ Tests run offline via `make test` (`pytest`) without making network or LLM API c
 - [Architecture Guide](docs/architecture.md)
 - [Step-by-Step Guide](docs/step-by-step.md)
 - [Saved Posts Workflow](docs/saved-posts-workflow.md)
+- [Telegram Bot Setup](docs/telegram-bot.md)
 - [Example Walkthrough](docs/example-walkthrough.md)
 - [CLI and MCP Reference](docs/cli-and-mcp.md)
 - [Configuration Reference](docs/configuration.md)

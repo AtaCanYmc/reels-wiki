@@ -201,3 +201,42 @@ def test_cli_rich_human_ui_outputs(
     assert "Diagnostics" in doc_out
     assert "PASS" in doc_out
     assert "gsk_secret_hidden" not in doc_out
+
+
+def test_cli_init_creates_config_and_env(tmp_path: Path) -> None:
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    cfg_path = tmp_path / "config.yaml"
+    env_path = tmp_path / ".env"
+
+    prompt_answers = iter([str(vault), "chrome", "groq", "gsk_test_123", ""])
+    with (
+        patch("reels_wiki.cli.Prompt.ask", side_effect=lambda *a, **kw: next(prompt_answers)),
+        patch("reels_wiki.cli.Confirm.ask", return_value=False),
+        patch("reels_wiki.cli.shutil.which", return_value="/usr/bin/ffmpeg"),
+    ):
+        rc = cli.main(["--config", str(cfg_path), "init", "--env-path", str(env_path)])
+
+    assert rc == 0
+    assert cfg_path.is_file()
+    assert env_path.is_file()
+    assert (env_path.stat().st_mode & 0o777) == 0o600
+    cfg_text = cfg_path.read_text(encoding="utf-8")
+    assert str(vault) in cfg_text
+    assert "cookies_from_browser: chrome" in cfg_text
+    env_text = env_path.read_text(encoding="utf-8")
+    assert "GROQ_API_KEY=gsk_test_123" in env_text
+    assert "GEMINI_API_KEY=your_gemini_api_key" in env_text
+
+
+def test_cli_init_respects_existing_without_force(tmp_path: Path) -> None:
+    cfg_path = tmp_path / "config.yaml"
+    env_path = tmp_path / ".env"
+    cfg_path.write_text("vault_path: /existing\n", encoding="utf-8")
+
+    with patch("reels_wiki.cli.Confirm.ask", return_value=False):
+        rc = cli.main(["--config", str(cfg_path), "init", "--env-path", str(env_path)])
+
+    assert rc == 0
+    assert cfg_path.read_text(encoding="utf-8") == "vault_path: /existing\n"
+    assert not env_path.exists()
