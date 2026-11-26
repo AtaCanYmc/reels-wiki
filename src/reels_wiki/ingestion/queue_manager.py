@@ -142,14 +142,12 @@ def extract_shortcode(url: str) -> str | None:
 def normalize_url(shortcode_or_url: str) -> str:
     """Canonical URL for Instagram Reels, YouTube Shorts, or TikTok videos."""
     parsed = parse_media_url(shortcode_or_url)
-    if parsed:
-        platform, _kind, key = parsed
-        if platform == "youtube":
-            return f"https://www.youtube.com/shorts/{key.removeprefix('yt_')}"
-        if platform == "tiktok":
-            return f"https://www.tiktok.com/video/{key.removeprefix('tt_')}"
-        return f"https://www.instagram.com/reel/{key}/"
-    return f"https://www.instagram.com/reel/{shortcode_or_url}/"
+    key = parsed[2] if parsed else shortcode_or_url
+    if key.startswith("yt_"):
+        return f"https://www.youtube.com/shorts/{key.removeprefix('yt_')}"
+    if key.startswith("tt_"):
+        return f"https://www.tiktok.com/@_/video/{key.removeprefix('tt_')}"
+    return f"https://www.instagram.com/reel/{key}/"
 
 
 def _index_entry(item: QueueItem) -> dict:
@@ -237,11 +235,11 @@ class QueueManager:
 
     # ------------------------------------------------------------------ enqueue
     def _enqueue_one(self, index: dict[str, dict], url: str, source: str, force: bool) -> dict:
-        parsed = parse_instagram_url(url)
+        parsed = parse_media_url(url)
         if not parsed:
             return {"ok": False, "result": "invalid", "url": url, "shortcode": None,
-                    "message": "Not a recognizable Instagram reel/post URL"}
-        kind, shortcode = parsed
+                    "message": "Not a recognizable Instagram, YouTube Shorts, or TikTok URL"}
+        _platform, kind, shortcode = parsed
         canonical = normalize_url(shortcode)
         existing = index.get(shortcode)
         if existing and not force:

@@ -208,6 +208,64 @@
           retries: 0
         }
       }, null, 2)
+    },
+    ytvp: {
+      shortcode: 'yt_VpW4T7e34EI',
+      rawUrl: 'https://www.youtube.com/shorts/VpW4T7e34EI',
+      canonicalUrl: 'https://www.youtube.com/shorts/VpW4T7e34EI',
+      stage1: { badge: 'EXECUTED', active: true, text: 'Empty caption; fetched Turkish ASR subtitles (1533 chars >= 150). Creator: Hurda Lab (72.0s).' },
+      stage2: { badge: 'SKIPPED', active: false, text: 'Skipped because Stage 1 subtitles met the text threshold without downloading audio.' },
+      stage3: { badge: 'SKIPPED', active: false, text: 'Skipped; no frame extraction needed.' },
+      outputPath: 'sources/reels/yt_VpW4T7e34EI.json (verified Groq synthesis)',
+      outputContent: JSON.stringify({
+        shortcode: 'yt_VpW4T7e34EI',
+        url: 'https://www.youtube.com/shorts/VpW4T7e34EI',
+        creator: 'Hurda Lab',
+        title: 'kart\u0131n kurumas\u0131n\u0131 bekliyorum   #electronic #arduino',
+        duration: 72.0,
+        upload_date: '20261030',
+        transcript_source: 'subtitles',
+        steps_used: ['metadata', 'subtitles'],
+        warnings: [],
+        note_path: 'learning/arduino-karti-bakim-onarim.md',
+        synthesis_metrics: {
+          provider: 'groq',
+          model: 'openai/gpt-oss-120b',
+          prompt_tokens: 1571,
+          completion_tokens: 739,
+          total_tokens: 2310,
+          retries: 0
+        }
+      }, null, 2)
+    },
+    tt76: {
+      shortcode: 'tt_7684682826159049991',
+      rawUrl: 'https://www.tiktok.com/@kodkatman/video/7684682826159049991',
+      canonicalUrl: 'https://www.tiktok.com/@_/video/7684682826159049991',
+      stage1: { badge: 'EXECUTED', active: true, text: 'Caption is 69 chars (< 150) and subtitles are empty. Creator: kodkatman (29.0s).' },
+      stage2: { badge: 'EXECUTED', active: true, text: 'Transcribed audio via Groq whisper-large-v3-turbo (383 chars Turkish transcript).' },
+      stage3: { badge: 'SKIPPED', active: false, text: 'Skipped once spoken transcript met min_transcript_chars (40).' },
+      outputPath: 'sources/reels/tt_7684682826159049991.json (verified Groq synthesis)',
+      outputContent: JSON.stringify({
+        shortcode: 'tt_7684682826159049991',
+        url: 'https://www.tiktok.com/@_/video/7684682826159049991',
+        creator: 'kodkatman',
+        caption: 'ESP32 ile EMO Robot Yap\u0131yoruz 1. #robot #emo #kendinyap #esp32 #maker',
+        duration: 29.0,
+        upload_date: '20260912',
+        transcript_source: 'groq',
+        steps_used: ['metadata', 'whisper:groq'],
+        warnings: [],
+        note_path: 'projects/esp32-emo-robot-yapimi.md',
+        synthesis_metrics: {
+          provider: 'groq',
+          model: 'openai/gpt-oss-120b',
+          prompt_tokens: 1256,
+          completion_tokens: 607,
+          total_tokens: 1863,
+          retries: 0
+        }
+      }, null, 2)
     }
   };
 

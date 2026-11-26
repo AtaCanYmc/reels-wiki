@@ -212,5 +212,21 @@ def test_parse_youtube_shorts_and_tiktok_urls():
     tt = "https://www.tiktok.com/@creator/video/7351234567890123456"
     assert extract_shortcode(yt) == "yt_dQw4w9WgXcQ"
     assert normalize_url(yt) == "https://www.youtube.com/shorts/dQw4w9WgXcQ"
+    assert normalize_url("yt_dQw4w9WgXcQ") == "https://www.youtube.com/shorts/dQw4w9WgXcQ"
     assert extract_shortcode(tt) == "tt_7351234567890123456"
-    assert normalize_url(tt) == "https://www.tiktok.com/video/7351234567890123456"
+    assert normalize_url(tt) == "https://www.tiktok.com/@_/video/7351234567890123456"
+    assert normalize_url("tt_7351234567890123456") == "https://www.tiktok.com/@_/video/7351234567890123456"
+
+
+def test_enqueue_youtube_shorts_and_tiktok_urls(tmp_path):
+    q = QueueManager(tmp_path)
+    yt_res = q.enqueue("https://www.youtube.com/shorts/VpW4T7e34EI")
+    assert yt_res["ok"] is True and yt_res["result"] == "enqueued"
+    assert yt_res["shortcode"] == "yt_VpW4T7e34EI"
+    assert yt_res["url"] == "https://www.youtube.com/shorts/VpW4T7e34EI"
+    assert q.enqueue("https://www.youtube.com/shorts/VpW4T7e34EI?feature=share")["result"] == "duplicate"
+
+    tt_res = q.enqueue("https://www.tiktok.com/@creator/video/7123456789012345678")
+    assert tt_res["ok"] is True and tt_res["result"] == "enqueued"
+    assert tt_res["shortcode"] == "tt_7123456789012345678"
+    assert tt_res["url"] == "https://www.tiktok.com/@_/video/7123456789012345678"
