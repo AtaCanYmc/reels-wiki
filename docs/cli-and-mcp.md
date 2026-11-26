@@ -19,7 +19,7 @@ reels-sync [--config PATH] [--vault PATH] [--json] [-v] <subcommand>
 
 | Command | Description | Key Flags |
 | :--- | :--- | :--- |
-| `ingest <url>` | Enqueue a single Instagram URL | `--source`, `--force` |
+| `ingest <url>` | Enqueue an Instagram, YouTube Shorts, or TikTok URL | `--source`, `--force` |
 | `import-ig <path>` | Bulk-import from `saved_posts.json` or export folder | `--reels-only`, `--force` |
 | `process` | Run waterfall extraction, synthesis, and note writing | `--limit N`, `--dry-run`, `--retry-failed`, `--force` |
 | `reprocess [shortcode]` | Re-synthesize from `sources/reels/<code>.json` | `--all`, `--dry-run` |
@@ -60,6 +60,12 @@ reels-sync --json stats
 # Run runtime diagnostics in human-readable or JSON format
 reels-sync doctor
 reels-sync --json doctor
+
+# Start local HTTP ingest server for Shortcuts and browser extensions
+reels-sync serve
+
+# Generate weekly summary note for notes from the past 7 days
+reels-sync digest --days 7
 ```
 
 ## MCP Server (`reels-wiki-mcp`)

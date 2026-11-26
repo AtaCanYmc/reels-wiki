@@ -11,7 +11,7 @@ Product and engineering milestones for `reels-wiki`, grouped by SemVer releases 
 | `v0.3.0` | Extraction fidelity, local LLM synthesis, observability | Completed |
 | `v0.4.0` | Background scheduling, container packaging, ecosystem distribution | Completed |
 | `v0.5.0` | Multi-platform (Shorts/TikTok), weekly digest, extension auto-sync | Completed |
-| `v1.0.0` | Frozen schemas, public SDK contract, E2E fixture suite | Future |
+| `v1.0.0` | Frozen schemas, public SDK contract, E2E fixture suite | Completed |
 
 ## v0.1.0 (Completed)
 
@@ -81,18 +81,20 @@ Focus: Expand capture beyond Instagram, synthesize periodic digests across recen
 
 **Exit Criteria**: Users can ingest Shorts/TikTok/Reels, generate weekly digest notes from CLI, and capture offline in the extension without manual sync clicks.
 
-## v1.0.0 (Stable Contract)
+## v1.0.0 (Completed - Stable Contract)
 
 Focus: Guarantee backward compatibility for configuration, on-disk vault artifacts, and Python SDK consumers.
 
-- **Frozen Contracts**:
-  - Lock `config.yaml` v1 schema with explicit deprecation warnings before removing any key.
-  - Freeze `sources/reels/<shortcode>.json` and `inbox/reels-queue.jsonl` schemas so stored artifacts remain reprocessable across minor upgrades.
-  - Stabilize the public Python SDK exports in `reels_wiki.__all__`.
-- **E2E Fixture Vault Suite**:
-  - Run automated end-to-end integration tests against a reference 3-layer Obsidian vault fixture verifying folder routing, tag normalization, wikilink preservation, `_index.md` idempotency, and `_log.md` formatting.
-- **Migration Policy**:
-  - Document version upgrade notes and schema migration procedures in `CHANGELOG.md` and `docs/`.
+- [x] **Frozen Contracts (`core/config.py`, `core/models.py`, `__init__.py`)**:
+  - Lock `config.yaml` v1 schema (`schema_version: 1`) with `DeprecationWarning` warnings in `load_config()` via `DEPRECATED_CONFIG_KEYS` before removing any key.
+  - Freeze `sources/reels/<shortcode>.json` (`ARTIFACT_SCHEMA_VERSION = 1`) and `inbox/reels-queue.jsonl` (`QUEUE_SCHEMA_VERSION = 1`) with `ConfigDict(extra="ignore")` so stored artifacts remain reprocessable across minor upgrades.
+  - Lock the 11 public Python SDK exports in `reels_wiki.__all__`.
+- [x] **E2E Fixture Vault Suite (`tests/test_e2e_vault.py`)**:
+  - Run automated end-to-end integration tests against a reference 3-layer Obsidian vault fixture verifying folder routing, tag normalization, wikilink preservation, `_index.md` idempotency, human frontmatter preservation, and `_log.md` formatting.
+- [x] **Migration Policy (`CHANGELOG.md`, `docs/migration.md`)**:
+  - Document frozen v1 contracts, deprecation windows, safe upgrade workflow, and queue/index recovery procedures.
+
+**Exit Criteria**: Contract tests pass in CI (`make verify`), locking `reels_wiki.__all__`, `config.yaml` v1 validation, and legacy/additive artifact reprocessing.
 
 ## Non-Goals
 

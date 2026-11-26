@@ -9,7 +9,7 @@
 3. `./config.yaml` in the current working directory
 4. `~/.config/reels-wiki/config.yaml`
 
-Unknown keys in `config.yaml` are rejected at load time.
+Unknown keys in `config.yaml` are rejected at load time (`extra="forbid"`). `schema_version: 1` is optional and defaults to `1`; deprecated keys emit a `DeprecationWarning` before removal. See [Migration Policy](migration.md).
 
 ## Vault Path Override
 
@@ -27,6 +27,7 @@ Set `template_path` in `config.yaml` to render custom Markdown bodies via a sand
 | `GEMINI_API_KEY` | Gemini Vision / LLM | API key for frame OCR and Gemini synthesis |
 | `TELEGRAM_BOT_TOKEN` | `reels-sync telegram` | Bot token from `@BotFather` |
 | `TELEGRAM_ALLOWED_CHAT_ID` | `reels-sync telegram` | Numeric Telegram chat ID; bot refuses to start if missing or non-numeric |
+| `REELS_WIKI_HTTP_TOKEN` | `reels-sync serve` | Bearer token required when binding to non-loopback hosts (e.g. `0.0.0.0`) |
 | `REELS_WIKI_CONFIG` | Optional | Path to `config.yaml` |
 | `REELS_WIKI_VAULT` | Optional | Override `vault_path` |
 
@@ -51,9 +52,14 @@ The Telegram bot (`reels-sync telegram` or `reels-wiki-telegram`) only enqueues 
 ### Minimal `config.yaml`
 
 ```yaml
-vault_path: /Users/you/Documents/ObsidianVault
-llm_provider: groq
-whisper_provider: groq
+schema_version: 1
+vault_path: /path/to/ObsidianVault
+
+extraction:
+  whisper_provider: groq
+
+synthesis:
+  provider: groq
 ```
 
 ### Minimal `.env`

@@ -20,7 +20,8 @@
 
 ## Design Guarantees
 
-- **Shortcode Deduplication**: Every `/reel/`, `/reels/`, `/p/`, and `/tv/` URL normalizes to an 11-character shortcode and canonical `https://www.instagram.com/reel/<shortcode>/`.
+- **Multi-Platform ID Deduplication**: Instagram `/reel/`, `/reels/`, `/p/`, `/tv/`, and `/share/...` URLs normalize to 11-character shortcodes, YouTube Shorts normalize to `yt_<id>`, and TikTok video URLs normalize to `tt_<id>` (`https://www.tiktok.com/@_/video/<id>`).
+- **Frozen v1 Contracts**: `sources/reels/<code>.json`, `inbox/reels-queue.jsonl`, and `config.yaml` carry `schema_version: 1` with backward/forward-compatible `extra="ignore"` loading for persisted queue and artifact data. See [Migration Policy](migration.md).
 - **No Media Stored**: Downloaded audio and video frames are deleted after extraction; only `sources/reels/<code>.json` persists.
 - **Re-synthesizable Artifacts**: `reels-sync reprocess` re-runs LLM synthesis from `sources/reels/<code>.json` without re-downloading media.
 
@@ -30,12 +31,14 @@
 
 ```json
 {
+  "schema_version": 1,
   "shortcode": "ABC12345678",
   "url": "https://www.instagram.com/reel/ABC12345678/",
-  "author": "example_creator",
+  "creator": "example_creator",
   "caption": "Three habits for local-first note taking.",
   "transcript": "Keep raw sources separate from synthesized atomic notes...",
-  "vision_notes": ""
+  "visual_notes": "",
+  "steps_used": ["metadata", "whisper:groq"]
 }
 ```
 
@@ -44,7 +47,7 @@
 ```markdown
 ---
 title: Local-First Note Taking
-source: https://www.instagram.com/reel/ABC12345678/
+source_url: https://www.instagram.com/reel/ABC12345678/
 shortcode: ABC12345678
 tags: [pkm, obsidian]
 status: inbox
