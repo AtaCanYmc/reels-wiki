@@ -15,10 +15,16 @@ from ..ingestion.queue_manager import enqueue
 
 logger = logging.getLogger("reels_wiki.telegram_bot")
 
-IG_URL_PATTERN = re.compile(
-    r"https?://(?:www\.|m\.)?instagram\.com/(?:[A-Za-z0-9._-]+/)?(?:reel|reels|p|tv)/[A-Za-z0-9_-]{11}/?(?:\?[^\s<>\"']*)?",
+MEDIA_URL_PATTERN = re.compile(
+    r"https?://(?:"
+    r"(?:www\.|m\.)?instagram\.com/(?:[A-Za-z0-9._-]+/)?(?:reel|reels|p|tv|share)/[A-Za-z0-9_/-]+(?:\?[^\s<>\"']*)?"
+    r"|(?:www\.|m\.)?youtube\.com/shorts/[A-Za-z0-9_-]{11}/?(?:\?[^\s<>\"']*)?"
+    r"|youtu\.be/[A-Za-z0-9_-]{11}/?(?:\?[^\s<>\"']*)?"
+    r"|(?:www\.|m\.)?tiktok\.com/(?:@[^/\s]+/)?(?:video|v)/\d+/?(?:\?[^\s<>\"']*)?"
+    r")",
     re.IGNORECASE,
 )
+IG_URL_PATTERN = MEDIA_URL_PATTERN
 
 
 def _get_authorized_chat_id() -> int:
@@ -84,15 +90,18 @@ class TelegramBotClient:
         self._request("sendMessage", params=params, read_timeout=15)
 
 
-def extract_instagram_urls(text: str) -> list[str]:
+def extract_media_urls(text: str) -> list[str]:
     if not text:
         return []
     seen: list[str] = []
-    for match in IG_URL_PATTERN.findall(text):
+    for match in MEDIA_URL_PATTERN.findall(text):
         cleaned = match.rstrip(").,]>\"'")
         if cleaned not in seen:
             seen.append(cleaned)
     return seen
+
+
+extract_instagram_urls = extract_media_urls
 
 
 def handle_update(
@@ -112,13 +121,13 @@ def handle_update(
         return
 
     text = msg.get("text") or msg.get("caption") or ""
-    urls = extract_instagram_urls(text)
+    urls = extract_media_urls(text)
     message_id = msg.get("message_id")
 
     if not urls:
         client.send_message(
             chat_id=allowed_chat_id,
-            text="No Instagram Reel/post URL found in message.",
+            text="No supported Instagram, YouTube Shorts, or TikTok URL found in message.",
             reply_to_message_id=message_id,
         )
         return
@@ -127,10 +136,10 @@ def handle_update(
     for url in urls:
         res = enqueue(url=url, source="telegram", vault=cfg.vault_path)
         code = res.get("shortcode", "?")
-        if res.get("enqueued"):
+        if res.get("result") == "enqueued" or res.get("enqueued"):
             lines.append(f"Queued [{code}]: {res.get('url', url)}")
         else:
-            reason = res.get("reason", "already indexed")
+            reason = res.get("reason") or res.get("message") or "already indexed"
             lines.append(f"Skipped [{code}] ({reason}): {res.get('url', url)}")
 
     client.send_message(

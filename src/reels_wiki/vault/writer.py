@@ -156,6 +156,51 @@ def update_index(vault: Path, folder: str, slug: str, title: str, summary: str) 
     return True
 
 
+def append_backlink(target_path: Path, source_slug: str, source_title: str) -> bool:
+    """Append ``- [[source_slug|source_title]]`` under Related Links without altering frontmatter or prose."""
+    if not target_path.is_file():
+        return False
+    text = target_path.read_text(encoding="utf-8")
+    if re.search(r"\[\[" + re.escape(source_slug) + r"(?:\|[^\]]*)?\]\]", text, re.I):
+        return False
+    entry = f"- [[{source_slug}|{source_title}]]"
+    lines = text.splitlines()
+    for idx, line in enumerate(lines):
+        if re.match(r"^##\s+Related\s+Links\s*$", line, re.I):
+            end = len(lines)
+            for j in range(idx + 1, len(lines)):
+                if lines[j].startswith("<details") or re.match(r"^#{1,6}\s+", lines[j]):
+                    end = j
+                    break
+            last = idx
+            for k in range(idx + 1, end):
+                if lines[k].strip():
+                    last = k
+            lines.insert(last + 1, entry)
+            atomic_write_text(target_path, "\n".join(lines).rstrip("\n") + "\n")
+            return True
+    atomic_write_text(target_path, text.rstrip("\n") + f"\n\n## Related Links\n\n{entry}\n")
+    return True
+
+
+def _apply_backlinks(
+    ctx: VaultContext,
+    source_path: Path,
+    source_title: str,
+    existing_links: list[str],
+    enabled: bool,
+) -> int:
+    if not enabled:
+        return 0
+    updated = 0
+    for name in existing_links:
+        target = ctx.note_paths.get(name)
+        if target and target.resolve() != source_path.resolve() and target.resolve().is_relative_to(ctx.root):
+            if append_backlink(target, source_path.stem, source_title):
+                updated += 1
+    return updated
+
+
 # ---------------------------------------------------------------------- main entry point
 def render_custom_body(
     template_path: Path,
@@ -187,6 +232,7 @@ def write_synthesis(
     *,
     overwrite_path: str | Path | None = None,
     template_path: Path | None = None,
+    enable_backlinks: bool = False,
     now: datetime | None = None,
 ) -> dict:
     """Apply a synthesis: skip (status only) or write note + log + index + status. Idempotent."""
@@ -231,6 +277,7 @@ def write_synthesis(
     rel = path.relative_to(ctx.root).as_posix()
 
     if updating and hashlib.sha256(path.read_bytes()).hexdigest() == new_hash:
+        backlinks = _apply_backlinks(ctx, path, syn.title.strip(), existing_links, enable_backlinks)
         queue.update_status(sc, "processed", note_path=rel)
         return {
             "status": "processed",
@@ -240,6 +287,7 @@ def write_synthesis(
             "updated_existing": False,
             "unchanged": True,
             "content_hash": new_hash,
+            "backlinks_updated": backlinks,
         }
 
     atomic_write_text(path, rendered)
@@ -247,6 +295,7 @@ def write_synthesis(
     action = "update" if updating else "ingest"
     append_log(ctx.root, slug=path.stem, title=syn.title.strip(), artifact=artifact, action=action, now=now)
     index_updated = update_index(ctx.root, folder, path.stem, syn.title.strip(), syn.core_insight)
+    backlinks = _apply_backlinks(ctx, path, syn.title.strip(), existing_links, enable_backlinks)
     queue.update_status(sc, "processed", note_path=rel)
     return {
         "status": "processed",
@@ -256,4 +305,5 @@ def write_synthesis(
         "updated_existing": updating,
         "unchanged": False,
         "content_hash": new_hash,
+        "backlinks_updated": backlinks,
     }

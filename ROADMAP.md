@@ -12,7 +12,7 @@ Product and engineering milestones for `reels-wiki`, grouped by SemVer releases 
 | `v0.4.0` | Background scheduling, container packaging, ecosystem distribution | Completed |
 | `v0.5.0` | Multi-platform (Shorts/TikTok), weekly digest, extension auto-sync | Completed |
 | `v1.0.0` | Frozen schemas, public SDK contract, E2E fixture suite | Completed |
-| `v1.1.0` | Local semantic search, bidirectional graph links, multi-platform bot | Planned |
+| `v1.1.0` | Local semantic search, bidirectional graph links, multi-platform bot | Completed |
 | `v1.2.0` | Interactive review TUI, topic digests, bounded worker concurrency | Planned |
 | `v1.3.0` | Native Obsidian plugin, automated browser store packaging | Future |
 
@@ -99,17 +99,17 @@ Focus: Guarantee backward compatibility for configuration, on-disk vault artifac
 
 **Exit Criteria**: Contract tests pass in CI (`make verify`), locking `reels_wiki.__all__`, `config.yaml` v1 validation, and legacy/additive artifact reprocessing.
 
-## v1.1.0 (Planned - Semantic Search, Graph Links, and Multi-Platform Bot)
+## v1.1.0 (Completed - Semantic Search, Graph Links, and Multi-Platform Bot)
 
 Focus: Improve vault recall and graph connectivity locally while bringing Telegram capture to parity with CLI and extension ingestion.
 
-- **Local Semantic Search (`vault/search.py`, `interfaces/cli.py`, `interfaces/mcp_server.py`)**:
+- [x] **Local Semantic Search (`vault/search.py`, `interfaces/cli.py`, `interfaces/mcp_server.py`)**:
   - Add an optional local embedding index (`ollama` embeddings or `fastembed`) stored in `sources/.embeddings.sqlite` (rebuildable from Markdown notes, zero cloud lock-in).
   - Expose `reels-sync search "<query>"` and upgrade MCP `search_vault_notes` with hybrid keyword + vector ranking.
-- **Bidirectional Concept & Backlink Enrichment (`vault/context.py`, `vault/writer.py`)**:
+- [x] **Bidirectional Concept & Backlink Enrichment (`core/config.py`, `vault/writer.py`, `pipeline/runner.py`)**:
   - Detect reciprocal topic matches against existing vault notes and optionally append backlinks into related concept notes without touching user-curated prose or frontmatter (`status`, `created`).
-- **Multi-Platform Telegram Capture (`interfaces/telegram_bot.py`)**:
-  - Expand `extract_urls` in the allowlisted Telegram bot beyond Instagram so shared YouTube Shorts and TikTok links from mobile apps enqueue cleanly alongside Reels.
+- [x] **Multi-Platform Telegram Capture (`interfaces/telegram_bot.py`)**:
+  - Expand `extract_media_urls` (aliased as `extract_instagram_urls`) in the allowlisted Telegram bot beyond Instagram so shared YouTube Shorts and TikTok links from mobile apps enqueue cleanly alongside Reels.
 
 **Exit Criteria**: Hybrid search returns ranked vault notes offline via CLI and MCP, reciprocal backlinks pass idempotency tests, and Telegram bot tests verify Reels, Shorts, and TikTok URLs.
 

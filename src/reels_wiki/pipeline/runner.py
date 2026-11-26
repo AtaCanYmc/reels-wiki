@@ -52,6 +52,7 @@ def process_item(
             syn,
             overwrite_path=item.note_path,
             template_path=cfg.template_path,
+            enable_backlinks=cfg.enable_backlinks,
         )
         result["warnings"] = artifact.warnings
         result["steps"] = artifact.steps_used

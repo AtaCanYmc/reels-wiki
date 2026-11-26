@@ -65,6 +65,7 @@ class Config(BaseModel):
     allowed_folders: list[str] | None = None
     default_folder: str | None = None
     delay_seconds: float = Field(2.0, ge=0)
+    enable_backlinks: bool = False
     extraction: ExtractionConfig = Field(default_factory=lambda: ExtractionConfig())
     synthesis: SynthesisConfig = Field(default_factory=lambda: SynthesisConfig())
 

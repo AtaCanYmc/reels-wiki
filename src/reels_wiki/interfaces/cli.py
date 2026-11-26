@@ -19,6 +19,7 @@ from ..ingestion.ig_export import import_ig_export
 from ..ingestion.queue_manager import enqueue, queue_stats
 from ..pipeline.runner import process_queue, reprocess
 from ..vault.digest import generate_digest
+from ..vault.search import search_vault
 from .cli_ui import (
     make_progress_callback,
     render_doctor,
@@ -199,6 +200,18 @@ def _build_parser() -> argparse.ArgumentParser:
     p_digest = subparsers.add_parser("digest", help="Generate a weekly digest note grouping recent vault notes by tag.")
     p_digest.add_argument("--days", type=int, default=7, help="Lookback window in days (default: 7).")
     p_digest.add_argument("--dry-run", action="store_true", help="Preview matched notes without writing a digest file.")
+
+    # search
+    p_search = subparsers.add_parser("search", help="Search vault notes via keyword and optional local embeddings.")
+    p_search.add_argument("query", help="Search query string.")
+    p_search.add_argument("--limit", type=int, default=10, help="Maximum matches to return (default: 10).")
+    p_search.add_argument(
+        "--backend",
+        choices=["none", "ollama", "fastembed"],
+        default="none",
+        help="Optional embedding backend (default: none).",
+    )
+    p_search.add_argument("--reindex", action="store_true", help="Rebuild embeddings in sources/.embeddings.sqlite.")
 
     return parser
 
@@ -432,6 +445,23 @@ def main(argv: list[str] | None = None) -> int:
                 _emit_json(result)
             else:
                 print(f"Digest ({result['notes_count']} notes): {result['digest_path'] or 'none'}")
+            return 0
+
+        if args.command == "search":
+            result = search_vault(
+                cfg.vault_path,
+                args.query,
+                limit=args.limit,
+                backend=args.backend,
+                ollama_url=cfg.synthesis.ollama_base_url,
+                reindex=args.reindex,
+            )
+            if args.json_output:
+                _emit_json(result)
+            else:
+                print(f"Matches ({result['count']}):")
+                for item in result["matches"]:
+                    print(f"- {item['path']} ({item['score']}): {item['snippet']}")
             return 0
 
         parser.error(f"Unknown command: {args.command}")

@@ -11,6 +11,7 @@ from reels_wiki.interfaces.telegram_bot import (
     TelegramBotClient,
     _get_authorized_chat_id,
     extract_instagram_urls,
+    extract_media_urls,
     handle_update,
 )
 
@@ -91,3 +92,30 @@ def test_telegram_client_redacts_token_on_network_error() -> None:
     msg = str(exc_info.value)
     assert secret not in msg
     assert "<redacted>" in msg
+
+
+def test_extract_media_urls_supports_shorts_tiktok_and_share_and_enqueues(tmp_path: Path) -> None:
+    text = (
+        "IG: https://www.instagram.com/share/reel/abc123?utm_source=ig, "
+        "YT: https://www.youtube.com/shorts/VpW4T7e34EI?feature=share and "
+        "TT: https://www.tiktok.com/@kodkatman/video/7684682826159049991."
+    )
+    assert extract_media_urls(text) == [
+        "https://www.instagram.com/share/reel/abc123?utm_source=ig",
+        "https://www.youtube.com/shorts/VpW4T7e34EI?feature=share",
+        "https://www.tiktok.com/@kodkatman/video/7684682826159049991",
+    ]
+
+    cfg = SimpleNamespace(vault_path=tmp_path)
+    client = MagicMock()
+    update = {
+        "message": {
+            "message_id": 77,
+            "chat": {"id": 123},
+            "text": "https://www.youtube.com/shorts/VpW4T7e34EI https://www.tiktok.com/@kodkatman/video/7684682826159049991",
+        }
+    }
+    handle_update(cfg=cfg, client=client, update=update, allowed_chat_id=123)
+    reply = client.send_message.call_args.kwargs["text"]
+    assert "Queued [yt_VpW4T7e34EI]" in reply
+    assert "Queued [tt_7684682826159049991]" in reply

@@ -30,6 +30,7 @@ reels-sync [--config PATH] [--vault PATH] [--json] [-v] <subcommand>
 | `mcp` | Start MCP server over stdio | None |
 | `serve` | Start HTTP ingest server for Shortcuts and browser extensions | `--host`, `--port` |
 | `digest` | Generate weekly summary note grouping recent vault notes by tag | `--days N`, `--dry-run` |
+| `search <query>` | Search vault notes via hybrid keyword + local embeddings (`sources/.embeddings.sqlite`) | `--limit N`, `--backend`, `--reindex` |
 
 ### Output Modes
 
@@ -66,6 +67,9 @@ reels-sync serve
 
 # Generate weekly summary note for notes from the past 7 days
 reels-sync digest --days 7
+
+# Search vault notes via keyword or local Ollama/fastembed index
+reels-sync search "ffmpeg framing" --backend ollama
 ```
 
 ## MCP Server (`reels-wiki-mcp`)
@@ -79,4 +83,4 @@ Run via `reels-wiki-mcp` or `reels-sync mcp` over `stdio` transport.
 | `process_reels_queue` | `limit=10`, `dry_run=False`, `retry_failed=False`, `force=False`, `vault_path=None` | Process pending queue items |
 | `get_queue_stats` | `vault_path=None` | Return index status counts and artifact count |
 | `reprocess_reel` | `shortcode=None`, `all_items=False`, `vault_path=None` | Re-synthesize from stored `sources/reels/<code>.json` artifacts |
-| `search_vault_notes` | `query`, `limit=10`, `vault_path=None` | Search Markdown notes inside the vault (excluding `sources/` and `inbox/`) |
+| `search_vault_notes` | `query`, `limit=10`, `backend="none"`, `vault_path=None` | Search Markdown notes inside the vault via hybrid keyword + local embedding index |

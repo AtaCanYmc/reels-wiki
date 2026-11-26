@@ -12,6 +12,7 @@ from ..core.config import Config, load_config
 from ..ingestion.ig_export import import_ig_export as _import_ig_export
 from ..ingestion.queue_manager import enqueue, queue_stats
 from ..pipeline.runner import process_queue, reprocess
+from ..vault.search import search_vault
 
 
 def create_mcp_server(default_cfg: Config | None = None) -> FastMCP:
@@ -95,36 +96,18 @@ def create_mcp_server(default_cfg: Config | None = None) -> FastMCP:
     def search_vault_notes(
         query: str,
         limit: int = 10,
+        backend: str = "none",
         vault_path: str | None = None,
     ) -> dict[str, Any]:
-        """Search Markdown notes inside the Obsidian vault (excluding sources/ and inbox/)."""
+        """Search Markdown notes inside the Obsidian vault via hybrid keyword + local embedding index."""
         cfg = _resolve_cfg(vault_path)
-        root = cfg.vault_path.resolve()
-        needle = query.strip().lower()
-        matches: list[dict[str, str]] = []
-        if not needle or not root.is_dir():
-            return {"query": query, "count": 0, "matches": matches}
-        max_hits = max(limit, 1)
-        for path in sorted(root.rglob("*.md")):
-            resolved = path.resolve()
-            try:
-                rel = resolved.relative_to(root)
-            except ValueError:
-                continue
-            if rel.parts[0] in {"sources", "inbox"} or any(p.startswith(".") for p in rel.parts):
-                continue
-            try:
-                text = resolved.read_text(encoding="utf-8", errors="ignore")
-            except OSError:
-                continue
-            idx = text.lower().find(needle)
-            if idx != -1:
-                start = max(0, idx - 60)
-                snippet = " ".join(text[start : idx + len(needle) + 120].split())
-                matches.append({"path": rel.as_posix(), "snippet": snippet})
-                if len(matches) >= max_hits:
-                    break
-        return {"query": query, "count": len(matches), "matches": matches}
+        return search_vault(
+            cfg.vault_path,
+            query,
+            limit=limit,
+            backend=backend,
+            ollama_url=cfg.synthesis.ollama_base_url,
+        )
 
     return mcp
 

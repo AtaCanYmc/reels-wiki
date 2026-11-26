@@ -327,6 +327,7 @@ reels-secretary/
 │           ├── __init__.py
 │           ├── context.py
 │           ├── digest.py
+│           ├── search.py
 │           └── writer.py
 ├── extension/
 │   ├── icons/
@@ -358,6 +359,7 @@ reels-secretary/
 │   ├── test_mcp_server.py
 │   ├── test_pipeline.py
 │   ├── test_queue_manager.py
+│   ├── test_search.py
 │   ├── test_synthesizer.py
 │   ├── test_telegram_bot.py
 │   └── test_writer.py

@@ -256,3 +256,25 @@ def test_write_synthesis_custom_template_preserves_frontmatter(vault, tmp_path):
     assert post["created"] == f"{NOW:%Y-%m-%d}"
     assert f"# Custom: {syn.title}" in post.content
     assert f"Insight: {syn.core_insight}" in post.content
+
+
+def test_bidirectional_backlinks_idempotent_and_preserves_frontmatter(vault):
+    target_path = vault / "ideas" / "Existing Idea.md"
+    target_path.write_text(
+        "---\ntitle: Existing Idea\nstatus: reviewed\ncreated: '2025-02-01'\ntags: [ai-agents]\n---\n\nCurated prose line.\n",
+        encoding="utf-8",
+    )
+    q, ctx = _setup(vault)
+    first = write_synthesis(q, ctx, _artifact(), _syn(), enable_backlinks=True, now=NOW)
+    assert first["backlinks_updated"] == 1
+
+    updated_target = target_path.read_text(encoding="utf-8")
+    assert "status: reviewed" in updated_target
+    assert "created: '2025-02-01'" in updated_target
+    assert "Curated prose line." in updated_target
+    assert "- [[mcp-araclari-sunmak|" in updated_target
+
+    # Re-running must keep backlink count idempotent without duplicating the link
+    second = write_synthesis(q, VaultContext.load(vault), _artifact(), _syn(), enable_backlinks=True, now=NOW)
+    assert second["backlinks_updated"] == 0
+    assert target_path.read_text(encoding="utf-8").count("[[mcp-araclari-sunmak|") == 1
