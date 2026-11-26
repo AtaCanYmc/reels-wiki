@@ -15,6 +15,9 @@ Product and engineering milestones for `reels-wiki`, grouped by SemVer releases 
 | `v1.1.0` | Local semantic search, bidirectional graph links, multi-platform bot | Completed |
 | `v1.2.0` | Interactive review TUI, topic digests, bounded worker concurrency | Completed |
 | `v1.3.0` | Native Obsidian plugin, automated browser store packaging | Completed |
+| `v1.4.0` | Multi-vault profiles, long-form chunking, near-duplicate concept dedupe | Planned |
+| `v1.5.0` | Local web dashboard, built-in watch daemon | Planned |
+| `v2.0.0` | Plugin entry points, vault knowledge graph export | Future |
 
 ## v0.1.0 (Completed)
 
@@ -137,6 +140,41 @@ Focus: Embed `reels-wiki` workflows directly inside Obsidian and automate browse
   - Automate reproducible extension and Obsidian plugin ZIP builds (`make build-extension`, `make build-obsidian-plugin`), version-parity checks across Python, extension, and Obsidian manifests, and release asset uploads alongside PyPI wheels.
 
 **Exit Criteria**: Obsidian plugin triggers `reels-sync serve` endpoints from within a vault pane, and release tags publish reproducible browser extension bundles alongside PyPI wheels.
+
+## v1.4.0 (Planned - Multi-Vault Profiles, Long-Form Media, and Concept Dedupe)
+
+Focus: Support separate vaults/work-vs-personal profiles, handle longer YouTube/podcast captures, and prevent semantic near-duplicate notes.
+
+- **Named Vault Profiles (`core/config.py`, `interfaces/cli.py`)**:
+  - Support multiple named `profiles:` inside `config.yaml` (vault path, allowed folders, provider defaults, custom template) selectable via `reels-sync --profile <name>`.
+- **Long-Form YouTube & Podcast Chunking (`pipeline/extractor.py`, `pipeline/synthesizer.py`)**:
+  - Split long transcripts by YouTube chapters or token windows before synthesis, merging extracted insights into linked atomic notes instead of truncating at `max_input_chars`.
+- **Near-Duplicate Concept Detection (`vault/search.py`, `interfaces/cli.py`)**:
+  - Add `reels-sync dedupe [--threshold 0.88] [--dry-run]` using `sources/.embeddings.sqlite` vectors to flag overlapping notes and propose clean merge targets or reciprocal links.
+
+**Exit Criteria**: Users can switch vaults cleanly with `--profile`, chunk long-form videos without truncation loss, and identify near-duplicate notes via `reels-sync dedupe --dry-run`.
+
+## v1.5.0 (Planned - Local Web Dashboard and Watch Daemon)
+
+Focus: Zero-terminal local observability and built-in queue watching without OS scheduler boilerplate.
+
+- **Minimal Local Web Dashboard (`interfaces/http_server.py`)**:
+  - Serve a lightweight local status UI at `GET /` on `reels-sync serve` showing queue health, failed-item error traces, one-click retry/reprocess triggers, and recent notes.
+- **Built-in Watch Daemon (`interfaces/cli.py`)**:
+  - Add `reels-sync watch [--interval 30]` to poll `inbox/reels-queue.jsonl` and auto-process newly ingested URLs on a debounced schedule without external cron, `launchd`, or `systemd` configuration.
+
+**Exit Criteria**: Opening `http://127.0.0.1:8765/` renders live queue state safely behind optional token auth, and `reels-sync watch` processes newly captured URLs automatically in foreground/Docker containers.
+
+## v2.0.0 (Future - Plugin Entry Points and Knowledge Graph Export)
+
+Focus: Extensible third-party providers/extractors and periodic graph audits.
+
+- **Python Plugin Entry Points (`pyproject.toml`, `pipeline/`)**:
+  - Discover third-party extractors and LLM synthesis providers via standard `importlib.metadata` entry points (`reels_wiki.extractors`, `reels_wiki.providers`) without editing core modules.
+- **Vault Knowledge Graph Export (`vault/graph.py`, `interfaces/cli.py`)**:
+  - Add `reels-sync graph --format json|mermaid|svg` to export topic clusters, orphan notes, and citation hubs for vault hygiene reviews.
+
+**Exit Criteria**: External packages register custom providers cleanly via `entry_points`, and `reels-sync graph` builds complete vault topology maps offline.
 
 ## Non-Goals
 
