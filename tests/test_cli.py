@@ -240,3 +240,30 @@ def test_cli_init_respects_existing_without_force(tmp_path: Path) -> None:
     assert rc == 0
     assert cfg_path.read_text(encoding="utf-8") == "vault_path: /existing\n"
     assert not env_path.exists()
+
+
+def test_cli_doctor_passes_with_ollama_without_cloud_keys(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    cfg = SimpleNamespace(
+        vault_path=tmp_path,
+        config_path=tmp_path / "config.yaml",
+        extraction=SimpleNamespace(ffmpeg_path="ffmpeg", cookies_from_browser="chrome", cookies_file=None),
+        synthesis=SimpleNamespace(provider="ollama", fallback_provider=None),
+        groq_api_key=None,
+        gemini_api_key=None,
+    )
+
+    with (
+        patch("reels_wiki.cli.load_config", return_value=cfg),
+        patch("reels_wiki.cli.shutil.which", return_value="/opt/homebrew/bin/ffmpeg"),
+    ):
+        rc = cli.main(["--json", "doctor"])
+
+    assert rc == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["ok"] is True
+    assert out["api_keys"]["ok"] is True
+    assert out["api_keys"]["primary_provider"] == "ollama"

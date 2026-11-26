@@ -6,6 +6,7 @@ import re
 import time
 from typing import Any, Callable
 
+import httpx
 from pydantic import ValidationError
 
 from .config import Config, ConfigError
@@ -100,7 +101,29 @@ def _call_gemini(system: str, user: str, cfg: Config) -> str:
     return resp.text or ""
 
 
-PROVIDERS: dict[str, Callable[[str, str, Config], str]] = {"groq": _call_groq, "gemini": _call_gemini}
+def _call_ollama(system: str, user: str, cfg: Config) -> str:
+    url = f"{cfg.synthesis.ollama_base_url.rstrip('/')}/chat/completions"
+    resp = httpx.post(
+        url,
+        headers={"Authorization": f"Bearer {cfg.synthesis.ollama_api_key}"},
+        json={
+            "model": cfg.synthesis.ollama_model,
+            "temperature": cfg.synthesis.temperature,
+            "response_format": {"type": "json_object"},
+            "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
+        },
+        timeout=120.0,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    return (data["choices"][0]["message"].get("content") or "").strip()
+
+
+PROVIDERS: dict[str, Callable[[str, str, Config], str]] = {
+    "groq": _call_groq,
+    "gemini": _call_gemini,
+    "ollama": _call_ollama,
+}
 
 
 def parse_json_object(raw: str) -> dict:

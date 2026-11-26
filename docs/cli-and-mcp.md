@@ -25,6 +25,7 @@ reels-sync [--config PATH] [--vault PATH] [--json] [-v] <subcommand>
 | `reprocess [shortcode]` | Re-synthesize from `sources/reels/<code>.json` | `--all`, `--dry-run` |
 | `stats` | Show index counts by status and artifact count | None |
 | `doctor` | Verify Python, `ffmpeg`, cookies, API keys, and vault permissions | None |
+| `init` | Interactively scaffold `config.yaml`, `.env`, and run `doctor` | `--env-path PATH`, `--force` |
 | `telegram` | Start long-polling Telegram share capture bot | None |
 | `mcp` | Start MCP server over stdio | None |
 

@@ -40,10 +40,13 @@ class ExtractionConfig(BaseModel):
 class SynthesisConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    provider: Literal["groq", "gemini"] = "groq"
+    provider: Literal["groq", "gemini", "ollama"] = "groq"
     groq_model: str = "llama-3.3-70b-versatile"
     gemini_model: str = "gemini-2.5-flash"
-    fallback_provider: Literal["groq", "gemini"] | None = None
+    ollama_base_url: str = "http://localhost:11434/v1"
+    ollama_model: str = "llama3.1:8b"
+    ollama_api_key: str = "ollama"
+    fallback_provider: Literal["groq", "gemini", "ollama"] | None = None
     max_retries: int = Field(3, ge=1, le=8)
     temperature: float = Field(0.2, ge=0, le=2)
     max_input_chars: int = Field(12000, ge=1000)
@@ -71,6 +74,8 @@ class Config(BaseModel):
         return v.expanduser().resolve()
 
     def require_key(self, provider: str) -> str:
+        if provider == "ollama":
+            return self.synthesis.ollama_api_key
         key = {"groq": self.groq_api_key, "gemini": self.gemini_api_key}.get(provider)
         if not key:
             env = {"groq": "GROQ_API_KEY", "gemini": "GEMINI_API_KEY"}[provider]

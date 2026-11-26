@@ -6,46 +6,47 @@ Product and engineering milestones for `reels-wiki`, grouped by SemVer releases 
 
 | Version | Focus | Status |
 | :--- | :--- | :--- |
-| `v0.1.0` | Core pipeline, 5 interfaces, governance, release automation | Current |
-| `v0.2.0` | Reliability, static analysis, coverage gates, PyPI publishing | Planned |
-| `v0.3.0` | Extraction fidelity, local LLM synthesis, observability | Planned |
+| `v0.1.0` | Core pipeline, 5 interfaces, governance, release automation | Completed |
+| `v0.2.0` | Reliability, static analysis, coverage gates, `init` wizard, PyPI publishing | Completed |
+| `v0.3.0` | Extraction fidelity, local LLM synthesis, observability | In Progress |
 | `v0.4.0` | Background scheduling, container packaging, ecosystem distribution | Planned |
 | `v1.0.0` | Frozen schemas, public SDK contract, E2E fixture suite | Future |
 
-## v0.1.0 (Current)
+## v0.1.0 (Completed)
 
 - **Core Pipeline (`src/reels_wiki/`)**: URL normalization, append-only queue (`inbox/reels-queue.jsonl`) with O(1) index (`sources/.reels_index.json`), crash recovery, 3-stage waterfall extraction (`extractor.py`), LLM synthesis with noise filtering (`synthesizer.py`), and atomic vault updates (`writer.py`, `vault_context.py`).
 - **Interfaces**: Python SDK (`reels_wiki`), CLI (`reels-sync`), MCP server (`reels-wiki-mcp`), Telegram capture bot (`reels-wiki-telegram`), and Agent Skill (`SKILL.md`).
 - **Engineering Governance**: CI matrix across Python 3.10, 3.11, and 3.12, `release-please` automation with wheel/sdist/SHA256 release artifacts, Dependabot, Issue/PR templates, `Makefile`, and technical guides in `docs/`.
 
-## v0.2.0 (Reliability, Quality Gates, and Packaging)
+## v0.2.0 (Completed - Reliability, Quality Gates, and Packaging)
 
 Focus: Turn the repository into a strictly verified package with zero broken entry points, static analysis gates, and automated PyPI releases.
 
-- **Entrypoint Smoke Verification**: Lock `reels-sync`, `reels-wiki-mcp`, and `reels-wiki-telegram` console scripts in `pyproject.toml` and run `--help` smoke tests in `.github/workflows/ci.yml`.
-- **Expanded Unit Coverage**: Add mocked-boundary tests for `extractor.py` (3-stage fallback branching), `pipeline.py` (crash reset and lock contention), and `mcp_server.py` (tool schemas and JSON outputs).
-- **Coverage Enforcement**: Add `pytest-cov` reporting and minimum coverage thresholds to `Makefile` and `.github/workflows/ci.yml`.
-- **Static Analysis Gates**: Add `ruff` (lint and formatting) and `mypy` (strict typing on `src/reels_wiki/`) to `pyproject.toml`, `Makefile`, and CI.
-- **Configuration & Diagnostics**:
+- [x] **Entrypoint Smoke Verification**: Lock `reels-sync`, `reels-wiki-mcp`, and `reels-wiki-telegram` console scripts in `pyproject.toml` and run `--help` smoke tests in `.github/workflows/ci.yml`.
+- [x] **Expanded Unit Coverage**: Add mocked-boundary tests for `extractor.py` (3-stage fallback branching), `pipeline.py` (crash reset and lock contention), and `mcp_server.py` (tool schemas and JSON outputs).
+- [x] **Coverage Enforcement**: Add `pytest-cov` reporting and minimum coverage thresholds to `Makefile` and `.github/workflows/ci.yml`.
+- [x] **Static Analysis Gates**: Add `ruff` (lint and formatting) and `mypy` (strict typing on `src/reels_wiki/`) to `pyproject.toml`, `Makefile`, and CI.
+- [x] **Configuration & Diagnostics**:
   - Add `.env.example` with sanitized placeholders for all supported keys.
   - Implement `reels-sync doctor` to validate Python version, `ffmpeg`, cookie configuration, API key presence, and vault write permissions.
-  - Add `docs/troubleshooting.md` covering Instagram cookie expiration, `yt-dlp` updates, and lock recovery.
-- **PyPI Trusted Publishing**: Extend `.github/workflows/release-please.yml` to publish tagged wheels and sdists to PyPI via OIDC after checksum generation.
+  - Implement `reels-sync init` interactive setup wizard for `config.yaml` and `.env` with automatic `doctor` verification.
+  - Add `docs/troubleshooting.md`, `docs/saved-posts-workflow.md`, and `docs/telegram-bot.md`.
+- [x] **PyPI Trusted Publishing**: Extend `.github/workflows/release-please.yml` to publish tagged wheels and sdists to PyPI via OIDC after checksum generation.
 
 **Exit Criteria**: `make verify` passes `ruff`, `mypy`, `check-docs`, `check-release`, and `pytest` across Python 3.10 to 3.12, and all CLI entry points execute cleanly in CI.
 
-## v0.3.0 (Extraction Fidelity and Local-First Providers)
+## v0.3.0 (In Progress - Extraction Fidelity and Local-First Providers)
 
 Focus: Reduce failed extractions on edge-case Instagram posts, enable 100% offline synthesis, and expose cost/stage metrics.
 
-- **Instagram Edge Cases (`extractor.py`)**:
+- [ ] **Instagram Edge Cases (`extractor.py`)**:
   - Resolve `/share/...` redirect URLs before shortcode extraction.
   - Handle image-only `/p/` carousel posts by routing downloaded frames to Gemini Vision when `yt-dlp` finds no video stream.
-- **Offline LLM Synthesis (`synthesizer.py`)**:
+- [x] **Offline LLM Synthesis (`synthesizer.py`, `config.py`, `cli.py`)**:
   - Add an `ollama` / OpenAI-compatible local provider option alongside `groq` and `gemini` so audio (`faster-whisper`) and synthesis run completely offline.
-- **Stage & Token Observability (`pipeline.py`, `cli.py`)**:
+- [ ] **Stage & Token Observability (`pipeline.py`, `cli.py`)**:
   - Track waterfall stage counts (`metadata`, `whisper`, `vision`) and LLM token/retry counts in `sources/reels/<shortcode>.json` and `reels-sync stats --json`.
-- **Content-Hash Reprocessing (`queue_manager.py`, `writer.py`)**:
+- [ ] **Content-Hash Reprocessing (`queue_manager.py`, `writer.py`)**:
   - Skip rewriting identical notes during `reels-sync reprocess --all` unless synthesized content or frontmatter actually changed.
 
 **Exit Criteria**: A sample batch can run end-to-end offline using `faster-whisper` + local LLM without external API calls, and stage metrics appear in `reels-sync --json stats`.

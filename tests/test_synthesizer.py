@@ -94,3 +94,41 @@ def test_all_providers_failing_raises(ctx, cfg, monkeypatch):
 def test_kept_note_requires_title_and_insight():
     with pytest.raises(ValueError):
         AtomicNoteSynthesis(should_keep=True, title="", core_insight="")
+
+
+def test_ollama_provider_synthesizes_offline(tmp_path, ctx, monkeypatch):
+    from reels_wiki.config import Config
+
+    cfg = Config(vault_path=tmp_path, synthesis={"provider": "ollama", "ollama_model": "llama3.1:8b"})
+    payload = {
+        "should_keep": True,
+        "title": "Offline Synthesis",
+        "slug": "offline-synthesis",
+        "target_folder": "concepts",
+        "tags": ["local-llm"],
+        "core_insight": "Ollama synthesizes notes locally via OpenAI-compatible chat completions.",
+        "for_future_agent": ["No cloud API keys required."],
+        "actionable_next_step": "Run ollama serve.",
+        "related_wikilinks": [],
+    }
+
+    class _FakeResp:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"choices": [{"message": {"content": json.dumps(payload)}}]}
+
+    captured = {}
+
+    def _fake_post(url, **kwargs):
+        captured["url"] = url
+        captured["json"] = kwargs["json"]
+        return _FakeResp()
+
+    monkeypatch.setattr(synthesizer.httpx, "post", _fake_post)
+    out = synthesize(ART, ctx, cfg)
+    assert out.should_keep is True
+    assert out.title == "Offline Synthesis"
+    assert captured["url"] == "http://localhost:11434/v1/chat/completions"
+    assert captured["json"]["model"] == "llama3.1:8b"

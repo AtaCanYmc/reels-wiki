@@ -25,10 +25,13 @@ extraction:
   ffmpeg_path: ffmpeg
 
 synthesis:
-  provider: groq             # groq | gemini
+  provider: groq             # groq | gemini | ollama
   groq_model: llama-3.3-70b-versatile
   gemini_model: gemini-2.5-flash
-  fallback_provider: gemini  # tried if the primary provider fails; null to disable
+  # ollama_base_url: http://localhost:11434/v1
+  # ollama_model: llama3.1:8b
+  # ollama_api_key: ollama
+  fallback_provider: gemini  # groq | gemini | ollama; null to disable
   max_retries: 3
   temperature: 0.2
   max_input_chars: 12000

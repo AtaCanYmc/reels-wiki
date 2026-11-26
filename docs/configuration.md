@@ -30,6 +30,18 @@ Unknown keys in `config.yaml` are rejected at load time.
 
 The Telegram bot (`reels-sync telegram` or `reels-wiki-telegram`) only enqueues Instagram URLs from `TELEGRAM_ALLOWED_CHAT_ID` with `source="telegram"`. Messages from any other chat ID are ignored. It does not trigger `process`.
 
+## Synthesis Providers (`synthesis:`)
+
+| Key | Default | Description |
+| :--- | :--- | :--- |
+| `provider` | `groq` | Primary synthesis backend: `groq`, `gemini`, or `ollama` |
+| `fallback_provider` | `null` | Secondary backend (`groq`, `gemini`, or `ollama`) tried if primary fails |
+| `groq_model` | `llama-3.3-70b-versatile` | Model used when provider is `groq` |
+| `gemini_model` | `gemini-2.5-flash` | Model used when provider is `gemini` |
+| `ollama_base_url` | `http://localhost:11434/v1` | OpenAI-compatible base URL for `ollama` or local LLM servers |
+| `ollama_model` | `llama3.1:8b` | Local model name when provider is `ollama` |
+| `ollama_api_key` | `ollama` | Bearer token sent to the OpenAI-compatible local endpoint |
+
 ## Examples
 
 ### Minimal `config.yaml`

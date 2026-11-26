@@ -204,7 +204,7 @@ def run_doctor(cfg: Config) -> dict[str, Any]:
     gemini_set = bool(getattr(cfg, "gemini_api_key", None) or os.getenv("GEMINI_API_KEY"))
     primary = cfg.synthesis.provider
     fallback = cfg.synthesis.fallback_provider
-    api_ok = bool((primary == "groq" and groq_set) or (primary == "gemini" and gemini_set))
+    api_ok = bool((primary == "groq" and groq_set) or (primary == "gemini" and gemini_set) or primary == "ollama")
 
     vault_dir = Path(cfg.vault_path)
     vault_exists = vault_dir.is_dir()
@@ -264,7 +264,7 @@ def run_init(
     elif cookie_mode == "file":
         extraction_cfg["cookies_file"] = Prompt.ask("Netscape cookies file path", default="~/cookies.txt")
 
-    provider = Prompt.ask("Primary LLM provider", choices=["groq", "gemini"], default="groq")
+    provider = Prompt.ask("Primary LLM provider", choices=["groq", "gemini", "ollama"], default="groq")
     groq_key = Prompt.ask("GROQ_API_KEY (leave blank to skip)", password=True, default="")
     gemini_key = Prompt.ask("GEMINI_API_KEY (leave blank to skip)", password=True, default="")
 

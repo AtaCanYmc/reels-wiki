@@ -46,9 +46,15 @@ To enable offline audio transcription with `faster-whisper`, include the `local`
 pip install -e ".[dev,local]"
 ```
 
-### Step 2: Configure your vault path
+### Step 2: Configure your vault path and credentials
 
-Copy the example configuration and set `vault_path` to your Obsidian LLM Wiki root directory:
+Run the interactive setup wizard to generate `config.yaml` and `.env`, then run diagnostics automatically:
+
+```bash
+reels-sync init
+```
+
+Or copy the example configuration manually and set `vault_path` to your Obsidian LLM Wiki root directory:
 
 ```bash
 cp config.example.yaml config.yaml
@@ -310,4 +316,5 @@ Tests run offline via `make test` (`pytest`) without making network or LLM API c
 - Shortcodes are validated as exactly 11 characters (`[A-Za-z0-9_-]`). Instagram `/share/...` redirect links are not resolved automatically; open them in a browser first and copy the canonical URL.
 - Carousel and photo posts (`/p/`) are accepted. `yt-dlp` may fail on image-only posts, which marks them `failed`. Use `import-ig --reels-only` to filter them out during bulk import.
 - Note titles are generated in Turkish for Turkish content and technical English otherwise.
+- Offline synthesis is supported via `synthesis.provider: ollama` against any OpenAI-compatible local endpoint (`http://localhost:11434/v1`), requiring no cloud API keys when paired with `whisper_provider: local`.
 - Provider integrations for Groq, Google GenAI, and `yt-dlp` are isolated in `extractor.py` and `synthesizer.py` so upstream SDK changes only require edits in those two files.
