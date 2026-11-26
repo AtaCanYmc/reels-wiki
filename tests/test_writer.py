@@ -210,3 +210,34 @@ def test_choose_path_rejects_overwrite_outside_vault(tmp_path, outside_target):
         _choose_path(ctx, _syn(), _artifact(), overwrite=bad)
 
     assert _choose_path(ctx, _syn(), _artifact(), overwrite="ideas/existing.md") == inside.resolve()
+
+
+def test_write_synthesis_skips_rewrite_when_content_hash_unchanged(vault):
+    q, ctx = _setup(vault)
+    art = _artifact()
+    first = write_synthesis(q, ctx, art, _syn(), now=NOW)
+    assert first["unchanged"] is False and first["content_hash"]
+
+    path = vault / first["note_path"]
+    raw_before = path.read_bytes()
+    log_before = (vault / "_log.md").read_text(encoding="utf-8")
+
+    second = write_synthesis(q, VaultContext.load(vault), art, _syn(), overwrite_path=first["note_path"], now=NOW)
+    assert second["unchanged"] is True
+    assert second["updated_existing"] is False
+    assert second["index_updated"] is False
+    assert second["content_hash"] == first["content_hash"]
+    assert path.read_bytes() == raw_before
+    assert (vault / "_log.md").read_text(encoding="utf-8") == log_before
+
+    changed = write_synthesis(
+        q,
+        VaultContext.load(vault),
+        art,
+        _syn(core_insight="Changed insight."),
+        overwrite_path=first["note_path"],
+        now=NOW,
+    )
+    assert changed["unchanged"] is False
+    assert changed["updated_existing"] is True
+    assert changed["content_hash"] != first["content_hash"]

@@ -1,6 +1,7 @@
 """Safe Obsidian writer: valid YAML frontmatter, idempotent ``_index.md`` updates, ``_log.md`` entries."""
 from __future__ import annotations
 
+import hashlib
 import re
 from datetime import datetime
 from pathlib import Path
@@ -196,12 +197,34 @@ def write_synthesis(
         "tags": list(syn.tags),
     }
     post = frontmatter.Post(render_body(artifact, syn, existing_links, candidates), **meta)
-    atomic_write_text(path, frontmatter.dumps(post, sort_keys=False).rstrip("\n") + "\n")
-
+    rendered = frontmatter.dumps(post, sort_keys=False).rstrip("\n") + "\n"
+    new_hash = hashlib.sha256(rendered.encode("utf-8")).hexdigest()
     rel = path.relative_to(ctx.root).as_posix()
+
+    if updating and hashlib.sha256(path.read_bytes()).hexdigest() == new_hash:
+        queue.update_status(sc, "processed", note_path=rel)
+        return {
+            "status": "processed",
+            "shortcode": sc,
+            "note_path": rel,
+            "index_updated": False,
+            "updated_existing": False,
+            "unchanged": True,
+            "content_hash": new_hash,
+        }
+
+    atomic_write_text(path, rendered)
     folder = path.parent.relative_to(ctx.root).as_posix()
     action = "update" if updating else "ingest"
     append_log(ctx.root, slug=path.stem, title=syn.title.strip(), artifact=artifact, action=action, now=now)
     index_updated = update_index(ctx.root, folder, path.stem, syn.title.strip(), syn.core_insight)
     queue.update_status(sc, "processed", note_path=rel)
-    return {"status": "processed", "shortcode": sc, "note_path": rel, "index_updated": index_updated, "updated_existing": updating}
+    return {
+        "status": "processed",
+        "shortcode": sc,
+        "note_path": rel,
+        "index_updated": index_updated,
+        "updated_existing": updating,
+        "unchanged": False,
+        "content_hash": new_hash,
+    }

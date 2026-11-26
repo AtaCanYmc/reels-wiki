@@ -8,7 +8,7 @@ Product and engineering milestones for `reels-wiki`, grouped by SemVer releases 
 | :--- | :--- | :--- |
 | `v0.1.0` | Core pipeline, 5 interfaces, governance, release automation | Completed |
 | `v0.2.0` | Reliability, static analysis, coverage gates, `init` wizard, PyPI publishing | Completed |
-| `v0.3.0` | Extraction fidelity, local LLM synthesis, observability | In Progress |
+| `v0.3.0` | Extraction fidelity, local LLM synthesis, observability | Completed |
 | `v0.4.0` | Background scheduling, container packaging, ecosystem distribution | Planned |
 | `v1.0.0` | Frozen schemas, public SDK contract, E2E fixture suite | Future |
 
@@ -35,7 +35,7 @@ Focus: Turn the repository into a strictly verified package with zero broken ent
 
 **Exit Criteria**: `make verify` passes `ruff`, `mypy`, `check-docs`, `check-release`, and `pytest` across Python 3.10 to 3.12, and all CLI entry points execute cleanly in CI.
 
-## v0.3.0 (In Progress - Extraction Fidelity and Local-First Providers)
+## v0.3.0 (Completed - Extraction Fidelity and Local-First Providers)
 
 Focus: Reduce failed extractions on edge-case Instagram posts, enable 100% offline synthesis, and expose cost/stage metrics.
 
@@ -46,7 +46,7 @@ Focus: Reduce failed extractions on edge-case Instagram posts, enable 100% offli
   - Add an `ollama` / OpenAI-compatible local provider option alongside `groq` and `gemini` so audio (`faster-whisper`) and synthesis run completely offline.
 - [x] **Stage & Token Observability (`pipeline/runner.py`, `pipeline/synthesizer.py`, `ingestion/queue_manager.py`)**:
   - Track waterfall stage counts (`metadata`, `subtitles`, `whisper`, `vision`) and LLM token/retry counts (`prompt_tokens`, `completion_tokens`, `total_tokens`, `retries`) in `sources/reels/<shortcode>.json` and `reels-sync --json stats`.
-- [ ] **Content-Hash Reprocessing (`queue_manager.py`, `writer.py`)**:
+- [x] **Content-Hash Reprocessing (`vault/writer.py`)**:
   - Skip rewriting identical notes during `reels-sync reprocess --all` unless synthesized content or frontmatter actually changed.
 
 **Exit Criteria**: A sample batch can run end-to-end offline using `faster-whisper` + local LLM without external API calls, and stage metrics appear in `reels-sync --json stats`.
