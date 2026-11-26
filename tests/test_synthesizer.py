@@ -132,3 +132,27 @@ def test_ollama_provider_synthesizes_offline(tmp_path, ctx, monkeypatch):
     assert out.title == "Offline Synthesis"
     assert captured["url"] == "http://localhost:11434/v1/chat/completions"
     assert captured["json"]["model"] == "llama3.1:8b"
+
+
+def test_provider_abc_and_registration(monkeypatch):
+    with pytest.raises(TypeError):
+        synthesizer.BaseProvider()  # type: ignore[abstract]
+
+    for key, cls in (
+        ("groq", synthesizer.GroqProvider),
+        ("gemini", synthesizer.GeminiProvider),
+        ("ollama", synthesizer.OllamaProvider),
+    ):
+        assert isinstance(synthesizer.PROVIDERS[key], synthesizer.BaseProvider)
+        assert isinstance(synthesizer.PROVIDERS[key], cls)
+
+    class CustomProvider(synthesizer.BaseProvider):
+        name = "custom_test"
+
+        def complete(self, system: str, user: str, cfg) -> str:
+            return json.dumps({"should_keep": False, "skip_reason": "custom"})
+
+    monkeypatch.setitem(synthesizer.PROVIDERS, "custom_test", None)
+    synthesizer.register_provider(CustomProvider())
+    assert isinstance(synthesizer.PROVIDERS["custom_test"], CustomProvider)
+    assert json.loads(synthesizer.PROVIDERS["custom_test"]("sys", "usr", None))["skip_reason"] == "custom"

@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import re
 import time
+from abc import ABC, abstractmethod
 from typing import Any, Callable
 
 import httpx
@@ -11,6 +12,7 @@ from pydantic import ValidationError
 
 from .config import Config, ConfigError
 from .models import AtomicNoteSynthesis, RawReelArtifact
+from .prompts import render_prompt
 from .utils import slugify
 from .vault_context import VaultContext
 
@@ -19,25 +21,7 @@ class SynthesisError(RuntimeError):
     """All providers/retries exhausted."""
 
 
-SYSTEM_PROMPT = """You are the curator of a personal knowledge base (an Obsidian "LLM Wiki"). You receive the raw \
-extraction of one saved Instagram Reel (caption, audio transcript, on-screen text) and decide whether it deserves \
-an atomic note, and if so write it.
-
-Rules:
-- should_keep=false for pure entertainment, memes, trends, thirst traps, vague motivation, ads without substance, or \
-anything lacking an actionable insight or reusable knowledge. Give a concise skip_reason.
-- When keeping: be faithful to the source. Never invent tools, numbers, or steps that are not in it. If the source is \
-thin, say so in the core_insight rather than padding.
-- title: concise; write it in Turkish if the content is Turkish, otherwise technical English. No clickbait.
-- slug: ASCII kebab-case (no Turkish characters), at most 8 words.
-- target_folder: EXACTLY one of the allowed folders given below.
-- tags: lowercase, kebab-case, 2-6 items. Reuse existing tags whenever one fits; invent new ones sparingly.
-- core_insight: 2-4 sentences distilling the idea, tool, workflow or mental model (same language as the title).
-- for_future_agent: 2-6 terse bullets of technical constraints, architecture patterns, commands, or context that a \
-future AI agent would need to act on this knowledge.
-- actionable_next_step: ONE concrete next action or experiment.
-- related_wikilinks: only names from the "Existing note names" list, without brackets. Empty list if nothing fits.
-- Respond with a single JSON object matching the schema. No markdown fences, no commentary."""
+SYSTEM_PROMPT = render_prompt("synthesis_system.j2")
 
 
 def _schema_text() -> str:
@@ -45,85 +29,120 @@ def _schema_text() -> str:
 
 
 def build_user_prompt(artifact: RawReelArtifact, ctx: VaultContext, max_chars: int) -> str:
-    sections = [
+    raw_sections = [
         ("Caption", artifact.caption),
         ("Subtitles / audio transcript", artifact.transcript),
         ("On-screen text & visuals (OCR/VLM)", artifact.visual_notes),
     ]
     budget = max_chars
-    body: list[str] = []
-    for label, text in sections:
+    sections: list[tuple[str, str]] = []
+    for label, text in raw_sections:
         text = (text or "").strip()
         if not text:
             continue
         text = text[: max(budget, 0)]
         budget -= len(text)
-        body.append(f"### {label}\n{text}")
-    meta = (
-        f"creator: {artifact.creator or 'unknown'}\nurl: {artifact.url}\n"
-        f"duration_seconds: {artifact.duration or 'unknown'}\nupload_date: {artifact.upload_date or 'unknown'}"
-    )
-    return (
-        f"{ctx.prompt_block()}\n## JSON schema\n{_schema_text()}\n\n"
-        f"## Reel metadata\n{meta}\n\n## Reel content\n" + ("\n\n".join(body) or "(empty)")
+        sections.append((label, text))
+    return render_prompt(
+        "synthesis_user.j2",
+        vault_block=ctx.prompt_block(),
+        schema_text=_schema_text(),
+        creator=artifact.creator or "unknown",
+        url=artifact.url,
+        duration=artifact.duration or "unknown",
+        upload_date=artifact.upload_date or "unknown",
+        sections=sections,
     )
 
 
 # ---------------------------------------------------------------------- providers
-def _call_groq(system: str, user: str, cfg: Config) -> str:
-    from groq import Groq
+class BaseProvider(ABC):
+    """Abstract base class for LLM synthesis providers."""
 
-    client = Groq(api_key=cfg.require_key("groq"))
-    resp = client.chat.completions.create(
-        model=cfg.synthesis.groq_model,
-        temperature=cfg.synthesis.temperature,
-        response_format={"type": "json_object"},
-        messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
-    )
-    return resp.choices[0].message.content or ""
+    name: str
 
+    @abstractmethod
+    def complete(self, system: str, user: str, cfg: Config) -> str:
+        """Send system and user prompts and return the raw model response text."""
 
-def _call_gemini(system: str, user: str, cfg: Config) -> str:
-    from google import genai
-    from google.genai import types
-
-    client = genai.Client(api_key=cfg.require_key("gemini"))
-    kwargs: dict[str, Any] = dict(
-        system_instruction=system,
-        temperature=cfg.synthesis.temperature,
-        response_mime_type="application/json",
-    )
-    try:  # JSON-schema-constrained decoding when the installed SDK supports it
-        config = types.GenerateContentConfig(**kwargs, response_json_schema=AtomicNoteSynthesis.model_json_schema())
-    except (TypeError, ValidationError):
-        config = types.GenerateContentConfig(**kwargs)
-    resp = client.models.generate_content(model=cfg.synthesis.gemini_model, contents=user, config=config)
-    return resp.text or ""
+    def __call__(self, system: str, user: str, cfg: Config) -> str:
+        return self.complete(system, user, cfg)
 
 
-def _call_ollama(system: str, user: str, cfg: Config) -> str:
-    url = f"{cfg.synthesis.ollama_base_url.rstrip('/')}/chat/completions"
-    resp = httpx.post(
-        url,
-        headers={"Authorization": f"Bearer {cfg.synthesis.ollama_api_key}"},
-        json={
-            "model": cfg.synthesis.ollama_model,
-            "temperature": cfg.synthesis.temperature,
-            "response_format": {"type": "json_object"},
-            "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
-        },
-        timeout=120.0,
-    )
-    resp.raise_for_status()
-    data = resp.json()
-    return (data["choices"][0]["message"].get("content") or "").strip()
+class GroqProvider(BaseProvider):
+    """Groq chat-completions synthesis provider."""
+
+    name = "groq"
+
+    def complete(self, system: str, user: str, cfg: Config) -> str:
+        from groq import Groq
+
+        client = Groq(api_key=cfg.require_key("groq"))
+        resp = client.chat.completions.create(
+            model=cfg.synthesis.groq_model,
+            temperature=cfg.synthesis.temperature,
+            response_format={"type": "json_object"},
+            messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
+        )
+        return resp.choices[0].message.content or ""
 
 
-PROVIDERS: dict[str, Callable[[str, str, Config], str]] = {
-    "groq": _call_groq,
-    "gemini": _call_gemini,
-    "ollama": _call_ollama,
+class GeminiProvider(BaseProvider):
+    """Google Gemini structured-output synthesis provider."""
+
+    name = "gemini"
+
+    def complete(self, system: str, user: str, cfg: Config) -> str:
+        from google import genai
+        from google.genai import types
+
+        client = genai.Client(api_key=cfg.require_key("gemini"))
+        kwargs: dict[str, Any] = dict(
+            system_instruction=system,
+            temperature=cfg.synthesis.temperature,
+            response_mime_type="application/json",
+        )
+        try:  # JSON-schema-constrained decoding when the installed SDK supports it
+            config = types.GenerateContentConfig(**kwargs, response_json_schema=AtomicNoteSynthesis.model_json_schema())
+        except (TypeError, ValidationError):
+            config = types.GenerateContentConfig(**kwargs)
+        resp = client.models.generate_content(model=cfg.synthesis.gemini_model, contents=user, config=config)
+        return resp.text or ""
+
+
+class OllamaProvider(BaseProvider):
+    """Local OpenAI-compatible (Ollama) synthesis provider."""
+
+    name = "ollama"
+
+    def complete(self, system: str, user: str, cfg: Config) -> str:
+        url = f"{cfg.synthesis.ollama_base_url.rstrip('/')}/chat/completions"
+        resp = httpx.post(
+            url,
+            headers={"Authorization": f"Bearer {cfg.synthesis.ollama_api_key}"},
+            json={
+                "model": cfg.synthesis.ollama_model,
+                "temperature": cfg.synthesis.temperature,
+                "response_format": {"type": "json_object"},
+                "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
+            },
+            timeout=120.0,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return (data["choices"][0]["message"].get("content") or "").strip()
+
+
+PROVIDERS: dict[str, BaseProvider | Callable[[str, str, Config], str]] = {
+    "groq": GroqProvider(),
+    "gemini": GeminiProvider(),
+    "ollama": OllamaProvider(),
 }
+
+
+def register_provider(provider: BaseProvider) -> None:
+    """Register a custom ``BaseProvider`` implementation by its ``name``."""
+    PROVIDERS[provider.name] = provider
 
 
 def parse_json_object(raw: str) -> dict:

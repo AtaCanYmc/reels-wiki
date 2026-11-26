@@ -15,6 +15,7 @@ import httpx
 
 from .config import Config, ConfigError, ExtractionConfig
 from .models import RawReelArtifact
+from .prompts import render_prompt
 from .utils import atomic_write_text
 
 GROQ_MAX_BYTES = 24 * 1024 * 1024
@@ -232,15 +233,6 @@ def _transcribe(url: str, tmp: Path, cfg: Config) -> tuple[str, str]:
 
 
 # ---------------------------------------------------------------------- vision
-_VISION_PROMPT = (
-    "These are {n} evenly spaced frames from one Instagram Reel, in order. Extract ALL legible on-screen text "
-    "verbatim (captions, slides, code, terminal commands, UI labels, diagrams' text), then add a brief factual "
-    "description of what is shown that matters for the knowledge content (tools, interfaces, steps, charts). "
-    "Do not invent anything that is not visible. Answer in the language of the on-screen text. "
-    "Plain text only, no preamble."
-)
-
-
 def _vision_notes(url: str, tmp: Path, duration: float | None, cfg: Config) -> str:
     from google import genai
     from google.genai import types
@@ -251,7 +243,7 @@ def _vision_notes(url: str, tmp: Path, duration: float | None, cfg: Config) -> s
     if not frames:
         raise ExtractionError("ffmpeg produced no frames")
     parts: list[Any] = [types.Part.from_bytes(data=f.read_bytes(), mime_type="image/jpeg") for f in frames]
-    parts.append(_VISION_PROMPT.format(n=len(frames)))
+    parts.append(render_prompt("vision_ocr.j2", n=len(frames)))
     client = genai.Client(api_key=cfg.require_key("gemini"))
     resp = client.models.generate_content(model=ecfg.vision_model, contents=parts)
     return (resp.text or "").strip()

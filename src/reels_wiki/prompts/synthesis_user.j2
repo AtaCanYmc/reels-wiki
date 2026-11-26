@@ -1,0 +1,22 @@
+{{ vault_block }}
+## JSON schema
+{{ schema_text }}
+
+## Reel metadata
+creator: {{ creator }}
+url: {{ url }}
+duration_seconds: {{ duration }}
+upload_date: {{ upload_date }}
+
+## Reel content
+{% if sections %}
+{% for label, text in sections %}
+### {{ label }}
+{{ text }}
+{% if not loop.last %}
+
+{% endif %}
+{% endfor %}
+{% else %}
+(empty)
+{% endif %}
