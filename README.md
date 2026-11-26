@@ -257,6 +257,7 @@ reels-secretary/
 │   ├── cli-and-mcp.md
 │   ├── configuration.md
 │   ├── example-walkthrough.md
+│   ├── providers.md
 │   ├── saved-posts-workflow.md
 │   ├── step-by-step.md
 │   ├── telegram-bot.md
@@ -320,6 +321,7 @@ Tests run offline via `make test` (`pytest`) without making network or LLM API c
 - [Example Walkthrough](docs/example-walkthrough.md)
 - [CLI and MCP Reference](docs/cli-and-mcp.md)
 - [Configuration Reference](docs/configuration.md)
+- [Providers Guide](docs/providers.md)
 - [Troubleshooting Guide](docs/troubleshooting.md)
 - [Contributing Guide](CONTRIBUTING.md)
 - [Security Policy](SECURITY.md)

@@ -36,7 +36,7 @@ The Telegram bot (`reels-sync telegram` or `reels-wiki-telegram`) only enqueues 
 | :--- | :--- | :--- |
 | `provider` | `groq` | Primary synthesis backend: `groq`, `gemini`, or `ollama` |
 | `fallback_provider` | `null` | Secondary backend (`groq`, `gemini`, or `ollama`) tried if primary fails |
-| `groq_model` | `llama-3.3-70b-versatile` | Model used when provider is `groq` |
+| `groq_model` | `openai/gpt-oss-120b` | Model used when provider is `groq` |
 | `gemini_model` | `gemini-2.5-flash` | Model used when provider is `gemini` |
 | `ollama_base_url` | `http://localhost:11434/v1` | OpenAI-compatible base URL for `ollama` or local LLM servers |
 | `ollama_model` | `llama3.1:8b` | Local model name when provider is `ollama` |

@@ -12,5 +12,6 @@ Technical reference and operational guides for `reels-wiki`.
 | [Architecture Guide](architecture.md) | Data flow, queue invariants, 3-stage extraction waterfall, and vault context rules |
 | [CLI and MCP Reference](cli-and-mcp.md) | `reels-sync` flags, subcommands, Rich/JSON output modes, and `reels-wiki-mcp` tools |
 | [Configuration Reference](configuration.md) | Config file lookup order, `.env` variables, extraction settings, and synthesis options |
-| [Example Walkthrough](example-walkthrough.md) | Real Instagram Reel extraction traces (`Df44o7WhunQ`, `Df2jr_RN9gb`, `DdYn6ekug5W`) |
+| [Providers Guide](providers.md) | Obtaining API keys and discovering models for Groq, Google Gemini, and Ollama |
+| [Example Walkthrough](example-walkthrough.md) | Real Instagram Reel extraction traces (`Df44o7WhunQ`, `Df2jr_RN9gb`, `DdYn6ekug5W`, `DgNTHLDg9X5`) |
 | [Troubleshooting Guide](troubleshooting.md) | Diagnostics (`reels-sync doctor`), cookie expiration, `yt-dlp` updates, and lock recovery |

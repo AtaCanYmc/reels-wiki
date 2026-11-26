@@ -33,8 +33,8 @@ reels-sync process --dry-run
 When `process` runs (or when invoking `extract_reel` directly via the Python SDK), Stage 1 calls `yt_dlp` with `extract_info(download=False)`:
 
 ```python
-from reels_wiki.config import Config, ExtractionConfig
-from reels_wiki.extractor import extract_reel
+from reels_wiki.core.config import Config, ExtractionConfig
+from reels_wiki.pipeline.extractor import extract_reel
 
 cfg = Config(
     vault_path="/path/to/ObsidianVault",
@@ -201,3 +201,85 @@ Observed output from Stage 1 (`yt_dlp` metadata only):
 
 - The extracted artifact is saved to `sources/reels/DdYn6ekug5W.json`.
 - LLM synthesis generates an atomic note with a Turkish title and ASCII-transliterated slug, then updates `_index.md` and `_log.md`.
+
+---
+
+## Example 4: Long Caption (Stage 1 Sufficient) - `DgNTHLDg9X5`
+
+URL: `https://www.instagram.com/p/DgNTHLDg9X5/?hl=tr`
+
+### Step 1: URL Normalization and Enqueue
+
+```bash
+reels-sync ingest "https://www.instagram.com/p/DgNTHLDg9X5/?hl=tr"
+```
+
+- Parsed as `('post', 'DgNTHLDg9X5')` and normalized to `https://www.instagram.com/reel/DgNTHLDg9X5/`.
+
+### Step 2: Stage 1 Metadata Extraction
+
+Observed output from `extract_reel`:
+
+```json
+{
+  "shortcode": "DgNTHLDg9X5",
+  "url": "https://www.instagram.com/p/DgNTHLDg9X5/?hl=tr",
+  "creator": "Copy Paste AI | Tested Prompts",
+  "title": "Video by ai.copypaste",
+  "caption": "Comment COPY and I’ll DM you the install prompt for all 10 tools (follow first, or the DM won’t arrive).\n\nYour Claude is running on empty. 10 free, open-source tools Claude Code installs for you:\nVoice: Kokoro, faster-whisper, DeepFilterNet\nCut: yt-dlp, FFmpeg, auto-editor, OBS\nDesign: HyperFrames, rembg, ImageMagick\n\nAll run on a normal laptop. Start with the one you pay for now.\n(Claude Code needs a paid Claude plan.)",
+  "duration": null,
+  "upload_date": "20261126",
+  "subtitles": "",
+  "transcript": "",
+  "transcript_source": "none",
+  "visual_notes": "",
+  "steps_used": [
+    "metadata"
+  ],
+  "warnings": [],
+  "synthesis_metrics": null,
+  "extracted_at": "2026-11-26T16:06:58+00:00"
+}
+```
+
+### Step 3: Decision Gate
+
+- `len(caption)` is 438 characters (`>= min_caption_chars: 150`), so Stage 2 (Whisper) and Stage 3 (Vision) are skipped.
+- `steps_used` contains `["metadata"]` with zero `warnings`.
+
+---
+
+## End-to-End Groq Run Summary (All 4 Examples)
+
+Verified full pipeline run (`whisper_provider: groq` with `whisper-large-v3-turbo`, `synthesis.provider: groq` with `openai/gpt-oss-120b`, `enable_vision_fallback: false`):
+
+| Shortcode | `steps_used` | Generated Note Path | Tokens (Prompt / Completion / Total) | Retries |
+| :--- | :--- | :--- | :--- | :--- |
+| `Df44o7WhunQ` | `["metadata"]` | `tools/claude-token-azaltma-rtk-caveman.md` | `1182 / 590 / 1772` | `0` |
+| `Df2jr_RN9gb` | `["metadata", "whisper:groq"]` | `tools/awards-cloud-skill-otomatik-odul-sitesi.md` | `1338 / 775 / 2113` | `0` |
+| `DdYn6ekug5W` | `["metadata", "whisper:groq"]` | `tools/prompt-chat-turkish-repo.md` | `1482 / 787 / 2269` | `0` |
+| `DgNTHLDg9X5` | `["metadata"]` | `tools/claude-code-10-tools-install.md` | `1258 / 704 / 1962` | `0` |
+
+Observed `reels-sync --json stats` output totals from the run:
+
+```json
+{
+  "total": 4,
+  "processed": 4,
+  "skipped": 0,
+  "failed": 0,
+  "artifacts_count": 4,
+  "stages": {
+    "metadata": 4,
+    "subtitles": 0,
+    "whisper": 2,
+    "vision": 0
+  },
+  "llm_usage": {
+    "prompt_tokens": 5260,
+    "completion_tokens": 2856,
+    "total_tokens": 8116,
+    "retries": 0
+  }
+}
+```

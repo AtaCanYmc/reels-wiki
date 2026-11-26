@@ -41,7 +41,7 @@ class SynthesisConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     provider: Literal["groq", "gemini", "ollama"] = "groq"
-    groq_model: str = "llama-3.3-70b-versatile"
+    groq_model: str = "openai/gpt-oss-120b"
     gemini_model: str = "gemini-2.5-flash"
     ollama_base_url: str = "http://localhost:11434/v1"
     ollama_model: str = "llama3.1:8b"
