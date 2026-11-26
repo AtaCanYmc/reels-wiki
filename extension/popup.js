@@ -2,6 +2,7 @@ const urlInput = document.getElementById("url");
 const endpointInput = document.getElementById("endpoint");
 const tokenInput = document.getElementById("token");
 const saveBtn = document.getElementById("saveBtn");
+const processBtn = document.getElementById("processBtn");
 const statusEl = document.getElementById("status");
 const healthBadge = document.getElementById("healthBadge");
 const pendingBar = document.getElementById("pendingBar");
@@ -53,12 +54,16 @@ async function checkHealth(endpoint) {
   return false;
 }
 
-async function sendUrl(endpoint, token, url) {
+function jsonHeaders(token) {
   const headers = { "Content-Type": "application/json" };
   if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
+}
+
+async function sendUrl(endpoint, token, url) {
   const resp = await fetch(`${endpoint}/ingest`, {
     method: "POST",
-    headers,
+    headers: jsonHeaders(token),
     body: JSON.stringify({ url, source: "extension" }),
   });
   const data = await resp.json();
@@ -110,6 +115,39 @@ saveBtn.addEventListener("click", async () => {
     healthBadge.className = "pill pill-off";
   } finally {
     saveBtn.disabled = false;
+  }
+});
+
+processBtn.addEventListener("click", async () => {
+  const endpoint = cleanEndpoint();
+  const token = tokenInput.value.trim();
+
+  processBtn.disabled = true;
+  setStatus("Processing queue...", "");
+  await chrome.storage.local.set({ endpoint, token });
+
+  try {
+    const resp = await fetch(`${endpoint}/process`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({ limit: 10 }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) {
+      setStatus(data.error || `Error ${resp.status}`, "err");
+    } else if (data.error) {
+      setStatus(data.error, "warn");
+    } else {
+      setStatus(
+        `PROCESSED ${data.processed} (skipped ${data.skipped}, failed ${data.failed})`,
+        data.failed ? "warn" : "ok"
+      );
+    }
+  } catch {
+    setStatus("Server unreachable. Start reels-sync serve first.", "err");
+  } finally {
+    processBtn.disabled = false;
+    checkHealth(endpoint);
   }
 });
 

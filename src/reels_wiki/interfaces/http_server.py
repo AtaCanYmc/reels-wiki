@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hmac
 import json
+import logging
 import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -10,9 +11,10 @@ from typing import Any
 
 from ..core.config import Config, ConfigError, load_config
 from ..ingestion.queue_manager import enqueue, queue_stats
-from ..pipeline.runner import reprocess
+from ..pipeline.runner import process_queue, reprocess
 from ..vault.digest import generate_digest
 
+logger = logging.getLogger("reels_wiki.http")
 _MAX_BODY_BYTES = 16 * 1024
 _LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1"}
 
@@ -34,7 +36,8 @@ def make_http_server(
 
     class _IngestHandler(BaseHTTPRequestHandler):
         def log_message(self, format: str, *args: Any) -> None:  # noqa: A002
-            return
+            if resolved_cfg.http_access_logs:
+                logger.info("%s - %s", self.address_string(), format % args)
 
         def _send_json(self, status: int, payload: dict[str, Any]) -> None:
             body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
@@ -94,7 +97,7 @@ def make_http_server(
                 self._send_json(404, {"error": "Not found"})
 
         def do_POST(self) -> None:  # noqa: N802
-            if self.path not in {"/ingest", "/reprocess", "/digest"}:
+            if self.path not in {"/ingest", "/process", "/reprocess", "/digest"}:
                 self._send_json(404, {"error": "Not found"})
                 return
             if not self._authorized():
@@ -115,6 +118,32 @@ def make_http_server(
                     force=bool(data.get("force", False)),
                 )
                 self._send_json(400 if res.get("result") == "invalid" else 200, res)
+                return
+
+            if self.path == "/process":
+                data = self._read_json_body(allow_empty=True)
+                if data is None:
+                    return
+                raw_limit = data.get("limit")
+                if raw_limit is None:
+                    limit: int | None = None
+                elif isinstance(raw_limit, bool):
+                    self._send_json(400, {"error": "Invalid integer field 'limit'"})
+                    return
+                else:
+                    try:
+                        limit = int(raw_limit)
+                    except (TypeError, ValueError):
+                        self._send_json(400, {"error": "Invalid integer field 'limit'"})
+                        return
+                res = process_queue(
+                    cfg=resolved_cfg,
+                    limit=limit,
+                    dry_run=bool(data.get("dry_run", False)),
+                    retry_failed=bool(data.get("retry_failed", False)),
+                    re_extract=bool(data.get("force", False)),
+                )
+                self._send_json(200, res)
                 return
 
             if self.path == "/reprocess":

@@ -7,6 +7,7 @@ allowed_folders: null        # e.g. [ideas, projects, tools, learning]
 default_folder: null         # used when the LLM picks a folder that is not allowed
 
 delay_seconds: 2.0           # pause between network extractions (be gentle with Instagram)
+http_access_logs: true       # log incoming HTTP requests in reels-sync serve
 
 extraction:
   min_caption_chars: 150     # below this -> audio transcript fallback

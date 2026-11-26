@@ -1,0 +1,28 @@
+meta {
+  name: Process Queue Dry Run
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/process
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "limit": 5,
+    "dry_run": true
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.dry_run: eq true
+  res.body.processed: isNumber
+}

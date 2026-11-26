@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import threading
 import urllib.error
 import urllib.request
@@ -138,3 +139,69 @@ def test_run_http_server_handles_keyboard_interrupt(
     assert "http://127.0.0.1:8765" in out
     assert "Shutting down HTTP server." in out
     dummy_server.server_close.assert_called_once_with()
+
+
+def test_http_server_access_logs_toggle(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    caplog.set_level(logging.INFO, logger="reels_wiki.http")
+
+    for enabled in (True, False):
+        caplog.clear()
+        server = make_http_server(Config(vault_path=tmp_path, http_access_logs=enabled), port=0)
+        port = server.server_address[1]
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=5) as resp:
+                assert resp.status == 200
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2)
+
+        http_records = [r for r in caplog.records if r.name == "reels_wiki.http"]
+        if enabled:
+            assert any("/health" in r.getMessage() for r in http_records)
+        else:
+            assert http_records == []
+
+
+def test_http_server_process_endpoint(tmp_path: Path) -> None:
+    server = make_http_server(Config(vault_path=tmp_path), port=0, token="proc-tok")
+    port = server.server_address[1]
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    auth = {"Authorization": "Bearer proc-tok"}
+    try:
+        code_bad, bad = _post_json(
+            f"http://127.0.0.1:{port}/process",
+            {"limit": "not-an-int"},
+            headers=auth,
+        )
+        assert code_bad == 400 and "limit" in bad["error"]
+
+        mock_summary = {
+            "selected": 2,
+            "recovered_stale": 0,
+            "processed": 2,
+            "skipped": 0,
+            "failed": 0,
+            "results": [],
+            "dry_run": True,
+        }
+        with patch("reels_wiki.interfaces.http_server.process_queue", return_value=mock_summary) as mock_proc:
+            code_ok, ok = _post_json(
+                f"http://127.0.0.1:{port}/process",
+                {"limit": 5, "dry_run": True, "retry_failed": True, "force": True},
+                headers=auth,
+            )
+        assert code_ok == 200 and ok["processed"] == 2
+        mock_proc.assert_called_once()
+        kwargs = mock_proc.call_args.kwargs
+        assert kwargs["limit"] == 5
+        assert kwargs["dry_run"] is True
+        assert kwargs["retry_failed"] is True
+        assert kwargs["re_extract"] is True
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
