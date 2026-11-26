@@ -7,11 +7,20 @@
 [![CI](https://github.com/AtaCanYmc/reels-wiki/actions/workflows/ci.yml/badge.svg)](https://github.com/AtaCanYmc/reels-wiki/actions/workflows/ci.yml)
 [![Release Please](https://github.com/AtaCanYmc/reels-wiki/actions/workflows/release-please.yml/badge.svg)](https://github.com/AtaCanYmc/reels-wiki/actions/workflows/release-please.yml)
 [![GitHub Pages](https://github.com/AtaCanYmc/reels-wiki/actions/workflows/pages.yml/badge.svg)](https://github.com/AtaCanYmc/reels-wiki/actions/workflows/pages.yml)
-[![GitHub Release](https://img.shields.io/github/v/release/AtaCanYmc/reels-wiki)](https://github.com/AtaCanYmc/reels-wiki/releases)
-[![PyPI](https://img.shields.io/pypi/v/reels-wiki)](https://pypi.org/project/reels-wiki/)
-[![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/github/license/AtaCanYmc/reels-wiki)](LICENSE)
+[![GitHub Release](https://img.shields.io/github/v/release/AtaCanYmc/reels-wiki?logo=github)](https://github.com/AtaCanYmc/reels-wiki/releases)
+[![PyPI](https://img.shields.io/pypi/v/reels-wiki?logo=pypi&logoColor=white)](https://pypi.org/project/reels-wiki/)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/reels-wiki?logo=pypi&logoColor=white)](https://pypi.org/project/reels-wiki/)
 [![Homebrew](https://img.shields.io/badge/homebrew-AtaCanYmc%2Ftap-FBB040?logo=homebrew&logoColor=white)](https://github.com/AtaCanYmc/homebrew-tap)
+[![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-3776AB?logo=python&logoColor=white)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/github/license/AtaCanYmc/reels-wiki)](LICENSE)
+
+[![Website](https://img.shields.io/badge/website-atacanymc.github.io-0A66C2?logo=githubpages&logoColor=white)](https://atacanymc.github.io/reels-wiki/)
+[![Obsidian Plugin](https://img.shields.io/badge/obsidian-plugin-7C3AED?logo=obsidian&logoColor=white)](obsidian-plugin/README.md)
+[![Browser Extension](https://img.shields.io/badge/extension-Chrome%20%7C%20Firefox%20%7C%20Safari-4285F4?logo=googlechrome&logoColor=white)](docs/shortcuts-and-extension.md)
+[![MCP Server](https://img.shields.io/badge/MCP-server-111827?logo=modelcontextprotocol&logoColor=white)](docs/cli-and-mcp.md)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](pyproject.toml)
+[![Checked with mypy](https://img.shields.io/badge/type--checked-mypy-2A6DB2)](pyproject.toml)
+[![Bruno API Tests](https://img.shields.io/badge/API%20tests-Bruno-F4AA41)](bruno/bruno.json)
 
 Local-first pipeline that converts saved Instagram Reels into atomic Markdown notes inside an existing 3-layer Obsidian LLM Wiki vault without duplicates.
 
