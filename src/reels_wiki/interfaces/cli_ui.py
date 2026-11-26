@@ -213,3 +213,13 @@ def make_progress_callback(console: Console | None = None) -> Callable[[dict[str
 def render_error(exc: Exception, console: Console | None = None) -> None:
     con = console or get_console(stderr=True)
     con.print(Panel(f"{type(exc).__name__}: {exc}", title="Error", border_style="red", expand=False))
+
+
+def render_review_card(note_info: dict[str, Any], index: int, total: int, console: Console | None = None) -> None:
+    con = console or get_console()
+    tags_str = ", ".join(f"#{t}" for t in note_info.get("tags", [])) or "(no tags)"
+    body = Text()
+    body.append(f"{note_info.get('title', note_info['path'])}\n", style="bold")
+    body.append(f"Path: {note_info['path']}  |  Tags: {tags_str}\n\n", style="dim")
+    body.append(str(note_info.get("excerpt") or ""))
+    con.print(Panel(body, title=f"Inbox Review ({index}/{total})", border_style="cyan", expand=False))

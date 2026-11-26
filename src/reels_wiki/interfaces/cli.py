@@ -20,6 +20,7 @@ from ..ingestion.queue_manager import enqueue, queue_stats
 from ..pipeline.runner import process_queue, reprocess
 from ..vault.digest import generate_digest
 from ..vault.search import search_vault
+from ..vault.writer import apply_review_action, list_inbox_notes
 from .cli_ui import (
     make_progress_callback,
     render_doctor,
@@ -27,6 +28,7 @@ from .cli_ui import (
     render_import_ig,
     render_ingest,
     render_process_summary,
+    render_review_card,
     render_stats,
 )
 from .http_server import run_http_server
@@ -139,6 +141,12 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Re-process items and overwrite existing note_path if present.",
     )
+    p_process.add_argument(
+        "--workers",
+        type=int,
+        default=1,
+        help="Concurrent workers for Whisper/LLM synthesis (extraction remains serial).",
+    )
 
     # reprocess
     p_reprocess = subparsers.add_parser(
@@ -199,6 +207,7 @@ def _build_parser() -> argparse.ArgumentParser:
     # digest
     p_digest = subparsers.add_parser("digest", help="Generate a weekly digest note grouping recent vault notes by tag.")
     p_digest.add_argument("--days", type=int, default=7, help="Lookback window in days (default: 7).")
+    p_digest.add_argument("--tag", default=None, help="Scope digest to notes matching this tag.")
     p_digest.add_argument("--dry-run", action="store_true", help="Preview matched notes without writing a digest file.")
 
     # search
@@ -212,6 +221,10 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Optional embedding backend (default: none).",
     )
     p_search.add_argument("--reindex", action="store_true", help="Rebuild embeddings in sources/.embeddings.sqlite.")
+
+    # review
+    p_review = subparsers.add_parser("review", help="Interactively curate status: inbox notes (promote, retag, archive).")
+    p_review.add_argument("--limit", type=int, default=None, help="Maximum inbox notes to review.")
 
     return parser
 
@@ -387,6 +400,7 @@ def main(argv: list[str] | None = None) -> int:
                 dry_run=args.dry_run,
                 retry_failed=args.retry_failed,
                 re_extract=args.force,
+                workers=args.workers,
                 on_event=progress_cb,
             )
             if args.json_output:
@@ -440,11 +454,52 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "digest":
-            result = generate_digest(cfg.vault_path, days=args.days, dry_run=args.dry_run)
+            result = generate_digest(cfg.vault_path, days=args.days, tag=args.tag, dry_run=args.dry_run)
             if args.json_output:
                 _emit_json(result)
             else:
                 print(f"Digest ({result['notes_count']} notes): {result['digest_path'] or 'none'}")
+            return 0
+
+        if args.command == "review":
+            import frontmatter as _fm
+
+            inbox_paths = list_inbox_notes(cfg.vault_path)
+            if args.limit is not None:
+                inbox_paths = inbox_paths[: max(args.limit, 0)]
+            notes_meta: list[dict[str, Any]] = []
+            for p in inbox_paths:
+                post = _fm.load(p)
+                raw_tags = post.metadata.get("tags")
+                tags = [str(t) for t in raw_tags] if isinstance(raw_tags, list) else []
+                notes_meta.append({
+                    "path": p.relative_to(cfg.vault_path).as_posix(),
+                    "abs_path": p,
+                    "title": str(post.metadata.get("title") or p.stem),
+                    "tags": tags,
+                    "excerpt": " ".join(post.content.split())[:240],
+                })
+            if args.json_output:
+                payload = [{k: v for k, v in n.items() if k != "abs_path"} for n in notes_meta]
+                _emit_json({"count": len(notes_meta), "notes": payload})
+                return 0
+            for idx, info in enumerate(notes_meta, 1):
+                render_review_card(info, idx, len(notes_meta))
+                choice = Prompt.ask(
+                    "Action [p]romote / [t]ags / [a]rchive / [s]kip / [q]uit",
+                    choices=["p", "t", "a", "s", "q"],
+                    default="s",
+                )
+                if choice == "q":
+                    break
+                if choice == "p":
+                    apply_review_action(cfg.vault_path, info["abs_path"], "promote")
+                elif choice == "a":
+                    apply_review_action(cfg.vault_path, info["abs_path"], "archive")
+                elif choice == "t":
+                    raw = Prompt.ask("Tags (comma-separated)", default=",".join(info["tags"]))
+                    tags_in = [t.strip() for t in raw.split(",") if t.strip()]
+                    apply_review_action(cfg.vault_path, info["abs_path"], "retag", new_tags=tags_in)
             return 0
 
         if args.command == "search":

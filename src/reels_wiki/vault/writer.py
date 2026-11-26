@@ -11,7 +11,7 @@ import frontmatter
 from jinja2.sandbox import SandboxedEnvironment
 
 from ..core.models import AtomicNoteSynthesis, RawReelArtifact
-from ..core.utils import atomic_write_text, normalize_key, one_line
+from ..core.utils import atomic_write_text, normalize_key, one_line, slugify
 from ..ingestion.queue_manager import QueueManager
 from .context import VaultContext
 
@@ -306,4 +306,75 @@ def write_synthesis(
         "unchanged": False,
         "content_hash": new_hash,
         "backlinks_updated": backlinks,
+    }
+
+
+def list_inbox_notes(vault: Path) -> list[Path]:
+    """Return sorted vault Markdown note paths whose frontmatter status is ``inbox``."""
+    root = Path(vault).expanduser().resolve()
+    skip_dirs = {"sources", "inbox", "digests"}
+    skip_files = {"_index.md", "_log.md", "_CLAUDE.md"}
+    hits: list[Path] = []
+    if not root.is_dir():
+        return hits
+    for path in sorted(root.rglob("*.md")):
+        rel = path.relative_to(root)
+        if rel.name in skip_files or rel.parts[0] in skip_dirs or any(p.startswith(".") for p in rel.parts):
+            continue
+        post = _read_post(path)
+        if post is not None and str(post.metadata.get("status") or "").strip().lower() == "inbox":
+            hits.append(path)
+    return hits
+
+
+def apply_review_action(
+    vault: Path,
+    note_path: Path,
+    action: str,
+    *,
+    new_tags: list[str] | None = None,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Apply an inbox curation action (``promote``, ``retag``, ``archive``, or ``skip``)."""
+    root = Path(vault).expanduser().resolve()
+    target = Path(note_path).expanduser().resolve()
+    if not target.is_relative_to(root) or not target.is_file():
+        raise WriterError(f"Note is missing or outside vault: {note_path}")
+    rel = target.relative_to(root).as_posix()
+    if action == "skip":
+        return {"action": "skip", "path": rel, "index_updated": False}
+
+    post = _read_post(target)
+    if post is None:
+        raise WriterError(f"Could not parse frontmatter in {rel}")
+
+    if action == "promote":
+        post.metadata["status"] = "evergreen"
+    elif action == "archive":
+        post.metadata["status"] = "archived"
+    elif action == "retag":
+        cleaned: list[str] = []
+        for raw in new_tags or []:
+            tag = slugify(raw.lstrip("#").replace("/", "-"))
+            if tag and tag not in cleaned:
+                cleaned.append(tag)
+        post.metadata["tags"] = cleaned
+    else:
+        raise WriterError(f"Unsupported review action: {action}")
+
+    atomic_write_text(target, frontmatter.dumps(post, sort_keys=False).rstrip("\n") + "\n")
+    title = str(post.metadata.get("title") or target.stem)
+    folder = target.parent.relative_to(root).as_posix()
+    index_updated = update_index(root, folder, target.stem, title, title)
+    stub = RawReelArtifact(
+        shortcode=str(post.metadata.get("shortcode") or target.stem),
+        url=str(post.metadata.get("source_url") or ""),
+    )
+    append_log(root, slug=target.stem, title=title, artifact=stub, action=f"review:{action}", now=now or datetime.now())
+    return {
+        "action": action,
+        "path": rel,
+        "status": post.metadata.get("status"),
+        "tags": post.metadata.get("tags", []),
+        "index_updated": index_updated,
     }

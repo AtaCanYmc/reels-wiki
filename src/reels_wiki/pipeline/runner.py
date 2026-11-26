@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 import time
+from concurrent.futures import ThreadPoolExecutor
 from typing import Callable
 
 from filelock import FileLock, Timeout
 
 from ..core.config import Config
-from ..core.models import QueueItem
+from ..core.models import QueueItem, RawReelArtifact
 from ..ingestion.queue_manager import QueueManager
 from ..vault.context import VaultContext
 from ..vault.writer import write_synthesis
@@ -73,6 +74,7 @@ def process_queue(
     retry_failed: bool = False,
     re_extract: bool = False,
     dry_run: bool = False,
+    workers: int = 1,
     on_event: Progress | None = None,
 ) -> dict:
     """Process pending items (and optionally failed ones). Only one processor may run per vault at a time."""
@@ -93,14 +95,77 @@ def process_queue(
         if dry_run:
             summary["results"] = [{"shortcode": i.shortcode, "url": i.url, "status": i.status} for i in items]
             return summary
-        for n, item in enumerate(items):
-            result = process_item(cfg, queue, item, re_extract=re_extract)
-            summary[{"processed": "processed", "skipped": "skipped"}.get(result["status"], "failed")] += 1
-            summary["results"].append(result)
-            if on_event:
-                on_event(result)
-            if result.get("downloaded") and n < len(items) - 1 and cfg.delay_seconds:
+
+        if workers <= 1 or len(items) <= 1:
+            for n, item in enumerate(items):
+                result = process_item(cfg, queue, item, re_extract=re_extract)
+                summary[{"processed": "processed", "skipped": "skipped"}.get(result["status"], "failed")] += 1
+                summary["results"].append(result)
+                if on_event:
+                    on_event(result)
+                if result.get("downloaded") and n < len(items) - 1 and cfg.delay_seconds:
+                    time.sleep(cfg.delay_seconds)
+            return summary
+
+        # Stage 1 (serial): respect per-host delay_seconds on extraction.
+        extracted: list[tuple[QueueItem, RawReelArtifact, bool]] = []
+        last_downloaded = False
+        for item in items:
+            if last_downloaded and cfg.delay_seconds:
                 time.sleep(cfg.delay_seconds)
+            last_downloaded = False
+            sc = item.shortcode
+            queue.update_status(sc, "processing", count_attempt=True)
+            try:
+                artifact = None if re_extract else load_artifact(cfg.vault_path, sc)
+                downloaded = False
+                if artifact is None:
+                    artifact = extract_reel(item.url, sc, cfg)
+                    save_artifact(cfg.vault_path, artifact)
+                    downloaded = True
+                    last_downloaded = True
+                extracted.append((item, artifact, downloaded))
+            except Exception as exc:  # noqa: BLE001
+                msg = f"{type(exc).__name__}: {exc}"
+                queue.update_status(sc, "failed", error=msg)
+                fail = {"status": "failed", "shortcode": sc, "error": msg[:500], "downloaded": False}
+                summary["failed"] += 1
+                summary["results"].append(fail)
+                if on_event:
+                    on_event(fail)
+
+        # Stage 2 (concurrent): run synthesis in bounded worker pool; keep vault writes serial below.
+        ctx = _ctx(cfg)
+        with ThreadPoolExecutor(max_workers=max(workers, 1)) as pool:
+            futures = [(item, artifact, dl, pool.submit(synthesize, artifact, ctx, cfg)) for item, artifact, dl in extracted]
+            for item, artifact, dl, fut in futures:
+                sc = item.shortcode
+                try:
+                    syn = fut.result()
+                    if artifact.synthesis_metrics is not None:
+                        save_artifact(cfg.vault_path, artifact)
+                    result = write_synthesis(
+                        queue,
+                        _ctx(cfg),
+                        artifact,
+                        syn,
+                        overwrite_path=item.note_path,
+                        template_path=cfg.template_path,
+                        enable_backlinks=cfg.enable_backlinks,
+                    )
+                    result["warnings"] = artifact.warnings
+                    result["steps"] = artifact.steps_used
+                    result["downloaded"] = dl
+                    if artifact.synthesis_metrics is not None:
+                        result["synthesis_metrics"] = artifact.synthesis_metrics.model_dump()
+                except Exception as exc:  # noqa: BLE001
+                    msg = f"{type(exc).__name__}: {exc}"
+                    queue.update_status(sc, "failed", error=msg)
+                    result = {"status": "failed", "shortcode": sc, "error": msg[:500], "downloaded": dl}
+                summary[{"processed": "processed", "skipped": "skipped"}.get(result["status"], "failed")] += 1
+                summary["results"].append(result)
+                if on_event:
+                    on_event(result)
         return summary
     finally:
         lock.release()

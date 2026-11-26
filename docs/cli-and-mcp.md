@@ -21,7 +21,7 @@ reels-sync [--config PATH] [--vault PATH] [--json] [-v] <subcommand>
 | :--- | :--- | :--- |
 | `ingest <url>` | Enqueue an Instagram, YouTube Shorts, or TikTok URL | `--source`, `--force` |
 | `import-ig <path>` | Bulk-import from `saved_posts.json` or export folder | `--reels-only`, `--force` |
-| `process` | Run waterfall extraction, synthesis, and note writing | `--limit N`, `--dry-run`, `--retry-failed`, `--force` |
+| `process` | Run waterfall extraction, synthesis, and note writing | `--limit N`, `--dry-run`, `--retry-failed`, `--force`, `--workers N` |
 | `reprocess [shortcode]` | Re-synthesize from `sources/reels/<code>.json` | `--all`, `--dry-run` |
 | `stats` | Show queue counts, artifact count, extraction `stages`, and `llm_usage` token/retry metrics | None |
 | `doctor` | Verify Python, `ffmpeg`, cookies, API keys, and vault permissions | None |
@@ -29,8 +29,9 @@ reels-sync [--config PATH] [--vault PATH] [--json] [-v] <subcommand>
 | `telegram` | Start long-polling Telegram share capture bot | None |
 | `mcp` | Start MCP server over stdio | None |
 | `serve` | Start HTTP ingest server for Shortcuts and browser extensions | `--host`, `--port` |
-| `digest` | Generate weekly summary note grouping recent vault notes by tag | `--days N`, `--dry-run` |
+| `digest` | Generate summary note grouping recent vault notes by tag | `--days N`, `--tag TAG`, `--dry-run` |
 | `search <query>` | Search vault notes via hybrid keyword + local embeddings (`sources/.embeddings.sqlite`) | `--limit N`, `--backend`, `--reindex` |
+| `review` | Interactively promote, retag, or archive `status: inbox` vault notes | `--limit N` |
 
 ### Output Modes
 
@@ -67,6 +68,12 @@ reels-sync serve
 
 # Generate weekly summary note for notes from the past 7 days
 reels-sync digest --days 7
+
+# Generate topic-scoped summary note across the last 30 days
+reels-sync digest --days 30 --tag ai-agents
+
+# Interactively curate inbox notes (promote to evergreen, retag, or archive)
+reels-sync review --limit 10
 
 # Search vault notes via keyword or local Ollama/fastembed index
 reels-sync search "ffmpeg framing" --backend ollama

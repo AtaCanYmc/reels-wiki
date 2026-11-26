@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import re
+import threading
 import time
 from abc import ABC, abstractmethod
 from typing import Any, Callable
@@ -28,7 +29,13 @@ def _schema_text() -> str:
     return json.dumps(AtomicNoteSynthesis.model_json_schema(), ensure_ascii=False, indent=1)
 
 
-def build_user_prompt(artifact: RawReelArtifact, ctx: VaultContext, max_chars: int) -> str:
+def build_user_prompt(
+    artifact: RawReelArtifact,
+    ctx: VaultContext,
+    max_chars: int,
+    *,
+    folder_prompts: dict[str, str] | None = None,
+) -> str:
     raw_sections = [
         ("Caption", artifact.caption),
         ("Subtitles / audio transcript", artifact.transcript),
@@ -46,6 +53,7 @@ def build_user_prompt(artifact: RawReelArtifact, ctx: VaultContext, max_chars: i
     return render_prompt(
         "synthesis_user.j2",
         vault_block=ctx.prompt_block(),
+        folder_prompts=folder_prompts or {},
         schema_text=_schema_text(),
         creator=artifact.creator or "unknown",
         url=artifact.url,
@@ -60,10 +68,22 @@ class BaseProvider(ABC):
     """Abstract base class for LLM synthesis providers."""
 
     name: str
-    last_usage: dict[str, int]
 
     def __init__(self) -> None:
-        self.last_usage = {}
+        self._local = threading.local()
+        self._local.usage = {}
+
+    @property
+    def last_usage(self) -> dict[str, int]:
+        local = getattr(self, "_local", None)
+        val = getattr(local, "usage", None) if local is not None else None
+        return val if isinstance(val, dict) else {}
+
+    @last_usage.setter
+    def last_usage(self, value: dict[str, int]) -> None:
+        if not hasattr(self, "_local"):
+            self._local = threading.local()
+        self._local.usage = value
 
     @abstractmethod
     def complete(self, system: str, user: str, cfg: Config) -> str:
@@ -258,7 +278,12 @@ def synthesize(artifact: RawReelArtifact, ctx: VaultContext, cfg: Config) -> Ato
     """Return a normalised synthesis. Content-free artifacts are skipped without spending an LLM call."""
     if not artifact.has_content():
         return AtomicNoteSynthesis(should_keep=False, skip_reason="No extractable content (empty caption, transcript and visuals)")
-    user = build_user_prompt(artifact, ctx, cfg.synthesis.max_input_chars)
+    user = build_user_prompt(
+        artifact,
+        ctx,
+        cfg.synthesis.max_input_chars,
+        folder_prompts=cfg.synthesis.folder_prompts,
+    )
     providers = [cfg.synthesis.provider]
     if cfg.synthesis.fallback_provider and cfg.synthesis.fallback_provider != cfg.synthesis.provider:
         providers.append(cfg.synthesis.fallback_provider)

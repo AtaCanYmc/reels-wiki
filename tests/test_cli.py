@@ -290,3 +290,49 @@ def test_cli_digest_writes_weekly_summary(tmp_path: Path, capsys: pytest.Capture
     digest_file = tmp_path / out["digest_path"]
     assert digest_file.is_file()
     assert "[[note-one|First Idea]]" in digest_file.read_text(encoding="utf-8")
+
+
+def test_cli_digest_scoped_by_tag_and_review_actions(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    from datetime import date
+
+    from reels_wiki.vault.writer import apply_review_action, list_inbox_notes
+
+    today = date.today().isoformat()
+    tools = tmp_path / "tools"
+    ideas = tmp_path / "ideas"
+    tools.mkdir()
+    ideas.mkdir()
+    note_a = tools / "tool-note.md"
+    note_b = ideas / "idea-note.md"
+    note_a.write_text(
+        f"---\ntitle: CLI Tool Note\ncreated: '{today}'\nstatus: inbox\ntags: [cli, local]\n---\nTool body\n",
+        encoding="utf-8",
+    )
+    note_b.write_text(
+        f"---\ntitle: Design Idea\ncreated: '{today}'\nstatus: inbox\ntags: [design]\n---\nIdea body\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "_index.md").write_text("# Index\n\n## Tools\n- [[tool-note|CLI Tool Note]] - summary\n", encoding="utf-8")
+
+    cfg = _fake_cfg(tmp_path)
+    with patch("reels_wiki.interfaces.cli.load_config", return_value=cfg):
+        assert cli.main(["--json", "digest", "--days", "30", "--tag", "cli"]) == 0
+    digest_out = json.loads(capsys.readouterr().out)
+    assert digest_out["tag"] == "cli"
+    assert digest_out["notes_count"] == 1
+    assert digest_out["digest_path"].endswith("-cli-digest.md")
+
+    with patch("reels_wiki.interfaces.cli.load_config", return_value=cfg):
+        assert cli.main(["--json", "review", "--limit", "5"]) == 0
+    review_json = json.loads(capsys.readouterr().out)
+    assert review_json["count"] == 2
+    assert len(list_inbox_notes(tmp_path)) == 2
+
+    promo = apply_review_action(tmp_path, note_a, "promote")
+    assert promo["status"] == "evergreen" and promo["index_updated"] is False
+    retagged = apply_review_action(tmp_path, note_b, "retag", new_tags=["#New Tag", "design"])
+    assert retagged["tags"] == ["new-tag", "design"]
+    archived = apply_review_action(tmp_path, note_b, "archive")
+    assert archived["status"] == "archived"
+    assert len(list_inbox_notes(tmp_path)) == 0
+    assert (tmp_path / "_index.md").read_text(encoding="utf-8").count("[[tool-note|") == 1

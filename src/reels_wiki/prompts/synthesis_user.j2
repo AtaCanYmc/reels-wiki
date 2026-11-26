@@ -1,4 +1,11 @@
 {{ vault_block }}
+{% if folder_prompts %}
+## Folder-specific guidance
+{% for folder, guidance in folder_prompts.items() %}
+- `{{ folder }}/`: {{ guidance }}
+{% endfor %}
+
+{% endif %}
 ## JSON schema
 {{ schema_text }}
 

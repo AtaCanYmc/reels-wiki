@@ -33,7 +33,7 @@ Set `template_path` in `config.yaml` to render custom Markdown bodies via a sand
 
 ## Telegram Capture Bot
 
-The Telegram bot (`reels-sync telegram` or `reels-wiki-telegram`) only enqueues Instagram URLs from `TELEGRAM_ALLOWED_CHAT_ID` with `source="telegram"`. Messages from any other chat ID are ignored. It does not trigger `process`.
+The Telegram bot (`reels-sync telegram` or `reels-wiki-telegram`) enqueues Instagram, YouTube Shorts, and TikTok URLs from `TELEGRAM_ALLOWED_CHAT_ID` with `source="telegram"`. Messages from any other chat ID are ignored. It does not trigger `process`.
 
 ## Synthesis Providers (`synthesis:`)
 
@@ -46,6 +46,13 @@ The Telegram bot (`reels-sync telegram` or `reels-wiki-telegram`) only enqueues 
 | `ollama_base_url` | `http://localhost:11434/v1` | OpenAI-compatible base URL for `ollama` or local LLM servers |
 | `ollama_model` | `llama3.1:8b` | Local model name when provider is `ollama` |
 | `ollama_api_key` | `ollama` | Bearer token sent to the OpenAI-compatible local endpoint |
+| `folder_prompts` | `{}` | Mapping of folder names (e.g. `tools`, `learning`) to synthesis guidance appended to the prompt |
+
+## Vault Link Options
+
+| Top-Level Key | Default | Description |
+| :--- | :--- | :--- |
+| `enable_backlinks` | `false` | When `true`, append reciprocal `- [[source_slug|source_title]]` links into related existing notes |
 
 ## Examples
 

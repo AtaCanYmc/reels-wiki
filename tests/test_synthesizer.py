@@ -177,3 +177,15 @@ def test_synthesis_metrics_track_retries(ctx, cfg, monkeypatch):
     assert out.should_keep is False
     assert art.synthesis_metrics is not None
     assert art.synthesis_metrics.retries == 1
+
+
+def test_folder_prompts_included_in_user_prompt(ctx):
+    prompt = synthesizer.build_user_prompt(
+        ART,
+        ctx,
+        12000,
+        folder_prompts={"tools": "Emphasize CLI commands", "learning": "Emphasize mental models"},
+    )
+    assert "Folder-specific guidance" in prompt
+    assert "`tools/`: Emphasize CLI commands" in prompt
+    assert "`learning/`: Emphasize mental models" in prompt

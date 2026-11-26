@@ -54,6 +54,7 @@ class SynthesisConfig(BaseModel):
     max_retries: int = Field(3, ge=1, le=8)
     temperature: float = Field(0.2, ge=0, le=2)
     max_input_chars: int = Field(12000, ge=1000)
+    folder_prompts: dict[str, str] = Field(default_factory=dict)
 
 
 class Config(BaseModel):

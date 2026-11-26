@@ -13,7 +13,7 @@ Product and engineering milestones for `reels-wiki`, grouped by SemVer releases 
 | `v0.5.0` | Multi-platform (Shorts/TikTok), weekly digest, extension auto-sync | Completed |
 | `v1.0.0` | Frozen schemas, public SDK contract, E2E fixture suite | Completed |
 | `v1.1.0` | Local semantic search, bidirectional graph links, multi-platform bot | Completed |
-| `v1.2.0` | Interactive review TUI, topic digests, bounded worker concurrency | Planned |
+| `v1.2.0` | Interactive review TUI, topic digests, bounded worker concurrency | Completed |
 | `v1.3.0` | Native Obsidian plugin, automated browser store packaging | Future |
 
 ## v0.1.0 (Completed)
@@ -113,16 +113,16 @@ Focus: Improve vault recall and graph connectivity locally while bringing Telegr
 
 **Exit Criteria**: Hybrid search returns ranked vault notes offline via CLI and MCP, reciprocal backlinks pass idempotency tests, and Telegram bot tests verify Reels, Shorts, and TikTok URLs.
 
-## v1.2.0 (Planned - Review TUI, Topic Digests, and Bounded Concurrency)
+## v1.2.0 (Completed - Review TUI, Topic Digests, and Bounded Concurrency)
 
 Focus: Streamline human note curation inside the vault, support theme-scoped syntheses, and speed up multi-item queue runs safely.
 
-- **Interactive Inbox Review TUI (`interfaces/cli.py`, `interfaces/cli_ui.py`)**:
+- [x] **Interactive Inbox Review TUI (`interfaces/cli.py`, `interfaces/cli_ui.py`, `vault/writer.py`)**:
   - Add `reels-sync review` to step through `status: inbox` notes in the terminal, promote notes to `evergreen`, edit tags, or archive low-value captures while updating `_index.md` and `_log.md`.
-- **Topic-Scoped Digests & Folder Prompt Profiles (`vault/digest.py`, `prompts/`, `core/config.py`)**:
+- [x] **Topic-Scoped Digests & Folder Prompt Profiles (`vault/digest.py`, `prompts/`, `core/config.py`)**:
   - Extend `reels-sync digest --days 30 --tag <tag>` to synthesize focused thematic summaries across longer windows.
   - Support per-folder prompt overrides under `synthesis:` so `tools/` notes emphasize commands/configs while `learning/` notes emphasize mental models.
-- **Bounded Stage Concurrency (`pipeline/runner.py`)**:
+- [x] **Bounded Stage Concurrency (`pipeline/runner.py`)**:
   - Introduce opt-in `--workers N` concurrency for Whisper transcription and LLM synthesis stages while keeping serial per-host `delay_seconds` throttling on `yt-dlp` extraction.
 
 **Exit Criteria**: `reels-sync review` curates `inbox` notes without duplicating `_index.md` entries, topic digests accept `--tag`, and `--workers` runs pass lock/race tests cleanly.
