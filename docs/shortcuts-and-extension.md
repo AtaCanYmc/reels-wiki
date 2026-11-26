@@ -76,6 +76,23 @@ Supports **Instagram** (Reels and posts), **YouTube Shorts**, and **TikTok** URL
 2. Click **Load Temporary Add-on...** and select `extension/manifest.json`.
 3. Click the extension icon on any supported tab to enqueue the URL.
 
+### Safari (macOS + Xcode)
+
+Since `extension/` targets Manifest V3, convert it into a local Safari Web Extension with Xcode command-line tools:
+
+```bash
+xcrun safari-web-extension-converter extension/ \
+  --app-name "reels-wiki Capture" \
+  --bundle-identifier com.atacanymc.reels-wiki \
+  --macos-only
+```
+
+1. Open the generated Xcode project and build/run once (**Run** / `Cmd+R`).
+2. In Safari, enable **Settings > Developer > Allow unsigned extensions** (App Store distribution requires an Apple Developer account).
+3. Enable **reels-wiki Capture** under **Settings > Extensions** and grant access for `127.0.0.1` / `localhost`.
+
+> Without Xcode, use **Apple Shortcuts** (Section 2) from the Safari Share menu on macOS and iOS.
+
 ### Offline Queue & Automatic Background Sync
 
 If `reels-sync serve` is unreachable when you capture a URL, the extension stores it locally in `pendingQueue` (`chrome.storage.local`) instead of failing:
