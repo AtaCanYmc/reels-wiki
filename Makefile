@@ -24,7 +24,7 @@ GLOBAL_FLAGS := $(if $(CONFIG),--config "$(CONFIG)",) $(if $(VAULT),--vault "$(V
 .PHONY: help venv install install-dev install-local install-all update-yt-dlp init-config init doctor \
         test test-fast test-match test-cov lint typecheck check-docs check-release check-site verify \
         stats stats-json ingest import-ig process-dry process retry-failed reprocess reprocess-all telegram mcp serve \
-        docker-build docker-process docker-telegram build build-extension clean clean-all
+        docker-build docker-process docker-telegram build build-extension build-obsidian-plugin clean clean-all
 
 help: ## Show available targets grouped by category
 	@echo "reels-wiki Makefile targets"
@@ -107,18 +107,21 @@ check-release: ## Validate release-please JSON/YAML and version parity
 		m_ver = manifest["."]; \
 		py_ver = re.search(r"^version\s*=\s*\"([^\"]+)\"", pathlib.Path("pyproject.toml").read_text(), re.M).group(1); \
 		init_ver = re.search(r"__version__\s*=\s*\"([^\"]+)\"", pathlib.Path("src/reels_wiki/__init__.py").read_text()).group(1); \
-		assert m_ver == py_ver == init_ver, f"Version mismatch: manifest={m_ver}, pyproject={py_ver}, __init__={init_ver}"; \
+		ext_ver = json.loads(pathlib.Path("extension/manifest.json").read_text())["version"]; \
+		obs_ver = json.loads(pathlib.Path("obsidian-plugin/manifest.json").read_text())["version"]; \
+		assert m_ver == py_ver == init_ver == ext_ver == obs_ver, f"Version mismatch: manifest={m_ver}, pyproject={py_ver}, __init__={init_ver}, extension={ext_ver}, obsidian={obs_ver}"; \
 		assert "packages" in cfg and "." in cfg["packages"]; \
 		print(f"Release config and version parity OK ({m_ver}).")'
 	@$(VENV_PYTHON) -c 'import yaml, pathlib; yaml.safe_load(pathlib.Path(".github/workflows/release-please.yml").read_text()); print("Workflow YAML syntax OK.")' 2>/dev/null || \
 		$(PYTHON) -c 'import yaml, pathlib; yaml.safe_load(pathlib.Path(".github/workflows/release-please.yml").read_text()); print("Workflow YAML syntax OK.")'
 
-check-site: ## Validate site/ and extension/ JS, JSON, and XML files
+check-site: ## Validate site/, extension/, and obsidian-plugin/ JS, JSON, and XML files
 	@if command -v node >/dev/null 2>&1; then \
-		node --check site/index.js && node --check extension/background.js && node --check extension/popup.js; \
+		node --check site/index.js && node --check extension/background.js && node --check extension/popup.js && node --check obsidian-plugin/main.js; \
 	fi
 	@$(PYTHON) -c 'import json, pathlib, xml.etree.ElementTree as ET; \
 		json.loads(pathlib.Path("extension/manifest.json").read_text()); \
+		json.loads(pathlib.Path("obsidian-plugin/manifest.json").read_text()); \
 		ET.fromstring(pathlib.Path("site/sitemap.xml").read_text()); \
 		print("Site and extension checks passed.")'
 
@@ -186,6 +189,11 @@ build-extension: ## Package Chrome/Firefox extension ZIP into dist/
 	@mkdir -p dist
 	@cd extension && rm -f ../dist/reels-wiki-extension.zip && zip -q -r -X ../dist/reels-wiki-extension.zip manifest.json background.js popup.html popup.css popup.js icons/ -x "*.DS_Store"
 	@echo "Built dist/reels-wiki-extension.zip"
+
+build-obsidian-plugin: ## Package native Obsidian plugin ZIP into dist/
+	@mkdir -p dist
+	@cd obsidian-plugin && rm -f ../dist/reels-wiki-obsidian-plugin.zip && zip -q -r -X ../dist/reels-wiki-obsidian-plugin.zip manifest.json main.js styles.css README.md -x "*.DS_Store"
+	@echo "Built dist/reels-wiki-obsidian-plugin.zip"
 
 clean: ## Remove build artifacts and Python caches
 	rm -rf build/ dist/ *.egg-info .pytest_cache

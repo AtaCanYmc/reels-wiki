@@ -5,6 +5,7 @@ import threading
 import urllib.error
 import urllib.request
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -73,3 +74,52 @@ def test_http_server_refuses_non_loopback_without_token(tmp_path: Path, monkeypa
     monkeypatch.delenv("REELS_WIKI_HTTP_TOKEN", raising=False)
     with pytest.raises(ConfigError, match="REELS_WIKI_HTTP_TOKEN"):
         make_http_server(Config(vault_path=tmp_path), host="0.0.0.0", port=0)
+
+
+def test_http_server_stats_reprocess_and_digest_endpoints(tmp_path: Path) -> None:
+    from datetime import date
+
+    today = date.today().isoformat()
+    ideas = tmp_path / "ideas"
+    ideas.mkdir()
+    (ideas / "sample.md").write_text(
+        f"---\ntitle: Sample Note\ncreated: '{today}'\ntags: [obsidian]\n---\nBody\n",
+        encoding="utf-8",
+    )
+    server = make_http_server(Config(vault_path=tmp_path), port=0, token="obsidian-tok")
+    port = server.server_address[1]
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    auth = {"Authorization": "Bearer obsidian-tok"}
+    try:
+        req = urllib.request.Request(f"http://127.0.0.1:{port}/stats", headers=auth)
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            assert resp.status == 200
+            stats = json.loads(resp.read().decode("utf-8"))
+        assert stats["total"] == 0
+
+        code_bad, _ = _post_json(f"http://127.0.0.1:{port}/reprocess", {}, headers=auth)
+        assert code_bad == 400
+
+        with patch(
+            "reels_wiki.interfaces.http_server.reprocess",
+            return_value={"selected": 1, "processed": 1, "skipped": 0, "failed": 0},
+        ) as mock_rep:
+            code_rep, rep = _post_json(
+                f"http://127.0.0.1:{port}/reprocess",
+                {"shortcode": "DAbCdEfGhIj"},
+                headers=auth,
+            )
+        assert code_rep == 200 and rep["processed"] == 1
+        mock_rep.assert_called_once()
+
+        code_dig, dig = _post_json(
+            f"http://127.0.0.1:{port}/digest",
+            {"days": 7, "tag": "obsidian"},
+            headers=auth,
+        )
+        assert code_dig == 200 and dig["notes_count"] == 1
+        assert dig["digest_path"].endswith("-obsidian-digest.md")
+    finally:
+        server.shutdown()
+        server.server_close()

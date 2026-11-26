@@ -28,6 +28,16 @@
         {
           "type": "generic",
           "path": "site/index.html"
+        },
+        {
+          "type": "json",
+          "path": "extension/manifest.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "obsidian-plugin/manifest.json",
+          "jsonpath": "$.version"
         }
       ]
     }

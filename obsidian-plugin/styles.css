@@ -1,0 +1,26 @@
+.reels-wiki-pane {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reels-wiki-status {
+  font-weight: 600;
+}
+
+.reels-wiki-stats {
+  font-family: var(--font-monospace);
+  font-size: 0.85em;
+  color: var(--text-muted);
+}
+
+.reels-wiki-input {
+  width: 100%;
+}
+
+.reels-wiki-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}

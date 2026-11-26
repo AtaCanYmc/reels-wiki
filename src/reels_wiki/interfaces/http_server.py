@@ -9,7 +9,9 @@ from pathlib import Path
 from typing import Any
 
 from ..core.config import Config, ConfigError, load_config
-from ..ingestion.queue_manager import enqueue
+from ..ingestion.queue_manager import enqueue, queue_stats
+from ..pipeline.runner import reprocess
+from ..vault.digest import generate_digest
 
 _MAX_BODY_BYTES = 16 * 1024
 _LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1"}
@@ -27,7 +29,8 @@ def make_http_server(
     if host not in _LOOPBACK_HOSTS and not resolved_token:
         raise ConfigError("REELS_WIKI_HTTP_TOKEN is required when binding to a non-loopback host")
 
-    vault: Path = cfg.vault_path
+    resolved_cfg = cfg
+    vault: Path = resolved_cfg.vault_path
 
     class _IngestHandler(BaseHTTPRequestHandler):
         def log_message(self, format: str, *args: Any) -> None:  # noqa: A002
@@ -51,6 +54,27 @@ def make_http_server(
             candidate = auth[7:].strip() if auth.startswith("Bearer ") else self.headers.get("X-API-Key", "").strip()
             return bool(candidate) and hmac.compare_digest(candidate, resolved_token)
 
+        def _read_json_body(self, *, allow_empty: bool = False) -> dict[str, Any] | None:
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+            except ValueError:
+                self._send_json(400, {"error": "Invalid Content-Length"})
+                return None
+            if length == 0 and allow_empty:
+                return {}
+            if length <= 0 or length > _MAX_BODY_BYTES:
+                self._send_json(400, {"error": "Invalid or oversized request body"})
+                return None
+            try:
+                data = json.loads(self.rfile.read(length).decode("utf-8"))
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                self._send_json(400, {"error": "Invalid JSON body"})
+                return None
+            if not isinstance(data, dict):
+                self._send_json(400, {"error": "JSON body must be an object"})
+                return None
+            return data
+
         def do_OPTIONS(self) -> None:  # noqa: N802
             self.send_response(204)
             self.send_header("Access-Control-Allow-Origin", "*")
@@ -61,41 +85,62 @@ def make_http_server(
         def do_GET(self) -> None:  # noqa: N802
             if self.path == "/health":
                 self._send_json(200, {"ok": True})
+            elif self.path == "/stats":
+                if not self._authorized():
+                    self._send_json(401, {"error": "Unauthorized"})
+                    return
+                self._send_json(200, queue_stats(vault=vault))
             else:
                 self._send_json(404, {"error": "Not found"})
 
         def do_POST(self) -> None:  # noqa: N802
-            if self.path != "/ingest":
+            if self.path not in {"/ingest", "/reprocess", "/digest"}:
                 self._send_json(404, {"error": "Not found"})
                 return
             if not self._authorized():
                 self._send_json(401, {"error": "Unauthorized"})
                 return
-            try:
-                length = int(self.headers.get("Content-Length", "0"))
-            except ValueError:
-                self._send_json(400, {"error": "Invalid Content-Length"})
-                return
-            if length <= 0 or length > _MAX_BODY_BYTES:
-                self._send_json(400, {"error": "Invalid or oversized request body"})
-                return
-            try:
-                data = json.loads(self.rfile.read(length).decode("utf-8"))
-            except (UnicodeDecodeError, json.JSONDecodeError):
-                self._send_json(400, {"error": "Invalid JSON body"})
-                return
-            if not isinstance(data, dict) or not isinstance(data.get("url"), str):
-                self._send_json(400, {"error": "Missing string field 'url'"})
+
+            if self.path == "/ingest":
+                data = self._read_json_body(allow_empty=False)
+                if data is None:
+                    return
+                if not isinstance(data.get("url"), str):
+                    self._send_json(400, {"error": "Missing string field 'url'"})
+                    return
+                res = enqueue(
+                    url=data["url"],
+                    source=str(data.get("source") or "http"),
+                    vault=vault,
+                    force=bool(data.get("force", False)),
+                )
+                self._send_json(400 if res.get("result") == "invalid" else 200, res)
                 return
 
-            res = enqueue(
-                url=data["url"],
-                source=str(data.get("source") or "http"),
-                vault=vault,
-                force=bool(data.get("force", False)),
-            )
-            status = 400 if res.get("result") == "invalid" else 200
-            self._send_json(status, res)
+            if self.path == "/reprocess":
+                data = self._read_json_body(allow_empty=False)
+                if data is None:
+                    return
+                sc = data.get("shortcode")
+                all_items = bool(data.get("all", False))
+                if not isinstance(sc, str) and not all_items:
+                    self._send_json(400, {"error": "Provide 'shortcode' or set 'all': true"})
+                    return
+                res = reprocess(
+                    cfg=resolved_cfg,
+                    shortcodes=[sc] if isinstance(sc, str) and sc.strip() else None,
+                    all_items=all_items,
+                )
+                self._send_json(200, res)
+                return
+
+            data = self._read_json_body(allow_empty=True)
+            if data is None:
+                return
+            days = int(data.get("days", 7))
+            tag = data.get("tag") if isinstance(data.get("tag"), str) else None
+            dry_run = bool(data.get("dry_run", False))
+            self._send_json(200, generate_digest(vault, days=days, tag=tag, dry_run=dry_run))
 
     return ThreadingHTTPServer((host, port), _IngestHandler)
 

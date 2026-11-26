@@ -34,7 +34,10 @@ reels-sync serve --host 0.0.0.0 --port 8765
 | Endpoint | Method | Body / Headers | Effect |
 | :--- | :--- | :--- | :--- |
 | `/health` | `GET` | None | Returns `{"ok": true}` |
-| `/ingest` | `POST` | JSON `{"url": "...", "source": "shortcut"}` + optional `Authorization: Bearer <token>` | Deduplicates and enqueues shortcode |
+| `/stats` | `GET` | Optional `Authorization: Bearer <token>` | Returns queue counts and extracted artifact metrics |
+| `/ingest` | `POST` | JSON `{"url": "...", "source": "shortcut"}` + optional Bearer token | Deduplicates and enqueues shortcode |
+| `/reprocess` | `POST` | JSON `{"shortcode": "..."}` or `{"all": true}` + optional Bearer token | Re-synthesizes stored JSON artifact offline |
+| `/digest` | `POST` | JSON `{"days": 7, "tag": null, "dry_run": false}` + optional Bearer token | Generates weekly or topic-scoped digest note |
 
 ---
 
@@ -84,3 +87,13 @@ If `reels-sync serve` is unreachable when you capture a URL, the extension store
 
 - Chrome Web Store submission copy and permissions justification: [`extension/STORE_LISTING.md`](../extension/STORE_LISTING.md)
 - Extension privacy policy (zero remote data collection): [`site/privacy.html`](../site/privacy.html)
+
+---
+
+## 4. Native Obsidian Community Plugin (`obsidian-plugin/`)
+
+Control your local `reels-wiki` pipeline directly inside an Obsidian sidebar view backed by `reels-sync serve`:
+
+1. Run `make build-obsidian-plugin` (or copy `manifest.json`, `main.js`, and `styles.css` from `obsidian-plugin/`) into `<YourVault>/.obsidian/plugins/reels-wiki/`.
+2. Start `reels-sync serve`.
+3. Enable **reels-wiki** in Obsidian under **Settings > Community plugins**, open the sidebar via the film ribbon icon, and trigger queue health checks, URL ingest, active-note reprocessing, or 7-day digests.

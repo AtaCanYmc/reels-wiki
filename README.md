@@ -351,6 +351,11 @@ reels-secretary/
 │   ├── popup.css
 │   ├── popup.html
 │   └── popup.js
+├── obsidian-plugin/
+│   ├── main.js
+│   ├── manifest.json
+│   ├── README.md
+│   └── styles.css
 ├── site/
 │   ├── architecture-diagram.html
 │   ├── architecture-diagram.svg

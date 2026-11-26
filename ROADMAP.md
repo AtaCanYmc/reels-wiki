@@ -14,7 +14,7 @@ Product and engineering milestones for `reels-wiki`, grouped by SemVer releases 
 | `v1.0.0` | Frozen schemas, public SDK contract, E2E fixture suite | Completed |
 | `v1.1.0` | Local semantic search, bidirectional graph links, multi-platform bot | Completed |
 | `v1.2.0` | Interactive review TUI, topic digests, bounded worker concurrency | Completed |
-| `v1.3.0` | Native Obsidian plugin, automated browser store packaging | Future |
+| `v1.3.0` | Native Obsidian plugin, automated browser store packaging | Completed |
 
 ## v0.1.0 (Completed)
 
@@ -127,14 +127,14 @@ Focus: Streamline human note curation inside the vault, support theme-scoped syn
 
 **Exit Criteria**: `reels-sync review` curates `inbox` notes without duplicating `_index.md` entries, topic digests accept `--tag`, and `--workers` runs pass lock/race tests cleanly.
 
-## v1.3.0 (Future - Native Obsidian Plugin and Store Distribution)
+## v1.3.0 (Completed - Native Obsidian Plugin and Store Distribution)
 
 Focus: Embed `reels-wiki` workflows directly inside Obsidian and automate browser extension store publishing.
 
-- **Native Obsidian Community Plugin**:
-  - Ship an official Obsidian sidebar view backed by `reels-sync serve` for in-app queue health checks, one-click URL ingest, targeted artifact reprocessing, and weekly digest triggers.
-- **Automated Chrome Web Store & Firefox AMO Packaging (`.github/workflows/`, `extension/`)**:
-  - Automate reproducible extension ZIP builds, version-parity checks (`manifest.json` vs `pyproject.toml`), and store upload staging in release workflows.
+- [x] **Native Obsidian Community Plugin (`obsidian-plugin/`, `interfaces/http_server.py`)**:
+  - Ship an official Obsidian sidebar view backed by `reels-sync serve` for in-app queue health checks (`/health`, `/stats`), one-click URL ingest (`/ingest`), targeted artifact reprocessing (`/reprocess`), and weekly digest triggers (`/digest`).
+- [x] **Automated Chrome Web Store & Firefox AMO Packaging (`.github/workflows/release-please.yml`, `release-please-config.json`, `Makefile`)**:
+  - Automate reproducible extension and Obsidian plugin ZIP builds (`make build-extension`, `make build-obsidian-plugin`), version-parity checks across Python, extension, and Obsidian manifests, and release asset uploads alongside PyPI wheels.
 
 **Exit Criteria**: Obsidian plugin triggers `reels-sync serve` endpoints from within a vault pane, and release tags publish reproducible browser extension bundles alongside PyPI wheels.
 

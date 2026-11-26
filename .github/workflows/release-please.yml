@@ -47,8 +47,13 @@ jobs:
           python -m pip install --upgrade pip build
           python -m build
 
+      - name: Build browser extension and Obsidian plugin bundles
+        run: |
+          make build-extension
+          make build-obsidian-plugin
+
       - name: Generate SHA256 checksums
-        run: sha256sum dist/*.whl dist/*.tar.gz > dist/SHA256SUMS.txt
+        run: sha256sum dist/*.whl dist/*.tar.gz dist/*.zip > dist/SHA256SUMS.txt
 
       - name: Upload release assets
         env:
@@ -57,6 +62,7 @@ jobs:
           gh release upload "${{ needs.release-please.outputs.tag_name }}" \
             dist/*.whl \
             dist/*.tar.gz \
+            dist/*.zip \
             dist/SHA256SUMS.txt \
             --clobber
 
