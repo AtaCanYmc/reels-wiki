@@ -2,6 +2,22 @@
 
 For frozen v1 schemas (`config.yaml`, `sources/reels/<shortcode>.json`, `inbox/reels-queue.jsonl`, `reels_wiki.__all__`), deprecation notices, and upgrade/rollback procedures, see [Migration & Backward-Compatibility Policy](docs/migration.md).
 
+## [0.1.5](https://github.com/AtaCanYmc/reels-wiki/compare/v0.1.4...v0.1.5) (2026-11-26)
+
+
+### Features
+
+* add build target for generating Safari Web Extension and update documentation ([a391826](https://github.com/AtaCanYmc/reels-wiki/commit/a3918266ae6326c5a0614aca53c6dbf91671d482))
+* add HTTP endpoint tests for health check, stats, and ingesting social media content ([0a82945](https://github.com/AtaCanYmc/reels-wiki/commit/0a82945498dde50fbab5723f3ceb48c8efeba3cb))
+* add HTTP endpoints for listing queue items and searching vault notes ([956796c](https://github.com/AtaCanYmc/reels-wiki/commit/956796cb3f0f060281aa67b4545cebfca3a3dd2c))
+* add instructions for converting extension to Safari Web Extension using Xcode ([9e4c489](https://github.com/AtaCanYmc/reels-wiki/commit/9e4c489552101bb58ccb8d909d1deb829dd78192))
+* add Obsidian Community Plugin Store submission details to roadmap ([1cfed8e](https://github.com/AtaCanYmc/reels-wiki/commit/1cfed8e55a784108586e0a791dba5071f01af26c))
+* add process queue endpoint with dry run capability and HTTP access logging ([6bec390](https://github.com/AtaCanYmc/reels-wiki/commit/6bec3908e01d4ed1a4906ea7b5767f1c7da72911))
+* add zero-cost hosting and tunneling patterns to deployment documentation ([99714ba](https://github.com/AtaCanYmc/reels-wiki/commit/99714ba0f458bd98be189dc93c49d038e4818647))
+* enhance CLI setup wizard with additional configuration options and improve HTTP server shutdown message ([15061e7](https://github.com/AtaCanYmc/reels-wiki/commit/15061e7a4c8b26aec3fda19acee5c329a46764eb))
+* update CLI and documentation for enhanced HTTP server with 8 endpoints and improved initialization process ([acc2b87](https://github.com/AtaCanYmc/reels-wiki/commit/acc2b878669e3a87c3b39c0fd8fc0de5c289c141))
+* update README with additional badges for PyPI downloads, website, Obsidian plugin, browser extension, MCP server, Ruff, mypy, and API tests ([21ba412](https://github.com/AtaCanYmc/reels-wiki/commit/21ba41272ae492696da1a63a1a4f7188a213a647))
+
 ## [0.1.4](https://github.com/AtaCanYmc/reels-wiki/compare/v0.1.3...v0.1.4) (2026-11-26)
 
 
