@@ -164,6 +164,8 @@ Focus: Zero-terminal local observability and built-in queue watching without OS 
   - Add `reels-sync watch [--interval 30]` to poll `inbox/reels-queue.jsonl` and auto-process newly ingested URLs on a debounced schedule without external cron, `launchd`, or `systemd` configuration.
 - **Obsidian Community Plugin Store Submission (`obsidian-plugin/`)**:
   - Mirror `obsidian-plugin/` into a dedicated public GitHub repository (`obsidian-reels-wiki`) with root `versions.json`, publish a bare SemVer tag release (`X.Y.Z` without `v` prefix) attaching standalone `main.js`, `manifest.json`, and `styles.css` assets, and submit via `https://community.obsidian.md/account/plugins`.
+- **Zero-Cost Edge Ingest Front Door (Hybrid Cloud Queue)**:
+  - Ship an optional lightweight Cloudflare Worker + Postgres (Neon/Supabase) edge intake template and `reels-sync pull` sync step so mobile/Shortcuts captures respond 24/7 while `yt-dlp` executes on a residential home IP.
 
 **Exit Criteria**: Opening `http://127.0.0.1:8765/` renders live queue state safely behind optional token auth, and `reels-sync watch` processes newly captured URLs automatically in foreground/Docker containers.
 

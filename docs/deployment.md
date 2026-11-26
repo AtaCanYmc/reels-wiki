@@ -181,3 +181,21 @@ template_path: ~/.config/reels-wiki/note-template.j2
 ```
 
 Available template variables: `title`, `core_insight`, `for_future_agent`, `actionable_next_step`, `related_links`, `candidate_links`, `tags`, `artifact`, `syn`.
+
+---
+
+## 6. Zero-Cost Hosting & Tunneling Patterns
+
+Depending on whether your host machine stays online and how you capture links on mobile, choose one of three `$0` hosting architectures:
+
+| Option | Free Stack | Advantage | Key Constraint |
+| :--- | :--- | :--- | :--- |
+| **1. Home Mac / Mini PC + Tunnel** (Simplest) | Cloudflare Tunnel (`reels.example.com`) or Tailscale | Residential IP avoids Instagram `yt-dlp` blocks; writes directly to your local Obsidian vault with zero sync layer | Requires the Mac / Mini PC to be awake |
+| **2. 24/7 Edge Front Door + Home Processor** (Hybrid) | Cloudflare Workers (100K req/day) + Neon/Supabase (or Telegram Bot) + Home Mac | Captures Apple Shortcuts and browser URLs 24/7 even while desktop is asleep; `yt-dlp` still runs on residential IP | Needs a lightweight `launchd` / `reels-sync` pull step on wake |
+| **3. 24/7 Full Cloud VM** | Oracle Cloud Always Free (Ampere A1, 12 to 24 GB RAM) | Runs Python, `ffmpeg`, and Docker 24/7 on one host | Datacenter IP triggers frequent Instagram challenges (refresh `cookies.txt` periodically; use Git or Syncthing to sync vault) |
+
+### Which Option to Choose
+
+- **Desktop mostly online (single-user daily driver)**: Pick **Option 1** (`launchd` + Tailscale or Cloudflare Tunnel). For mobile captures via Telegram, Telegram queues updates on its own servers (up to 24h), so no always-on cloud server is needed.
+- **24/7 instant API response for Apple Shortcuts even when laptop sleeps**: Pick **Option 2** (thin edge Worker + Postgres intake queue). Cloudflare Workers V8 isolates cannot execute `yt-dlp` or `ffmpeg`, making them an ideal lightweight intake buffer for a home processor.
+- **Self-contained 24/7 host + automated vault sync**: Pick **Option 3** (Oracle Cloud Always Free A1 VM with `docker-compose.yml`), keep `cookies.txt` fresh, and stay within free tier limits (or enable PAYG strictly inside Always Free quotas to prevent idle reclamation).
