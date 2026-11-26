@@ -76,15 +76,23 @@
       </a>
 
       <nav class="nav-links" aria-label="Primary sections">
-        <a href="#pipeline">Pipeline</a>
-        <a href="#sandbox">Interactive Sandbox</a>
-        <a href="#interfaces">Interfaces</a>
-        <a href="#guardrails">Vault Rules</a>
-        <a href="#quickstart">Quick Start</a>
-        <a href="#docs">Docs</a>
+        <a href="#pipeline" data-i18n="nav.pipeline">Pipeline</a>
+        <a href="#sandbox" data-i18n="nav.sandbox">Interactive Sandbox</a>
+        <a href="#interfaces" data-i18n="nav.interfaces">Interfaces</a>
+        <a href="#guardrails" data-i18n="nav.guardrails">Vault Rules</a>
+        <a href="#quickstart" data-i18n="nav.quickstart">Quick Start</a>
+        <a href="#docs" data-i18n="nav.docs">Docs</a>
       </nav>
 
       <div class="nav-actions">
+        <select id="langSelect" class="lang-select" aria-label="Language">
+          <option value="en">EN</option>
+          <option value="tr">TR</option>
+          <option value="fr">FR</option>
+          <option value="de">DE</option>
+          <option value="es">ES</option>
+        </select>
+
         <button id="themeToggle" type="button" class="icon-btn" aria-live="off">
           <span class="theme-opt-dark">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -116,18 +124,19 @@
     <section class="hero">
       <div class="container hero-grid">
         <div>
-          <h1>Saved Short-Form Videos to Obsidian Atomic Notes</h1>
-          <p class="hero-lead">
+          <h1 data-i18n="hero.title">Saved Short-Form Videos to Obsidian Atomic Notes</h1>
+          <p class="hero-lead" data-i18n="hero.lead">
             A local-first pipeline that converts saved Instagram Reels, YouTube Shorts, and TikTok videos via captions, Whisper speech transcripts, and Gemini Vision OCR into deduplicated Markdown notes inside an existing 3-layer Obsidian LLM Wiki vault.
           </p>
 
           <div class="hero-actions">
-            <a href="#sandbox" class="btn-primary">Inspect Live Sandbox</a>
+            <a href="#sandbox" class="btn-primary" data-i18n="hero.ctaSandbox">Inspect Live Sandbox</a>
             <a
               href="https://youtu.be/olA_FnqwgkY"
               target="_blank"
               rel="noopener noreferrer"
               class="btn-github"
+              data-i18n="hero.ctaDemo"
             >
               Watch Demo Video
             </a>
@@ -142,8 +151,8 @@
                   commandfor="install-cmd"
                   aria-label="Copy PyPI install command"
                 >
-                  <span class="copy-icon-default" aria-hidden="true">Copy</span>
-                  <span class="copy-icon-check" aria-hidden="true">Copied</span>
+                  <span class="copy-icon-default" aria-hidden="true" data-i18n="copy.default">Copy</span>
+                  <span class="copy-icon-check" aria-hidden="true" data-i18n="copy.done">Copied</span>
                 </button>
                 <span class="copy-tip" role="status"></span>
               </span>
@@ -159,8 +168,8 @@
                   commandfor="brew-cmd"
                   aria-label="Copy Homebrew install command"
                 >
-                  <span class="copy-icon-default" aria-hidden="true">Copy</span>
-                  <span class="copy-icon-check" aria-hidden="true">Copied</span>
+                  <span class="copy-icon-default" aria-hidden="true" data-i18n="copy.default">Copy</span>
+                  <span class="copy-icon-check" aria-hidden="true" data-i18n="copy.done">Copied</span>
                 </button>
                 <span class="copy-tip" role="status"></span>
               </span>
@@ -179,7 +188,7 @@
         </div>
 
         <aside class="hero-panel" aria-label="Pipeline architecture summary">
-          <h2 class="hero-panel-title">4-Stage Pipeline</h2>
+          <h2 class="hero-panel-title" data-i18n="hero.panelTitle">4-Stage Pipeline</h2>
           <ol class="flow-list">
             <li class="flow-item">
               <span class="flow-num">01</span>
@@ -217,10 +226,10 @@
     <section id="pipeline" class="section section-alt">
       <div class="container">
         <div class="section-header">
-          <span class="section-kicker">Cost-Aware Extraction</span>
-          <h2>Escalates to audio and vision only when text is missing</h2>
+          <span class="section-kicker" data-i18n="pipeline.kicker">Cost-Aware Extraction</span>
+          <h2 data-i18n="pipeline.title">Escalates to audio and vision only when text is missing</h2>
           <p class="section-desc">
-            Every item moves through a 3-stage waterfall. Extracted payloads are stored in <code>sources/reels/&lt;shortcode&gt;.json</code>, and raw media files never enter the vault.
+            <span data-i18n="pipeline.desc1">Every item moves through a 3-stage waterfall. Extracted payloads are stored in</span> <code>sources/reels/&lt;shortcode&gt;.json</code><span data-i18n="pipeline.desc2">, and raw media files never enter the vault.</span>
           </p>
         </div>
 
@@ -279,10 +288,10 @@
     <section id="sandbox" class="section">
       <div class="container">
         <div class="section-header">
-          <span class="section-kicker">Verified Walkthroughs</span>
-          <h2>Trace real Reels, Shorts &amp; TikTok videos through the pipeline</h2>
+          <span class="section-kicker" data-i18n="sandbox.kicker">Verified Walkthroughs</span>
+          <h2 data-i18n="sandbox.title">Trace real Reels, Shorts &amp; TikTok videos through the pipeline</h2>
           <p class="section-desc">
-            Select one of the six tested URLs from <code>docs/example-walkthrough.md</code> to inspect URL normalization, stage routing, and verified output behavior.
+            <span data-i18n="sandbox.desc1">Select one of the six tested URLs from</span> <code>docs/example-walkthrough.md</code> <span data-i18n="sandbox.desc2">to inspect URL normalization, stage routing, and verified output behavior.</span>
           </p>
         </div>
 
@@ -342,8 +351,8 @@
                   commandfor="simOutputContent"
                   aria-label="Copy sandbox output"
                 >
-                  <span class="copy-icon-default" aria-hidden="true">Copy</span>
-                  <span class="copy-icon-check" aria-hidden="true">Copied</span>
+                  <span class="copy-icon-default" aria-hidden="true" data-i18n="copy.default">Copy</span>
+                  <span class="copy-icon-check" aria-hidden="true" data-i18n="copy.done">Copied</span>
                 </button>
                 <span class="copy-tip" role="status"></span>
               </span>
@@ -357,9 +366,9 @@
     <section id="interfaces" class="section section-alt">
       <div class="container">
         <div class="section-header">
-          <span class="section-kicker">Six Interfaces</span>
-          <h2>Run from terminal, browser extension, MCP client, Python script, or Telegram</h2>
-          <p class="section-desc">
+          <span class="section-kicker" data-i18n="interfaces.kicker">Six Interfaces</span>
+          <h2 data-i18n="interfaces.title">Run from terminal, browser extension, MCP client, Python script, or Telegram</h2>
+          <p class="section-desc" data-i18n="interfaces.desc">
             Every entry point shares the same queue, deduplication index, and vault writer. Use arrow keys or click a tab to inspect each interface.
           </p>
         </div>
@@ -380,8 +389,8 @@
                   <span>CLI commands (global flags appear before subcommand)</span>
                   <span class="copy">
                     <button type="button" class="copy-button copy-button-dark" command="--copy" commandfor="code-cli" aria-label="Copy CLI commands">
-                      <span class="copy-icon-default" aria-hidden="true">Copy</span>
-                      <span class="copy-icon-check" aria-hidden="true">Copied</span>
+                      <span class="copy-icon-default" aria-hidden="true" data-i18n="copy.default">Copy</span>
+                      <span class="copy-icon-check" aria-hidden="true" data-i18n="copy.done">Copied</span>
                     </button>
                     <span class="copy-tip" role="status"></span>
                   </span>
@@ -429,8 +438,8 @@ reels-sync --json stats</code></pre>
                   <span>MCP server stdio configuration</span>
                   <span class="copy">
                     <button type="button" class="copy-button copy-button-dark" command="--copy" commandfor="code-mcp" aria-label="Copy MCP config">
-                      <span class="copy-icon-default" aria-hidden="true">Copy</span>
-                      <span class="copy-icon-check" aria-hidden="true">Copied</span>
+                      <span class="copy-icon-default" aria-hidden="true" data-i18n="copy.default">Copy</span>
+                      <span class="copy-icon-check" aria-hidden="true" data-i18n="copy.done">Copied</span>
                     </button>
                     <span class="copy-tip" role="status"></span>
                   </span>
@@ -456,8 +465,8 @@ reels-sync --json stats</code></pre>
                   <span>Python SDK usage</span>
                   <span class="copy">
                     <button type="button" class="copy-button copy-button-dark" command="--copy" commandfor="code-sdk" aria-label="Copy Python SDK snippet">
-                      <span class="copy-icon-default" aria-hidden="true">Copy</span>
-                      <span class="copy-icon-check" aria-hidden="true">Copied</span>
+                      <span class="copy-icon-default" aria-hidden="true" data-i18n="copy.default">Copy</span>
+                      <span class="copy-icon-check" aria-hidden="true" data-i18n="copy.done">Copied</span>
                     </button>
                     <span class="copy-tip" role="status"></span>
                   </span>
@@ -477,8 +486,8 @@ print(summary)</code></pre>
                   <span>Telegram capture bot setup</span>
                   <span class="copy">
                     <button type="button" class="copy-button copy-button-dark" command="--copy" commandfor="code-telegram" aria-label="Copy Telegram bot commands">
-                      <span class="copy-icon-default" aria-hidden="true">Copy</span>
-                      <span class="copy-icon-check" aria-hidden="true">Copied</span>
+                      <span class="copy-icon-default" aria-hidden="true" data-i18n="copy.default">Copy</span>
+                      <span class="copy-icon-check" aria-hidden="true" data-i18n="copy.done">Copied</span>
                     </button>
                     <span class="copy-tip" role="status"></span>
                   </span>
@@ -500,8 +509,8 @@ reels-sync telegram
                   <span>SKILL.md operational guardrails</span>
                   <span class="copy">
                     <button type="button" class="copy-button copy-button-dark" command="--copy" commandfor="code-skill" aria-label="Copy SKILL.md rules">
-                      <span class="copy-icon-default" aria-hidden="true">Copy</span>
-                      <span class="copy-icon-check" aria-hidden="true">Copied</span>
+                      <span class="copy-icon-default" aria-hidden="true" data-i18n="copy.default">Copy</span>
+                      <span class="copy-icon-check" aria-hidden="true" data-i18n="copy.done">Copied</span>
                     </button>
                     <span class="copy-tip" role="status"></span>
                   </span>
@@ -521,9 +530,9 @@ reels-sync telegram
     <section id="guardrails" class="section">
       <div class="container">
         <div class="section-header">
-          <span class="section-kicker">Vault Enforcement</span>
-          <h2>Validation guarantees before writing to disk</h2>
-          <p class="section-desc">
+          <span class="section-kicker" data-i18n="guardrails.kicker">Vault Enforcement</span>
+          <h2 data-i18n="guardrails.title">Validation guarantees before writing to disk</h2>
+          <p class="section-desc" data-i18n="guardrails.desc">
             Model output is treated as untrusted input and normalized against your vault schema before any file is written.
           </p>
         </div>
@@ -560,10 +569,10 @@ reels-sync telegram
     <section id="quickstart" class="section section-alt">
       <div class="container">
         <div class="section-header">
-          <span class="section-kicker">Setup</span>
-          <h2>Quick Start</h2>
+          <span class="section-kicker" data-i18n="quickstart.kicker">Setup</span>
+          <h2 data-i18n="quickstart.title">Quick Start</h2>
           <p class="section-desc">
-            Requires Python 3.10 or newer and <code>ffmpeg</code> on your <code>PATH</code> for audio or frame fallbacks.
+            <span data-i18n="quickstart.desc1">Requires Python 3.10 or newer and</span> <code>ffmpeg</code> <span data-i18n="quickstart.desc2">on your PATH for audio or frame fallbacks.</span>
           </p>
         </div>
 
@@ -571,15 +580,15 @@ reels-sync telegram
           <li class="step-card">
             <div class="step-title">
               <span class="step-badge">1</span>
-              <span>Install via PyPI, Homebrew, or source</span>
+              <span data-i18n="quickstart.step1">Install via PyPI, Homebrew, or source</span>
             </div>
             <div class="code-shell">
               <div class="code-header">
                 <span>Shell</span>
                 <span class="copy">
                   <button type="button" class="copy-button copy-button-dark" command="--copy" commandfor="qs-step-1" aria-label="Copy step 1 commands">
-                    <span class="copy-icon-default" aria-hidden="true">Copy</span>
-                    <span class="copy-icon-check" aria-hidden="true">Copied</span>
+                    <span class="copy-icon-default" aria-hidden="true" data-i18n="copy.default">Copy</span>
+                    <span class="copy-icon-check" aria-hidden="true" data-i18n="copy.done">Copied</span>
                   </button>
                   <span class="copy-tip" role="status"></span>
                 </span>
@@ -598,15 +607,15 @@ git clone https://github.com/AtaCanYmc/reels-wiki.git &amp;&amp; cd reels-wiki &
           <li class="step-card">
             <div class="step-title">
               <span class="step-badge">2</span>
-              <span>Configure vault path and Instagram cookies</span>
+              <span data-i18n="quickstart.step2">Configure vault path and Instagram cookies</span>
             </div>
             <div class="code-shell">
               <div class="code-header">
                 <span>config.yaml</span>
                 <span class="copy">
                   <button type="button" class="copy-button copy-button-dark" command="--copy" commandfor="qs-step-2" aria-label="Copy step 2 commands">
-                    <span class="copy-icon-default" aria-hidden="true">Copy</span>
-                    <span class="copy-icon-check" aria-hidden="true">Copied</span>
+                    <span class="copy-icon-default" aria-hidden="true" data-i18n="copy.default">Copy</span>
+                    <span class="copy-icon-check" aria-hidden="true" data-i18n="copy.done">Copied</span>
                   </button>
                   <span class="copy-tip" role="status"></span>
                 </span>
@@ -620,15 +629,15 @@ git clone https://github.com/AtaCanYmc/reels-wiki.git &amp;&amp; cd reels-wiki &
           <li class="step-card">
             <div class="step-title">
               <span class="step-badge">3</span>
-              <span>Add API keys and verify configuration</span>
+              <span data-i18n="quickstart.step3">Add API keys and verify configuration</span>
             </div>
             <div class="code-shell">
               <div class="code-header">
                 <span>.env + verification</span>
                 <span class="copy">
                   <button type="button" class="copy-button copy-button-dark" command="--copy" commandfor="qs-step-3" aria-label="Copy step 3 commands">
-                    <span class="copy-icon-default" aria-hidden="true">Copy</span>
-                    <span class="copy-icon-check" aria-hidden="true">Copied</span>
+                    <span class="copy-icon-default" aria-hidden="true" data-i18n="copy.default">Copy</span>
+                    <span class="copy-icon-check" aria-hidden="true" data-i18n="copy.done">Copied</span>
                   </button>
                   <span class="copy-tip" role="status"></span>
                 </span>
@@ -649,9 +658,9 @@ reels-sync stats</code></pre>
     <section id="docs" class="section">
       <div class="container">
         <div class="section-header">
-          <span class="section-kicker">Guides &amp; Reference</span>
-          <h2>Documentation</h2>
-          <p class="section-desc">
+          <span class="section-kicker" data-i18n="docs.kicker">Guides &amp; Reference</span>
+          <h2 data-i18n="docs.title">Documentation</h2>
+          <p class="section-desc" data-i18n="docs.desc">
             Full operational guides covering provider setup, background scheduling, offline capture workflows, v1 compatibility, and diagnostics.
           </p>
         </div>

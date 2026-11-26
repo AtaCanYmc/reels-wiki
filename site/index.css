@@ -205,6 +205,23 @@ code, pre {
   background: var(--bg-subtle);
 }
 
+.lang-select {
+  min-block-size: 38px;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  color: var(--ink-primary);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lang-select:hover {
+  background: var(--bg-subtle);
+}
+
 /* Hero */
 .hero {
   padding-block: 4.5rem 3.5rem;

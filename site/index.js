@@ -349,3 +349,248 @@
     panel.addEventListener('beforematch', () => activateTab(tabs[idx], false));
   });
 })();
+
+// 5. Client-side i18n (en, tr, fr, de, es)
+(() => {
+  const I18N = {
+    en: {
+      'nav.pipeline': 'Pipeline',
+      'nav.sandbox': 'Interactive Sandbox',
+      'nav.interfaces': 'Interfaces',
+      'nav.guardrails': 'Vault Rules',
+      'nav.quickstart': 'Quick Start',
+      'nav.docs': 'Docs',
+      'hero.title': 'Saved Short-Form Videos to Obsidian Atomic Notes',
+      'hero.lead': 'A local-first pipeline that converts saved Instagram Reels, YouTube Shorts, and TikTok videos via captions, Whisper speech transcripts, and Gemini Vision OCR into deduplicated Markdown notes inside an existing 3-layer Obsidian LLM Wiki vault.',
+      'hero.ctaSandbox': 'Inspect Live Sandbox',
+      'hero.ctaDemo': 'Watch Demo Video',
+      'hero.panelTitle': '4-Stage Pipeline',
+      'pipeline.kicker': 'Cost-Aware Extraction',
+      'pipeline.title': 'Escalates to audio and vision only when text is missing',
+      'pipeline.desc1': 'Every item moves through a 3-stage waterfall. Extracted payloads are stored in',
+      'pipeline.desc2': ', and raw media files never enter the vault.',
+      'sandbox.kicker': 'Verified Walkthroughs',
+      'sandbox.title': 'Trace real Reels, Shorts & TikTok videos through the pipeline',
+      'sandbox.desc1': 'Select one of the six tested URLs from',
+      'sandbox.desc2': 'to inspect URL normalization, stage routing, and verified output behavior.',
+      'interfaces.kicker': 'Six Interfaces',
+      'interfaces.title': 'Run from terminal, browser extension, MCP client, Python script, or Telegram',
+      'interfaces.desc': 'Every entry point shares the same queue, deduplication index, and vault writer. Use arrow keys or click a tab to inspect each interface.',
+      'guardrails.kicker': 'Vault Enforcement',
+      'guardrails.title': 'Validation guarantees before writing to disk',
+      'guardrails.desc': 'Model output is treated as untrusted input and normalized against your vault schema before any file is written.',
+      'quickstart.kicker': 'Setup',
+      'quickstart.title': 'Quick Start',
+      'quickstart.desc1': 'Requires Python 3.10 or newer and',
+      'quickstart.desc2': 'on your PATH for audio or frame fallbacks.',
+      'quickstart.step1': 'Install via PyPI, Homebrew, or source',
+      'quickstart.step2': 'Configure vault path and Instagram cookies',
+      'quickstart.step3': 'Add API keys and verify configuration',
+      'docs.kicker': 'Guides & Reference',
+      'docs.title': 'Documentation',
+      'docs.desc': 'Full operational guides covering provider setup, background scheduling, offline capture workflows, v1 compatibility, and diagnostics.',
+      'copy.default': 'Copy',
+      'copy.done': 'Copied',
+    },
+    tr: {
+      'nav.pipeline': 'Akış',
+      'nav.sandbox': 'Etkileşimli Örnekler',
+      'nav.interfaces': 'Arayüzler',
+      'nav.guardrails': 'Kasa Kuralları',
+      'nav.quickstart': 'Hızlı Başlangıç',
+      'nav.docs': 'Dokümanlar',
+      'hero.title': 'Kısa Videoları Obsidian Atomik Notlarına Dönüştürün',
+      'hero.lead': 'Kaydedilen Instagram Reels, YouTube Shorts ve TikTok videolarını altyazı, Whisper konuşma çözümü ve Gemini Vision OCR ile mevcut 3 katmanlı Obsidian LLM Wiki kasanızda tekilleştirilmiş Markdown notlarına çeviren yerel öncelikli hat.',
+      'hero.ctaSandbox': 'Canlı Örneği İncele',
+      'hero.ctaDemo': 'Tanıtım Videosunu İzle',
+      'hero.panelTitle': '4 Aşamalı Akış',
+      'pipeline.kicker': 'Maliyet Bilinçli Çıkarım',
+      'pipeline.title': 'Yalnızca metin eksik olduğunda ses ve görüntüye geçer',
+      'pipeline.desc1': 'Her öğe 3 aşamalı şelaleden geçer. Çıkarılan veriler',
+      'pipeline.desc2': ' içinde saklanır ve ham medya dosyaları kasaya asla girmez.',
+      'sandbox.kicker': 'Doğrulanmış Senaryolar',
+      'sandbox.title': 'Gerçek Reels, Shorts ve TikTok videolarını hatta izleyin',
+      'sandbox.desc1': 'URL normalizasyonunu, aşama yönlendirmesini ve doğrulanmış çıktı davranışını incelemek için',
+      'sandbox.desc2': ' içindeki altı test edilmiş URL\u2019den birini seçin.',
+      'interfaces.kicker': 'Altı Arayüz',
+      'interfaces.title': 'Terminal, tarayıcı eklentisi, MCP istemcisi, Python betiği veya Telegram ile çalıştırın',
+      'interfaces.desc': 'Her giriş noktası aynı kuyruğu, tekilleştirme dizinini ve kasa yazıcısını paylaşır. Her arayüzü incelemek için ok tuşlarını kullanın veya bir sekmeye tıklayın.',
+      'guardrails.kicker': 'Kasa Denetimi',
+      'guardrails.title': 'Diske yazmadan önce doğrulama garantileri',
+      'guardrails.desc': 'Model çıktısı güvenilmeyen veri olarak ele alınır ve dosya yazılmadan önce kasa şemanıza göre normalize edilir.',
+      'quickstart.kicker': 'Kurulum',
+      'quickstart.title': 'Hızlı Başlangıç',
+      'quickstart.desc1': 'Ses ve kare OCR yedekleri için Python 3.10+ ve PATH üzerinde',
+      'quickstart.desc2': ' gereklidir.',
+      'quickstart.step1': 'PyPI, Homebrew veya kaynaktan kurun',
+      'quickstart.step2': 'Kasa yolunu ve Instagram çerezlerini yapılandırın',
+      'quickstart.step3': 'API anahtarlarını ekleyin ve yapılandırmayı doğrulayın',
+      'docs.kicker': 'Kılavuzlar ve Referans',
+      'docs.title': 'Dokümantasyon',
+      'docs.desc': 'Sağlayıcı kurulumu, arka plan zamanlaması, çevrimdışı yakalama, v1 uyumluluğu ve tanılama konularını kapsayan tam operasyon kılavuzları.',
+      'copy.default': 'Kopyala',
+      'copy.done': 'Kopyalandı',
+    },
+    fr: {
+      'nav.pipeline': 'Pipeline',
+      'nav.sandbox': 'Bac à sable',
+      'nav.interfaces': 'Interfaces',
+      'nav.guardrails': 'Règles du coffre',
+      'nav.quickstart': 'Démarrage',
+      'nav.docs': 'Documentation',
+      'hero.title': 'Vidéos courtes sauvegardées vers notes atomiques Obsidian',
+      'hero.lead': 'Pipeline local convertissant vos Instagram Reels, YouTube Shorts et TikTok sauvegardés via légendes, transcription Whisper et OCR Gemini Vision en notes Markdown dédupliquées dans un coffre Obsidian LLM Wiki à 3 couches.',
+      'hero.ctaSandbox': 'Explorer le bac à sable',
+      'hero.ctaDemo': 'Voir la démo vidéo',
+      'hero.panelTitle': 'Pipeline en 4 étapes',
+      'pipeline.kicker': 'Extraction économique',
+      'pipeline.title': 'N\u2019active l\u2019audio et la vision que lorsque le texte manque',
+      'pipeline.desc1': 'Chaque élément traverse une cascade en 3 étapes. Les données extraites sont enregistrées dans',
+      'pipeline.desc2': ', et aucun fichier média brut n\u2019entre dans le coffre.',
+      'sandbox.kicker': 'Parcours vérifiés',
+      'sandbox.title': 'Tracez de vrais Reels, Shorts et TikTok dans le pipeline',
+      'sandbox.desc1': 'Sélectionnez l\u2019une des six URL testées dans',
+      'sandbox.desc2': 'pour inspecter la normalisation, le routage et le résultat vérifié.',
+      'interfaces.kicker': 'Six interfaces',
+      'interfaces.title': 'Exécutez via terminal, extension navigateur, client MCP, script Python ou Telegram',
+      'interfaces.desc': 'Chaque point d\u2019entrée partage la même file, l\u2019index de déduplication et l\u2019éditeur de coffre. Utilisez les flèches ou cliquez sur un onglet.',
+      'guardrails.kicker': 'Contrôle du coffre',
+      'guardrails.title': 'Garanties de validation avant écriture sur disque',
+      'guardrails.desc': 'La sortie du modèle est traitée comme non fiable et normalisée selon le schéma de votre coffre avant toute écriture.',
+      'quickstart.kicker': 'Installation',
+      'quickstart.title': 'Démarrage rapide',
+      'quickstart.desc1': 'Nécessite Python 3.10 ou plus récent et',
+      'quickstart.desc2': 'dans le PATH pour les replis audio ou image.',
+      'quickstart.step1': 'Installer via PyPI, Homebrew ou les sources',
+      'quickstart.step2': 'Configurer le chemin du coffre et les cookies Instagram',
+      'quickstart.step3': 'Ajouter les clés API et vérifier la configuration',
+      'docs.kicker': 'Guides & Référence',
+      'docs.title': 'Documentation',
+      'docs.desc': 'Guides complets sur les fournisseurs, la planification, la capture hors ligne, la compatibilité v1 et le diagnostic.',
+      'copy.default': 'Copier',
+      'copy.done': 'Copié',
+    },
+    de: {
+      'nav.pipeline': 'Pipeline',
+      'nav.sandbox': 'Interaktive Sandbox',
+      'nav.interfaces': 'Schnittstellen',
+      'nav.guardrails': 'Tresor-Regeln',
+      'nav.quickstart': 'Schnellstart',
+      'nav.docs': 'Dokumentation',
+      'hero.title': 'Gespeicherte Kurzvideos als atomare Obsidian-Notizen',
+      'hero.lead': 'Eine Local-First-Pipeline, die gespeicherte Instagram Reels, YouTube Shorts und TikTok-Videos über Untertitel, Whisper-Transkription und Gemini Vision OCR als deduplizierte Markdown-Notizen in Ihren 3-Schichten-Obsidian-Vault schreibt.',
+      'hero.ctaSandbox': 'Live-Sandbox ansehen',
+      'hero.ctaDemo': 'Demo-Video ansehen',
+      'hero.panelTitle': '4-Stufen-Pipeline',
+      'pipeline.kicker': 'Kostenbewusste Extraktion',
+      'pipeline.title': 'Eskaliert nur zu Audio und Vision, wenn Text fehlt',
+      'pipeline.desc1': 'Jedes Element durchläuft eine 3-stufige Kaskade. Extrahierte Daten werden in',
+      'pipeline.desc2': ' gespeichert; Mediendateien gelangen nie in den Vault.',
+      'sandbox.kicker': 'Verifizierte Durchläufe',
+      'sandbox.title': 'Echte Reels, Shorts & TikTok-Videos in der Pipeline verfolgen',
+      'sandbox.desc1': 'Wählen Sie eine der sechs getesteten URLs aus',
+      'sandbox.desc2': ', um Normalisierung, Stufen-Routing und Ausgabe zu prüfen.',
+      'interfaces.kicker': 'Sechs Schnittstellen',
+      'interfaces.title': 'Per Terminal, Browser-Erweiterung, MCP-Client, Python-Skript oder Telegram starten',
+      'interfaces.desc': 'Jeder Einstiegspunkt nutzt dieselbe Warteschlange, den Deduplizierungsindex und den Vault-Writer. Nutzen Sie Pfeiltasten oder Tabs.',
+      'guardrails.kicker': 'Vault-Prüfung',
+      'guardrails.title': 'Validierungsgarantien vor dem Schreiben auf die Festplatte',
+      'guardrails.desc': 'Modellantworten gelten als nicht vertrauenswürdig und werden vor dem Speichern gegen Ihr Vault-Schema normalisiert.',
+      'quickstart.kicker': 'Einrichtung',
+      'quickstart.title': 'Schnellstart',
+      'quickstart.desc1': 'Erfordert Python 3.10 oder neuer sowie',
+      'quickstart.desc2': 'im PATH für Audio- und Frame-Fallbacks.',
+      'quickstart.step1': 'Über PyPI, Homebrew oder Quellcode installieren',
+      'quickstart.step2': 'Vault-Pfad und Instagram-Cookies konfigurieren',
+      'quickstart.step3': 'API-Schlüssel hinzufügen und Konfiguration prüfen',
+      'docs.kicker': 'Anleitungen & Referenz',
+      'docs.title': 'Dokumentation',
+      'docs.desc': 'Vollständige Anleitungen zu Anbietern, Hintergrundplanung, Offline-Erfassung, v1-Kompatibilität und Diagnose.',
+      'copy.default': 'Kopieren',
+      'copy.done': 'Kopiert',
+    },
+    es: {
+      'nav.pipeline': 'Pipeline',
+      'nav.sandbox': 'Sandbox Interactivo',
+      'nav.interfaces': 'Interfaces',
+      'nav.guardrails': 'Reglas de Bóveda',
+      'nav.quickstart': 'Inicio Rápido',
+      'nav.docs': 'Documentación',
+      'hero.title': 'Videos cortos guardados a notas atómicas en Obsidian',
+      'hero.lead': 'Pipeline local que convierte Instagram Reels, YouTube Shorts y videos de TikTok guardados mediante subtítulos, transcripción Whisper y Gemini Vision OCR en notas Markdown deduplicadas dentro de una bóveda Obsidian LLM Wiki de 3 capas.',
+      'hero.ctaSandbox': 'Explorar Sandbox en vivo',
+      'hero.ctaDemo': 'Ver video de demostración',
+      'hero.panelTitle': 'Pipeline de 4 etapas',
+      'pipeline.kicker': 'Extracción eficiente',
+      'pipeline.title': 'Solo recurre a audio y visión cuando falta texto',
+      'pipeline.desc1': 'Cada elemento pasa por una cascada de 3 etapas. Los datos extraídos se guardan en',
+      'pipeline.desc2': ', y ningún archivo multimedia entra en la bóveda.',
+      'sandbox.kicker': 'Recorridos verificados',
+      'sandbox.title': 'Rastrea Reels, Shorts y TikTok reales en el pipeline',
+      'sandbox.desc1': 'Selecciona una de las seis URL probadas de',
+      'sandbox.desc2': 'para inspeccionar normalización, enrutamiento y salida verificada.',
+      'interfaces.kicker': 'Seis interfaces',
+      'interfaces.title': 'Ejecuta desde terminal, extensión de navegador, cliente MCP, script Python o Telegram',
+      'interfaces.desc': 'Cada punto de entrada comparte la misma cola, índice de deduplicación y escritor. Usa flechas o haz clic en una pestaña.',
+      'guardrails.kicker': 'Control de bóveda',
+      'guardrails.title': 'Garantías de validación antes de escribir en disco',
+      'guardrails.desc': 'La salida del modelo se trata como entrada no confiable y se normaliza contra el esquema de tu bóveda antes de guardar.',
+      'quickstart.kicker': 'Configuración',
+      'quickstart.title': 'Inicio rápido',
+      'quickstart.desc1': 'Requiere Python 3.10 o superior y',
+      'quickstart.desc2': 'en PATH para respaldos de audio o fotogramas.',
+      'quickstart.step1': 'Instalar mediante PyPI, Homebrew o código fuente',
+      'quickstart.step2': 'Configurar ruta de la bóveda y cookies de Instagram',
+      'quickstart.step3': 'Agregar claves API y verificar configuración',
+      'docs.kicker': 'Guías y Referencia',
+      'docs.title': 'Documentación',
+      'docs.desc': 'Guías completas sobre proveedores, programación en segundo plano, captura sin conexión, compatibilidad v1 y diagnóstico.',
+      'copy.default': 'Copiar',
+      'copy.done': 'Copiado',
+    },
+  };
+
+  const SUPPORTED = new Set(Object.keys(I18N));
+  const select = document.getElementById('langSelect');
+  if (!select) return;
+
+  function detectInitialLang() {
+    const param = new URLSearchParams(window.location.search).get('lang');
+    if (param && SUPPORTED.has(param)) return param;
+    try {
+      const saved = localStorage.getItem('lang');
+      if (saved && SUPPORTED.has(saved)) return saved;
+    } catch {}
+    const browser = (navigator.language || 'en').slice(0, 2).toLowerCase();
+    return SUPPORTED.has(browser) ? browser : 'en';
+  }
+
+  function applyLang(lang) {
+    const chosen = SUPPORTED.has(lang) ? lang : 'en';
+    const dict = I18N[chosen];
+    document.documentElement.lang = chosen;
+    select.value = chosen;
+    document.querySelectorAll('[data-i18n]').forEach((el) => {
+      const key = el.getAttribute('data-i18n');
+      if (key && Object.prototype.hasOwnProperty.call(dict, key)) {
+        el.textContent = dict[key];
+      }
+    });
+  }
+
+  select.addEventListener('change', () => {
+    const chosen = select.value;
+    try {
+      localStorage.setItem('lang', chosen);
+    } catch {}
+    applyLang(chosen);
+  });
+
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'lang' && event.newValue) {
+      applyLang(event.newValue);
+    }
+  });
+
+  applyLang(detectInitialLang());
+})();
