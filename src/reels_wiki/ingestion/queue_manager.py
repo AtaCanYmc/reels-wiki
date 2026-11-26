@@ -16,8 +16,19 @@ from ..core.utils import atomic_write_text
 
 IG_HOSTS = {"instagram.com", "www.instagram.com", "m.instagram.com", "instagr.am"}
 _PATH_RE = re.compile(r"(?:^|/)(reels?|p|tv)/([A-Za-z0-9_-]{11})(?=/|$)")
-_SHARE_RE = re.compile(r"(?:^|/)share/([A-Za-z0-9_-]+(?:/[A-Za-z0-9_-]+)*)/?$")
+_SHARE_SEG_RE = re.compile(r"[A-Za-z0-9_-]+")
 ALL_STATUSES: tuple[str, ...] = ("pending", "processing", "processed", "skipped", "failed")
+
+
+def _extract_share_path(path: str) -> str | None:
+    """Return validated ``<subpath>`` for ``/share/<subpath>`` in O(n) without backtracking regex."""
+    parts = [p for p in path.split("/") if p]
+    if "share" not in parts:
+        return None
+    tail = parts[parts.index("share") + 1 :]
+    if not tail or not all(_SHARE_SEG_RE.fullmatch(seg) for seg in tail):
+        return None
+    return "/".join(tail)
 
 
 def resolve_share_url(url: str, *, timeout: float = 10.0) -> str:
@@ -28,12 +39,12 @@ def resolve_share_url(url: str, *, timeout: float = 10.0) -> str:
         return url
     if (parsed.hostname or "").lower() not in IG_HOSTS:
         return url
-    match = _SHARE_RE.search(parsed.path)
-    if not match:
+    share_subpath = _extract_share_path(parsed.path)
+    if not share_subpath:
         return url
 
     # Reconstruct from a fixed allowlisted origin so arbitrary hosts/ports/schemes cannot be probed.
-    safe_url = f"https://www.instagram.com/share/{match.group(1)}"
+    safe_url = f"https://www.instagram.com/share/{share_subpath}"
     try:
         resp = httpx.head(safe_url, follow_redirects=False, timeout=timeout)
         location = resp.headers.get("location")
@@ -75,7 +86,7 @@ def parse_instagram_url(url: str) -> tuple[str, str] | None:
     if (parsed.hostname or "").lower() not in IG_HOSTS:
         return None
     match = _PATH_RE.search(parsed.path)
-    if not match and _SHARE_RE.search(parsed.path):
+    if not match and _extract_share_path(parsed.path):
         resolved = resolve_share_url(candidate)
         try:
             r_parsed = urlparse(resolved)
