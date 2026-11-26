@@ -15,7 +15,17 @@
 
 Local-first pipeline that converts saved Instagram Reels into atomic Markdown notes inside an existing 3-layer Obsidian LLM Wiki vault without duplicates.
 
-Available interfaces: Python SDK (`reels_wiki`), CLI (`reels-sync`), MCP server (`reels-wiki-mcp`), Telegram capture bot (`reels-wiki-telegram`), and Agent Skill (`SKILL.md`).
+Available interfaces: Python SDK (`reels_wiki`), CLI (`reels-sync`), MCP server (`reels-wiki-mcp`), Telegram capture bot (`reels-wiki-telegram`), local HTTP ingest (`reels-sync serve` for Shortcuts & browser extensions), and Agent Skill (`SKILL.md`).
+
+## Demo
+
+[![Watch reels-wiki Demo on YouTube](assets/promo-never-lose.jpg)](https://youtu.be/olA_FnqwgkY)
+
+[Watch on YouTube](https://youtu.be/olA_FnqwgkY)
+
+| Local Sync Pipeline | Offline Obsidian Vault |
+| :---: | :---: |
+| ![Local Sync Pipeline](assets/promo-local-sync.jpg) | ![Offline Obsidian Vault](assets/promo-offline-vault.jpg) |
 
 ## Table of Contents
 
@@ -260,7 +270,10 @@ The `AtomicNoteSynthesis` schema includes a `should_keep` boolean. Memes, trends
 ```text
 reels-secretary/
 ├── assets/
-│   └── logo.png
+│   ├── logo.png
+│   ├── promo-local-sync.jpg
+│   ├── promo-never-lose.jpg
+│   └── promo-offline-vault.jpg
 ├── docs/
 │   ├── README.md
 │   ├── architecture.md

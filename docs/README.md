@@ -17,3 +17,11 @@ Technical reference and operational guides for `reels-wiki`.
 | [Providers Guide](providers.md) | Obtaining API keys and discovering models for Groq, Google Gemini, and Ollama |
 | [Example Walkthrough](example-walkthrough.md) | Real Instagram Reel extraction traces (`Df44o7WhunQ`, `Df2jr_RN9gb`, `DdYn6ekug5W`, `DgNTHLDg9X5`) |
 | [Troubleshooting Guide](troubleshooting.md) | Diagnostics (`reels-sync doctor`), cookie expiration, `yt-dlp` updates, and lock recovery |
+
+## Demo Video
+
+[![Watch reels-wiki Demo on YouTube](../assets/promo-never-lose.jpg)](https://youtu.be/olA_FnqwgkY)
+
+| Local Sync Pipeline | Offline Obsidian Vault |
+| :---: | :---: |
+| ![Local Sync Pipeline](../assets/promo-local-sync.jpg) | ![Offline Obsidian Vault](../assets/promo-offline-vault.jpg) |

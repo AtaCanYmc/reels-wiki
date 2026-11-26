@@ -46,3 +46,6 @@ Thumbs.db
 .env.*
 !.env.example
 config.yaml
+
+# Generated video artifacts
+brag-output/
