@@ -35,7 +35,10 @@ reels-sync serve --host 0.0.0.0 --port 8765
 | :--- | :--- | :--- | :--- |
 | `/health` | `GET` | None | Returns `{"ok": true}` |
 | `/stats` | `GET` | Optional `Authorization: Bearer <token>` | Returns queue counts and extracted artifact metrics |
-| `/ingest` | `POST` | JSON `{"url": "...", "source": "shortcut"}` + optional Bearer token | Deduplicates and enqueues shortcode |
+| `/queue` | `GET` | Query `?status=pending&limit=20` + optional Bearer token | Lists recent queue items ordered by `updated_at` |
+| `/search` | `GET` | Query `?q=<term>&limit=10` + optional Bearer token | Searches vault Markdown notes and returns matches |
+| `/ingest` | `POST` | JSON `{"url": "...", "source": "shortcut", "process": false}` + optional Bearer token | Deduplicates and enqueues shortcode; optionally processes immediately when `"process": true` |
+| `/process` | `POST` | JSON `{"limit": 10, "dry_run": false, "retry_failed": false, "force": false}` + optional Bearer token | Processes pending (or failed) queue items into Obsidian notes |
 | `/reprocess` | `POST` | JSON `{"shortcode": "..."}` or `{"all": true}` + optional Bearer token | Re-synthesizes stored JSON artifact offline |
 | `/digest` | `POST` | JSON `{"days": 7, "tag": null, "dry_run": false}` + optional Bearer token | Generates weekly or topic-scoped digest note |
 
@@ -72,7 +75,12 @@ Now tap **Share > More > Save to reels-wiki** from any Instagram Reel on iOS or 
 
 ## 3. Chrome & Firefox Extension (`extension/`)
 
-Supports **Instagram** (Reels and posts), **YouTube Shorts**, and **TikTok** URLs via either the toolbar popup (`Alt+Shift+S`) or the right-click context menu (**Save to reels-wiki**).
+Supports **Instagram** (Reels and posts), **YouTube Shorts**, and **TikTok** URLs via either the toolbar popup (`Alt+Shift+S`) or the right-click context menu (**Save to reels-wiki**):
+
+- **Live status bar**: Displays `pending`, `processed`, and `failed` counts from `GET /stats`.
+- **Save & immediate processing**: Toggle **Process immediately** to send `"process": true` with `POST /ingest`, or run batches anytime via **Process Queue Now** (`POST /process`).
+- **Retry failed**: Appears automatically when `failed > 0` (`POST /process` with `retry_failed: true`).
+- **Vault search**: Query saved Obsidian notes directly inside the popup (`GET /search`).
 
 ### Chrome / Edge / Brave / Arc
 

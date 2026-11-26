@@ -1,0 +1,20 @@
+meta {
+  name: Search Vault Notes
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/search?q=obsidian&limit=5
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.count: isNumber
+}

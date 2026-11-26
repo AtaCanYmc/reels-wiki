@@ -1,14 +1,20 @@
 const urlInput = document.getElementById("url");
 const endpointInput = document.getElementById("endpoint");
 const tokenInput = document.getElementById("token");
+const autoProcessInput = document.getElementById("autoProcess");
 const saveBtn = document.getElementById("saveBtn");
 const processBtn = document.getElementById("processBtn");
+const retryBtn = document.getElementById("retryBtn");
 const statusEl = document.getElementById("status");
 const healthBadge = document.getElementById("healthBadge");
+const statsBar = document.getElementById("statsBar");
+const statsText = document.getElementById("statsText");
 const pendingBar = document.getElementById("pendingBar");
 const pendingCount = document.getElementById("pendingCount");
 const syncBtn = document.getElementById("syncBtn");
 const exportBtn = document.getElementById("exportBtn");
+const searchInput = document.getElementById("searchInput");
+const searchResults = document.getElementById("searchResults");
 
 const MEDIA_URL_RE = /^https?:\/\/(?:www\.|m\.)?(?:instagram\.com|instagr\.am|youtube\.com|youtu\.be|tiktok\.com)\//i;
 
@@ -54,27 +60,51 @@ async function checkHealth(endpoint) {
   return false;
 }
 
-function jsonHeaders(token) {
-  const headers = { "Content-Type": "application/json" };
-  if (token) headers.Authorization = `Bearer ${token}`;
-  return headers;
+function authHeaders(token) {
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-async function sendUrl(endpoint, token, url) {
+function jsonHeaders(token) {
+  return { "Content-Type": "application/json", ...authHeaders(token) };
+}
+
+async function refreshStats(endpoint, token) {
+  try {
+    const resp = await fetch(`${endpoint}/stats`, { headers: authHeaders(token) });
+    if (!resp.ok) {
+      statsBar.hidden = true;
+      retryBtn.hidden = true;
+      return;
+    }
+    const data = await resp.json();
+    statsText.textContent = `pending: ${data.pending} | processed: ${data.processed} | failed: ${data.failed}`;
+    statsBar.hidden = false;
+    retryBtn.hidden = !(data.failed > 0);
+  } catch {
+    statsBar.hidden = true;
+    retryBtn.hidden = true;
+  }
+}
+
+async function sendUrl(endpoint, token, url, process = false) {
   const resp = await fetch(`${endpoint}/ingest`, {
     method: "POST",
     headers: jsonHeaders(token),
-    body: JSON.stringify({ url, source: "extension" }),
+    body: JSON.stringify({ url, source: "extension", process }),
   });
   const data = await resp.json();
   return { resp, data };
 }
 
 async function init() {
-  const stored = await chrome.storage.local.get(["endpoint", "token"]);
+  const stored = await chrome.storage.local.get(["endpoint", "token", "autoProcess"]);
   if (stored.endpoint) endpointInput.value = stored.endpoint;
   if (stored.token) tokenInput.value = stored.token;
-  checkHealth(cleanEndpoint());
+  if (typeof stored.autoProcess === "boolean") autoProcessInput.checked = stored.autoProcess;
+  const endpoint = cleanEndpoint();
+  const token = tokenInput.value.trim();
+  checkHealth(endpoint);
+  refreshStats(endpoint, token);
   renderPending();
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -83,6 +113,15 @@ async function init() {
 
 endpointInput.addEventListener("change", () => {
   checkHealth(cleanEndpoint());
+  refreshStats(cleanEndpoint(), tokenInput.value.trim());
+});
+
+tokenInput.addEventListener("change", () => {
+  refreshStats(cleanEndpoint(), tokenInput.value.trim());
+});
+
+autoProcessInput.addEventListener("change", () => {
+  chrome.storage.local.set({ autoProcess: autoProcessInput.checked });
 });
 
 saveBtn.addEventListener("click", async () => {
@@ -96,18 +135,29 @@ saveBtn.addEventListener("click", async () => {
 
   saveBtn.disabled = true;
   setStatus("Sending...", "");
-  await chrome.storage.local.set({ endpoint, token });
+  await chrome.storage.local.set({ endpoint, token, autoProcess: autoProcessInput.checked });
 
   try {
-    const { resp, data } = await sendUrl(endpoint, token, url);
+    const { resp, data } = await sendUrl(endpoint, token, url, autoProcessInput.checked);
     if (!resp.ok) {
       setStatus(data.error || `Error ${resp.status}`, "err");
     } else if (data.result === "enqueued") {
-      setStatus(`ENQUEUED [${data.shortcode}]`, "ok");
+      if (data.process) {
+        const p = data.process;
+        setStatus(
+          p.error
+            ? `ENQUEUED [${data.shortcode}] (${p.error})`
+            : `ENQUEUED [${data.shortcode}] -> processed ${p.processed}, failed ${p.failed}`,
+          p.error || p.failed ? "warn" : "ok"
+        );
+      } else {
+        setStatus(`ENQUEUED [${data.shortcode}]`, "ok");
+      }
     } else {
       setStatus(`SKIPPED (${data.result || "duplicate"}) [${data.shortcode}]`, "warn");
     }
     checkHealth(endpoint);
+    refreshStats(endpoint, token);
   } catch {
     const count = await queueOffline(url);
     setStatus(`SAVED OFFLINE (${count} queued). Use Sync or Export JSON later.`, "warn");
@@ -118,19 +168,19 @@ saveBtn.addEventListener("click", async () => {
   }
 });
 
-processBtn.addEventListener("click", async () => {
+async function runProcess(payload, btn, busyText) {
   const endpoint = cleanEndpoint();
   const token = tokenInput.value.trim();
 
-  processBtn.disabled = true;
-  setStatus("Processing queue...", "");
+  btn.disabled = true;
+  setStatus(busyText, "");
   await chrome.storage.local.set({ endpoint, token });
 
   try {
     const resp = await fetch(`${endpoint}/process`, {
       method: "POST",
       headers: jsonHeaders(token),
-      body: JSON.stringify({ limit: 10 }),
+      body: JSON.stringify(payload),
     });
     const data = await resp.json();
     if (!resp.ok) {
@@ -146,9 +196,18 @@ processBtn.addEventListener("click", async () => {
   } catch {
     setStatus("Server unreachable. Start reels-sync serve first.", "err");
   } finally {
-    processBtn.disabled = false;
+    btn.disabled = false;
     checkHealth(endpoint);
+    refreshStats(endpoint, token);
   }
+}
+
+processBtn.addEventListener("click", () => {
+  runProcess({ limit: 10 }, processBtn, "Processing queue...");
+});
+
+retryBtn.addEventListener("click", () => {
+  runProcess({ retry_failed: true, limit: 10 }, retryBtn, "Retrying failed items...");
 });
 
 syncBtn.addEventListener("click", async () => {
@@ -178,6 +237,7 @@ syncBtn.addEventListener("click", async () => {
   await chrome.storage.local.set({ pendingQueue: remaining });
   await renderPending();
   checkHealth(endpoint);
+  refreshStats(endpoint, token);
   setStatus(
     remaining.length
       ? `Synced ${sent}; ${remaining.length} still pending (check server/token).`
@@ -203,6 +263,46 @@ exportBtn.addEventListener("click", async () => {
   link.click();
   URL.revokeObjectURL(objectUrl);
   setStatus(`Exported ${queue.length} URL(s). Run: reels-sync import-ig ~/Downloads/reels-wiki-saved.json`, "ok");
+});
+
+searchInput.addEventListener("keydown", async (event) => {
+  if (event.key !== "Enter") return;
+  const q = searchInput.value.trim();
+  searchResults.replaceChildren();
+  if (!q) return;
+
+  const endpoint = cleanEndpoint();
+  const token = tokenInput.value.trim();
+  try {
+    const resp = await fetch(`${endpoint}/search?q=${encodeURIComponent(q)}&limit=5`, {
+      headers: authHeaders(token),
+    });
+    const data = await resp.json();
+    if (!resp.ok) {
+      setStatus(data.error || `Search error ${resp.status}`, "err");
+      return;
+    }
+    if (!data.matches || data.matches.length === 0) {
+      const empty = document.createElement("li");
+      empty.className = "res-path";
+      empty.textContent = "No matching notes.";
+      searchResults.appendChild(empty);
+      return;
+    }
+    for (const item of data.matches) {
+      const li = document.createElement("li");
+      const title = document.createElement("span");
+      title.className = "res-title";
+      title.textContent = item.title || item.path;
+      const rel = document.createElement("span");
+      rel.className = "res-path";
+      rel.textContent = item.path;
+      li.append(title, rel);
+      searchResults.appendChild(li);
+    }
+  } catch {
+    setStatus("Server unreachable. Start reels-sync serve first.", "err");
+  }
 });
 
 init();

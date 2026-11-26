@@ -8,11 +8,13 @@ import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qs, urlsplit
 
 from ..core.config import Config, ConfigError, load_config
-from ..ingestion.queue_manager import enqueue, queue_stats
+from ..ingestion.queue_manager import QueueManager, enqueue, queue_stats
 from ..pipeline.runner import process_queue, reprocess
 from ..vault.digest import generate_digest
+from ..vault.search import search_vault
 
 logger = logging.getLogger("reels_wiki.http")
 _MAX_BODY_BYTES = 16 * 1024
@@ -78,6 +80,18 @@ def make_http_server(
                 return None
             return data
 
+        def _parse_int(self, raw: object, field: str, default: int | None) -> tuple[bool, int | None]:
+            if raw is None:
+                return True, default
+            if isinstance(raw, bool) or not isinstance(raw, (int, str)):
+                self._send_json(400, {"error": f"Invalid integer field '{field}'"})
+                return False, None
+            try:
+                return True, int(raw)
+            except ValueError:
+                self._send_json(400, {"error": f"Invalid integer field '{field}'"})
+                return False, None
+
         def do_OPTIONS(self) -> None:  # noqa: N802
             self.send_response(204)
             self.send_header("Access-Control-Allow-Origin", "*")
@@ -86,15 +100,42 @@ def make_http_server(
             self.end_headers()
 
         def do_GET(self) -> None:  # noqa: N802
-            if self.path == "/health":
+            parsed = urlsplit(self.path)
+            route = parsed.path
+            qs = parse_qs(parsed.query)
+
+            if route == "/health":
                 self._send_json(200, {"ok": True})
-            elif self.path == "/stats":
-                if not self._authorized():
-                    self._send_json(401, {"error": "Unauthorized"})
-                    return
-                self._send_json(200, queue_stats(vault=vault))
-            else:
+                return
+            if route not in {"/stats", "/queue", "/search"}:
                 self._send_json(404, {"error": "Not found"})
+                return
+            if not self._authorized():
+                self._send_json(401, {"error": "Unauthorized"})
+                return
+
+            if route == "/stats":
+                self._send_json(200, queue_stats(vault=vault))
+            elif route == "/queue":
+                ok, limit = self._parse_int(qs.get("limit", [None])[0], "limit", 20)
+                if not ok:
+                    return
+                status_filter = qs.get("status", [None])[0]
+                items = list(QueueManager(vault).read_queue().values())
+                if status_filter:
+                    items = [i for i in items if i.status == status_filter]
+                items.sort(key=lambda i: i.updated_at, reverse=True)
+                items = items[: max(limit if limit is not None else 20, 0)]
+                self._send_json(200, {"count": len(items), "items": [i.model_dump(mode="json") for i in items]})
+            else:
+                q = (qs.get("q", [""])[0] or "").strip()
+                if not q:
+                    self._send_json(400, {"error": "Missing query parameter 'q'"})
+                    return
+                ok, limit = self._parse_int(qs.get("limit", [None])[0], "limit", 10)
+                if not ok:
+                    return
+                self._send_json(200, search_vault(vault, q, limit=limit if limit is not None else 10))
 
         def do_POST(self) -> None:  # noqa: N802
             if self.path not in {"/ingest", "/process", "/reprocess", "/digest"}:
@@ -117,25 +158,21 @@ def make_http_server(
                     vault=vault,
                     force=bool(data.get("force", False)),
                 )
-                self._send_json(400 if res.get("result") == "invalid" else 200, res)
+                if res.get("result") == "invalid":
+                    self._send_json(400, res)
+                    return
+                if bool(data.get("process", False)) and res.get("result") == "enqueued":
+                    res = {**res, "process": process_queue(cfg=resolved_cfg, limit=1)}
+                self._send_json(200, res)
                 return
 
             if self.path == "/process":
                 data = self._read_json_body(allow_empty=True)
                 if data is None:
                     return
-                raw_limit = data.get("limit")
-                if raw_limit is None:
-                    limit: int | None = None
-                elif isinstance(raw_limit, bool):
-                    self._send_json(400, {"error": "Invalid integer field 'limit'"})
+                ok, limit = self._parse_int(data.get("limit"), "limit", None)
+                if not ok:
                     return
-                else:
-                    try:
-                        limit = int(raw_limit)
-                    except (TypeError, ValueError):
-                        self._send_json(400, {"error": "Invalid integer field 'limit'"})
-                        return
                 res = process_queue(
                     cfg=resolved_cfg,
                     limit=limit,

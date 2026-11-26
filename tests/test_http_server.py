@@ -205,3 +205,65 @@ def test_http_server_process_endpoint(tmp_path: Path) -> None:
         server.shutdown()
         server.server_close()
         thread.join(timeout=2)
+
+
+def test_http_server_queue_search_and_ingest_process(tmp_path: Path) -> None:
+    ideas = tmp_path / "ideas"
+    ideas.mkdir()
+    (ideas / "obsidian-workflow.md").write_text(
+        "---\ntitle: Obsidian Graph Note\n---\nAtomic vault search content.\n",
+        encoding="utf-8",
+    )
+    server = make_http_server(Config(vault_path=tmp_path), port=0, token="ext-tok")
+    port = server.server_address[1]
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    auth = {"Authorization": "Bearer ext-tok"}
+    try:
+        proc_summary = {"selected": 1, "processed": 1, "skipped": 0, "failed": 0, "results": []}
+        with patch("reels_wiki.interfaces.http_server.process_queue", return_value=proc_summary) as mock_proc:
+            code_ing, ing = _post_json(
+                f"http://127.0.0.1:{port}/ingest",
+                {"url": "https://www.instagram.com/reel/DAbCdEfGhIj/", "process": True},
+                headers=auth,
+            )
+        assert code_ing == 200
+        assert ing["result"] == "enqueued"
+        assert ing["process"]["processed"] == 1
+        mock_proc.assert_called_once()
+
+        with urllib.request.urlopen(
+            urllib.request.Request(f"http://127.0.0.1:{port}/queue?limit=10", headers=auth),
+            timeout=5,
+        ) as resp:
+            assert resp.status == 200
+            q_all = json.loads(resp.read().decode("utf-8"))
+        assert q_all["count"] == 1 and q_all["items"][0]["shortcode"] == "DAbCdEfGhIj"
+
+        with urllib.request.urlopen(
+            urllib.request.Request(f"http://127.0.0.1:{port}/queue?status=processed", headers=auth),
+            timeout=5,
+        ) as resp:
+            assert resp.status == 200
+            q_filtered = json.loads(resp.read().decode("utf-8"))
+        assert q_filtered["count"] == 0
+
+        with pytest.raises(urllib.error.HTTPError) as exc_info:
+            urllib.request.urlopen(
+                urllib.request.Request(f"http://127.0.0.1:{port}/search", headers=auth),
+                timeout=5,
+            )
+        assert exc_info.value.code == 400
+
+        with urllib.request.urlopen(
+            urllib.request.Request(f"http://127.0.0.1:{port}/search?q=Obsidian&limit=5", headers=auth),
+            timeout=5,
+        ) as resp:
+            assert resp.status == 200
+            found = json.loads(resp.read().decode("utf-8"))
+        assert found["count"] == 1
+        assert found["matches"][0]["path"] == "ideas/obsidian-workflow.md"
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)

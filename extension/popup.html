@@ -14,6 +14,10 @@
     <span id="healthBadge" class="pill pill-idle">checking</span>
   </header>
 
+  <div id="statsBar" class="stats-bar" hidden>
+    <span id="statsText">pending: 0 | processed: 0 | failed: 0</span>
+  </div>
+
   <label for="url">Instagram URL</label>
   <input id="url" type="url" placeholder="https://www.instagram.com/reel/..." />
 
@@ -23,8 +27,14 @@
   <label for="token">Bearer Token (optional)</label>
   <input id="token" type="password" placeholder="REELS_WIKI_HTTP_TOKEN" />
 
+  <label class="inline-check">
+    <input id="autoProcess" type="checkbox" />
+    <span>Process immediately</span>
+  </label>
+
   <button id="saveBtn" type="button">Save to Queue</button>
   <button id="processBtn" type="button" class="btn-secondary">Process Queue Now</button>
+  <button id="retryBtn" type="button" class="btn-secondary" hidden>Retry Failed</button>
 
   <section id="pendingBar" class="pending-bar" hidden>
     <span id="pendingCount">Offline queue: 0</span>
@@ -35,6 +45,11 @@
   </section>
 
   <div id="status" role="status"></div>
+
+  <section class="search-box">
+    <input id="searchInput" type="search" placeholder="Search vault notes (Enter)..." />
+    <ul id="searchResults"></ul>
+  </section>
 
   <script src="popup.js"></script>
 </body>
