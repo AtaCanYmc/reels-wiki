@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Privacy Policy | reels-wiki Capture</title>
+  <meta name="description" content="Privacy policy for the reels-wiki Capture Chrome extension." />
+  <link rel="canonical" href="https://atacanymc.github.io/reels-wiki/privacy.html" />
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon.png" />
+  <link rel="stylesheet" href="index.css" />
+</head>
+<body>
+  <main class="container" style="max-width: 760px; padding: 48px 20px;">
+    <p><a href="./">Back to reels-wiki</a></p>
+    <h1>Privacy Policy: reels-wiki Capture</h1>
+    <p><strong>Effective Date:</strong> November 26, 2026</p>
+
+    <h2>1. Zero Remote Data Collection</h2>
+    <p>
+      The <strong>reels-wiki Capture</strong> browser extension runs strictly locally on your machine. It does not include analytics, telemetry, tracking pixels, advertising SDKs, or any developer-hosted backend servers.
+    </p>
+
+    <h2>2. What Data the Extension Accesses</h2>
+    <ul>
+      <li><strong>Active Tab URL / Clicked Link URL:</strong> Accessed only when you explicitly click the extension popup button or choose <em>Save to reels-wiki</em> from the right-click context menu.</li>
+      <li><strong>User Configuration:</strong> Your configured local server endpoint (default <code>http://127.0.0.1:8765</code>) and optional local Bearer token are stored solely on your device using <code>chrome.storage.local</code>.</li>
+    </ul>
+
+    <h2>3. Where Data Is Sent</h2>
+    <p>
+      When you trigger a save action, the extension sends an HTTP <code>POST</code> request with the selected URL exclusively to the local endpoint you configured (such as your own <code>reels-sync serve</code> process running on <code>127.0.0.1</code> or <code>localhost</code>). No data is ever transmitted to the extension author or any third party.
+    </p>
+
+    <h2>4. Data Sharing and Sale</h2>
+    <p>
+      We do not collect, retain, transfer, sell, or share any user data with third parties.
+    </p>
+
+    <h2>5. Contact</h2>
+    <p>
+      Questions or security reports can be opened on <a href="https://github.com/AtaCanYmc/reels-wiki/issues">GitHub Issues</a>.
+    </p>
+  </main>
+</body>
+</html>
