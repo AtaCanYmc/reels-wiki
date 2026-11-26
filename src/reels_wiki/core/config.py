@@ -76,6 +76,14 @@ class Config(BaseModel):
     telegram_bot_token: str | None = Field(default=None, repr=False)
     telegram_allowed_chat_id: int | None = None
 
+    @field_validator("allowed_folders", mode="before")
+    @classmethod
+    def _coerce_allowed_folders(cls, v: object) -> object:
+        if isinstance(v, str):
+            parts = [p.strip() for p in v.split(",") if p.strip()]
+            return parts or None
+        return v
+
     @field_validator("vault_path")
     @classmethod
     def _expand_vault(cls, v: Path) -> Path:

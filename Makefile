@@ -24,7 +24,7 @@ GLOBAL_FLAGS := $(if $(CONFIG),--config "$(CONFIG)",) $(if $(VAULT),--vault "$(V
 .PHONY: help venv install install-dev install-local install-all update-yt-dlp init-config init doctor \
         test test-fast test-match test-cov lint typecheck check-docs check-release check-site verify \
         stats stats-json ingest import-ig process-dry process retry-failed reprocess reprocess-all telegram mcp serve \
-        docker-build docker-process docker-telegram build build-extension build-obsidian-plugin build-safari-extension clean clean-all
+        docker-build docker-process docker-telegram build build-extension build-obsidian-plugin build-safari-extension clean-cache clean clean-all
 
 help: ## Show available targets grouped by category
 	@echo "reels-wiki Makefile targets"
@@ -204,10 +204,13 @@ build-safari-extension: ## Generate Safari Web Extension Xcode project into dist
 		--macos-only --force --no-open --no-prompt
 	@echo "Generated dist/safari-extension"
 
-clean: ## Remove build artifacts and Python caches
-	rm -rf build/ dist/ *.egg-info .pytest_cache
-	find . -type d -name "__pycache__" -exec rm -rf {} +
-	find . -type f -name "*.pyc" -delete
+clean-cache: ## Remove pytest, ruff, mypy, coverage, and Python bytecode caches
+	rm -rf .pytest_cache .ruff_cache .mypy_cache .coverage htmlcov/
+	find . -path "./$(VENV)" -prune -o -type d -name "__pycache__" -exec rm -rf {} +
+	find . -path "./$(VENV)" -prune -o -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete
+
+clean: clean-cache ## Remove build artifacts and caches
+	rm -rf build/ dist/ *.egg-info src/*.egg-info
 
 clean-all: clean ## Remove build artifacts, caches, and $(VENV)
 	rm -rf $(VENV)

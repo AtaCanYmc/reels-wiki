@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
+from reels_wiki.core.config import Config, load_config
 from reels_wiki.interfaces import cli
 
 
@@ -203,16 +204,19 @@ def test_cli_rich_human_ui_outputs(
     assert "gsk_secret_hidden" not in doc_out
 
 
-def test_cli_init_creates_config_and_env(tmp_path: Path) -> None:
+def test_cli_init_creates_config_and_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    for key in ("GROQ_API_KEY", "GEMINI_API_KEY", "TELEGRAM_BOT_TOKEN"):
+        monkeypatch.delenv(key, raising=False)
     vault = tmp_path / "vault"
     vault.mkdir()
     cfg_path = tmp_path / "config.yaml"
     env_path = tmp_path / ".env"
 
-    prompt_answers = iter([str(vault), "chrome", "groq", "gsk_test_123", ""])
+    prompt_answers = iter([str(vault), "ideas, tools", "ideas", "chrome", "groq", "tr", "groq", "gemini", "gsk_test_123", ""])
+    confirm_answers = iter([False, True, False])
     with (
         patch("reels_wiki.interfaces.cli.Prompt.ask", side_effect=lambda *a, **kw: next(prompt_answers)),
-        patch("reels_wiki.interfaces.cli.Confirm.ask", return_value=False),
+        patch("reels_wiki.interfaces.cli.Confirm.ask", side_effect=lambda *a, **kw: next(confirm_answers)),
         patch("reels_wiki.interfaces.cli.shutil.which", return_value="/usr/bin/ffmpeg"),
     ):
         rc = cli.main(["--config", str(cfg_path), "init", "--env-path", str(env_path)])
@@ -221,12 +225,65 @@ def test_cli_init_creates_config_and_env(tmp_path: Path) -> None:
     assert cfg_path.is_file()
     assert env_path.is_file()
     assert (env_path.stat().st_mode & 0o777) == 0o600
-    cfg_text = cfg_path.read_text(encoding="utf-8")
-    assert str(vault) in cfg_text
-    assert "cookies_from_browser: chrome" in cfg_text
+    cfg = load_config(path=cfg_path)
+    assert cfg.vault_path == vault.resolve()
+    assert cfg.allowed_folders == ["ideas", "tools"]
+    assert cfg.default_folder == "ideas"
+    assert cfg.enable_backlinks is False
+    assert cfg.extraction.cookies_from_browser == "chrome"
+    assert cfg.extraction.whisper_provider == "groq"
+    assert cfg.extraction.whisper_language == "tr"
+    assert cfg.extraction.enable_vision_fallback is True
+    assert cfg.synthesis.provider == "groq"
+    assert cfg.synthesis.fallback_provider == "gemini"
     env_text = env_path.read_text(encoding="utf-8")
     assert "GROQ_API_KEY=gsk_test_123" in env_text
     assert "GEMINI_API_KEY=your_gemini_api_key" in env_text
+
+
+def test_cli_init_ollama_and_whisper_off(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    for key in ("GROQ_API_KEY", "GEMINI_API_KEY", "TELEGRAM_BOT_TOKEN"):
+        monkeypatch.delenv(key, raising=False)
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    cfg_path = tmp_path / "config.yaml"
+    env_path = tmp_path / ".env"
+
+    prompt_answers = iter(
+        [
+            str(vault),
+            "",
+            "",
+            "safari",
+            "off",
+            "ollama",
+            "http://127.0.0.1:11434/v1",
+            "qwen2.5:14b",
+            "none",
+            "",
+            "",
+        ]
+    )
+    confirm_answers = iter([True, False, False])
+    with (
+        patch("reels_wiki.interfaces.cli.Prompt.ask", side_effect=lambda *a, **kw: next(prompt_answers)),
+        patch("reels_wiki.interfaces.cli.Confirm.ask", side_effect=lambda *a, **kw: next(confirm_answers)),
+        patch("reels_wiki.interfaces.cli.shutil.which", return_value="/usr/bin/ffmpeg"),
+    ):
+        rc = cli.main(["--config", str(cfg_path), "init", "--env-path", str(env_path)])
+
+    assert rc == 0
+    cfg = load_config(path=cfg_path)
+    assert cfg.allowed_folders is None
+    assert cfg.default_folder is None
+    assert cfg.enable_backlinks is True
+    assert cfg.extraction.cookies_from_browser == "safari"
+    assert cfg.extraction.enable_whisper_fallback is False
+    assert cfg.extraction.enable_vision_fallback is False
+    assert cfg.synthesis.provider == "ollama"
+    assert cfg.synthesis.ollama_base_url == "http://127.0.0.1:11434/v1"
+    assert cfg.synthesis.ollama_model == "qwen2.5:14b"
+    assert cfg.synthesis.fallback_provider is None
 
 
 def test_cli_init_respects_existing_without_force(tmp_path: Path) -> None:
@@ -336,3 +393,9 @@ def test_cli_digest_scoped_by_tag_and_review_actions(tmp_path: Path, capsys: pyt
     assert archived["status"] == "archived"
     assert len(list_inbox_notes(tmp_path)) == 0
     assert (tmp_path / "_index.md").read_text(encoding="utf-8").count("[[tool-note|") == 1
+
+
+def test_config_coerces_allowed_folders_string(tmp_path: Path) -> None:
+    assert Config(vault_path=tmp_path, allowed_folders="inbox").allowed_folders == ["inbox"]  # type: ignore[arg-type]
+    assert Config(vault_path=tmp_path, allowed_folders="inbox, ideas").allowed_folders == ["inbox", "ideas"]  # type: ignore[arg-type]
+    assert Config(vault_path=tmp_path, allowed_folders="  ").allowed_folders is None  # type: ignore[arg-type]

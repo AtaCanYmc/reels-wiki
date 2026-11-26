@@ -5,12 +5,12 @@ import threading
 import urllib.error
 import urllib.request
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from reels_wiki.core.config import Config, ConfigError
-from reels_wiki.interfaces.http_server import make_http_server
+from reels_wiki.interfaces.http_server import make_http_server, run_http_server
 
 
 def _post_json(url: str, body: dict, headers: dict[str, str] | None = None) -> tuple[int, dict]:
@@ -123,3 +123,18 @@ def test_http_server_stats_reprocess_and_digest_endpoints(tmp_path: Path) -> Non
     finally:
         server.shutdown()
         server.server_close()
+
+
+def test_run_http_server_handles_keyboard_interrupt(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    dummy_server = MagicMock()
+    dummy_server.serve_forever.side_effect = KeyboardInterrupt
+
+    with patch("reels_wiki.interfaces.http_server.make_http_server", return_value=dummy_server):
+        run_http_server(Config(vault_path=tmp_path), host="127.0.0.1", port=8765)
+
+    out = capsys.readouterr().out
+    assert "http://127.0.0.1:8765" in out
+    assert "Shutting down HTTP server." in out
+    dummy_server.server_close.assert_called_once_with()

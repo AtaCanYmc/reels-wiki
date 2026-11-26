@@ -154,7 +154,10 @@ def run_http_server(
 ) -> None:
     """Start the HTTP ingest server until interrupted."""
     server = make_http_server(cfg or load_config(), host=host, port=port, token=token)
+    print(f"reels-wiki HTTP server listening on http://{host}:{port} (Ctrl+C to stop)", flush=True)
     try:
         server.serve_forever()
+    except KeyboardInterrupt:
+        print("\nShutting down HTTP server.", flush=True)
     finally:
         server.server_close()

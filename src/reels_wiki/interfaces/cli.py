@@ -22,6 +22,7 @@ from ..vault.digest import generate_digest
 from ..vault.search import search_vault
 from ..vault.writer import apply_review_action, list_inbox_notes
 from .cli_ui import (
+    get_console,
     make_progress_callback,
     render_doctor,
     render_error,
@@ -285,42 +286,96 @@ def run_init(
     vault_default: Path | None = None,
     force: bool = False,
 ) -> dict[str, Any]:
-    """Interactively create config.yaml and .env, then run diagnostics."""
+    """Interactively create config.yaml and .env across a 4-step setup wizard, then run diagnostics."""
     if config_path.exists() and not force:
         if not Confirm.ask(f"{config_path} already exists. Overwrite?", default=False):
             return {"written": False, "config_path": str(config_path), "env_path": str(env_path)}
 
+    con = get_console()
+
+    # Step 1: Obsidian Vault & Folders
+    con.print("\n[bold cyan][1/4] Obsidian Vault & Folders[/bold cyan]")
+    con.print("[dim]Notes save to <vault_path>/<folder>/<slug>.md with _index.md and _log.md at the vault root.[/dim]")
     vault_str = Prompt.ask(
         "Obsidian vault path",
-        default=str(vault_default) if vault_default else "~/Obsidian/Vault",
+        default=str(vault_default) if vault_default else "~/Documents/ObsidianVault",
     )
+    raw_folders = Prompt.ask(
+        "Allowed folders (comma-separated, blank for auto-discovery)",
+        default="",
+    )
+    allowed_folders = [f.strip() for f in raw_folders.split(",") if f.strip()]
+    default_folder_hint = allowed_folders[0] if allowed_folders else ""
+    default_folder = Prompt.ask(
+        "Default fallback folder (blank for auto)",
+        default=default_folder_hint,
+    ).strip()
+    enable_backlinks = Confirm.ask("Enable automatic backlinks in existing notes?", default=False)
+
+    # Step 2: Instagram Extraction & Fallbacks
+    con.print("\n[bold cyan][2/4] Instagram Extraction & Fallbacks[/bold cyan]")
     cookie_mode = Prompt.ask(
         "Instagram cookies source",
-        choices=["chrome", "firefox", "file", "skip"],
+        choices=["chrome", "firefox", "safari", "file", "skip"],
         default="chrome",
     )
     extraction_cfg: dict[str, Any] = {}
-    if cookie_mode in ("chrome", "firefox"):
+    if cookie_mode in ("chrome", "firefox", "safari"):
         extraction_cfg["cookies_from_browser"] = cookie_mode
     elif cookie_mode == "file":
         extraction_cfg["cookies_file"] = Prompt.ask("Netscape cookies file path", default="~/cookies.txt")
 
+    whisper_mode = Prompt.ask(
+        "Audio transcript fallback (Whisper)",
+        choices=["groq", "local", "off"],
+        default="groq",
+    )
+    if whisper_mode == "off":
+        extraction_cfg["enable_whisper_fallback"] = False
+    else:
+        extraction_cfg["enable_whisper_fallback"] = True
+        extraction_cfg["whisper_provider"] = whisper_mode
+        whisper_lang = Prompt.ask("Whisper language (e.g. tr, en, blank for auto)", default="").strip()
+        if whisper_lang:
+            extraction_cfg["whisper_language"] = whisper_lang
+
+    enable_vision = Confirm.ask("Enable Gemini vision fallback for visual-only Reels?", default=True)
+    extraction_cfg["enable_vision_fallback"] = enable_vision
+
+    # Step 3: LLM Synthesis & API Keys
+    con.print("\n[bold cyan][3/4] LLM Synthesis & API Keys[/bold cyan]")
     provider = Prompt.ask("Primary LLM provider", choices=["groq", "gemini", "ollama"], default="groq")
+    synthesis_cfg: dict[str, Any] = {"provider": provider}
+    if provider == "ollama":
+        synthesis_cfg["ollama_base_url"] = Prompt.ask("Ollama base URL", default="http://localhost:11434/v1")
+        synthesis_cfg["ollama_model"] = Prompt.ask("Ollama model", default="llama3.1:8b")
+
+    fallback = Prompt.ask(
+        "Fallback LLM provider",
+        choices=["none", "groq", "gemini", "ollama"],
+        default="gemini" if provider == "groq" else "none",
+    )
+    synthesis_cfg["fallback_provider"] = None if fallback == "none" else fallback
     groq_key = Prompt.ask("GROQ_API_KEY (leave blank to skip)", password=True, default="")
     gemini_key = Prompt.ask("GEMINI_API_KEY (leave blank to skip)", password=True, default="")
 
+    # Step 4: Optional Capture & Diagnostics
+    con.print("\n[bold cyan][4/4] Optional Capture & Diagnostics[/bold cyan]")
     tg_token = ""
     tg_chat_id = ""
     if Confirm.ask("Configure Telegram capture bot?", default=False):
         tg_token = Prompt.ask("TELEGRAM_BOT_TOKEN", password=True, default="")
         tg_chat_id = Prompt.ask("TELEGRAM_ALLOWED_CHAT_ID", default="")
 
-    cfg_data: dict[str, Any] = {
-        "vault_path": vault_str,
-        "synthesis": {"provider": provider},
-    }
-    if extraction_cfg:
-        cfg_data["extraction"] = extraction_cfg
+    cfg_data: dict[str, Any] = {"vault_path": vault_str}
+    if allowed_folders:
+        cfg_data["allowed_folders"] = allowed_folders
+    if default_folder:
+        cfg_data["default_folder"] = default_folder
+    if enable_backlinks:
+        cfg_data["enable_backlinks"] = True
+    cfg_data["extraction"] = extraction_cfg
+    cfg_data["synthesis"] = synthesis_cfg
 
     atomic_write_text(config_path, yaml.safe_dump(cfg_data, sort_keys=False))
 
