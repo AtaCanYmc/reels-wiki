@@ -12,6 +12,9 @@ Product and engineering milestones for `reels-wiki`, grouped by SemVer releases 
 | `v0.4.0` | Background scheduling, container packaging, ecosystem distribution | Completed |
 | `v0.5.0` | Multi-platform (Shorts/TikTok), weekly digest, extension auto-sync | Completed |
 | `v1.0.0` | Frozen schemas, public SDK contract, E2E fixture suite | Completed |
+| `v1.1.0` | Local semantic search, bidirectional graph links, multi-platform bot | Planned |
+| `v1.2.0` | Interactive review TUI, topic digests, bounded worker concurrency | Planned |
+| `v1.3.0` | Native Obsidian plugin, automated browser store packaging | Future |
 
 ## v0.1.0 (Completed)
 
@@ -95,6 +98,45 @@ Focus: Guarantee backward compatibility for configuration, on-disk vault artifac
   - Document frozen v1 contracts, deprecation windows, safe upgrade workflow, and queue/index recovery procedures.
 
 **Exit Criteria**: Contract tests pass in CI (`make verify`), locking `reels_wiki.__all__`, `config.yaml` v1 validation, and legacy/additive artifact reprocessing.
+
+## v1.1.0 (Planned - Semantic Search, Graph Links, and Multi-Platform Bot)
+
+Focus: Improve vault recall and graph connectivity locally while bringing Telegram capture to parity with CLI and extension ingestion.
+
+- **Local Semantic Search (`vault/search.py`, `interfaces/cli.py`, `interfaces/mcp_server.py`)**:
+  - Add an optional local embedding index (`ollama` embeddings or `fastembed`) stored in `sources/.embeddings.sqlite` (rebuildable from Markdown notes, zero cloud lock-in).
+  - Expose `reels-sync search "<query>"` and upgrade MCP `search_vault_notes` with hybrid keyword + vector ranking.
+- **Bidirectional Concept & Backlink Enrichment (`vault/context.py`, `vault/writer.py`)**:
+  - Detect reciprocal topic matches against existing vault notes and optionally append backlinks into related concept notes without touching user-curated prose or frontmatter (`status`, `created`).
+- **Multi-Platform Telegram Capture (`interfaces/telegram_bot.py`)**:
+  - Expand `extract_urls` in the allowlisted Telegram bot beyond Instagram so shared YouTube Shorts and TikTok links from mobile apps enqueue cleanly alongside Reels.
+
+**Exit Criteria**: Hybrid search returns ranked vault notes offline via CLI and MCP, reciprocal backlinks pass idempotency tests, and Telegram bot tests verify Reels, Shorts, and TikTok URLs.
+
+## v1.2.0 (Planned - Review TUI, Topic Digests, and Bounded Concurrency)
+
+Focus: Streamline human note curation inside the vault, support theme-scoped syntheses, and speed up multi-item queue runs safely.
+
+- **Interactive Inbox Review TUI (`interfaces/cli.py`, `interfaces/cli_ui.py`)**:
+  - Add `reels-sync review` to step through `status: inbox` notes in the terminal, promote notes to `evergreen`, edit tags, or archive low-value captures while updating `_index.md` and `_log.md`.
+- **Topic-Scoped Digests & Folder Prompt Profiles (`vault/digest.py`, `prompts/`, `core/config.py`)**:
+  - Extend `reels-sync digest --days 30 --tag <tag>` to synthesize focused thematic summaries across longer windows.
+  - Support per-folder prompt overrides under `synthesis:` so `tools/` notes emphasize commands/configs while `learning/` notes emphasize mental models.
+- **Bounded Stage Concurrency (`pipeline/runner.py`)**:
+  - Introduce opt-in `--workers N` concurrency for Whisper transcription and LLM synthesis stages while keeping serial per-host `delay_seconds` throttling on `yt-dlp` extraction.
+
+**Exit Criteria**: `reels-sync review` curates `inbox` notes without duplicating `_index.md` entries, topic digests accept `--tag`, and `--workers` runs pass lock/race tests cleanly.
+
+## v1.3.0 (Future - Native Obsidian Plugin and Store Distribution)
+
+Focus: Embed `reels-wiki` workflows directly inside Obsidian and automate browser extension store publishing.
+
+- **Native Obsidian Community Plugin**:
+  - Ship an official Obsidian sidebar view backed by `reels-sync serve` for in-app queue health checks, one-click URL ingest, targeted artifact reprocessing, and weekly digest triggers.
+- **Automated Chrome Web Store & Firefox AMO Packaging (`.github/workflows/`, `extension/`)**:
+  - Automate reproducible extension ZIP builds, version-parity checks (`manifest.json` vs `pyproject.toml`), and store upload staging in release workflows.
+
+**Exit Criteria**: Obsidian plugin triggers `reels-sync serve` endpoints from within a vault pane, and release tags publish reproducible browser extension bundles alongside PyPI wheels.
 
 ## Non-Goals
 
