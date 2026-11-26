@@ -182,8 +182,26 @@ def test_stats_aggregates_stages_and_llm_usage(tmp_path):
 
 def test_parse_share_url_resolves_redirect(monkeypatch):
     class _FakeResp:
-        status_code = 200
-        url = f"https://www.instagram.com/reel/{SC}/?igsh=abc"
+        status_code = 302
+        headers = {"location": f"https://www.instagram.com/reel/{SC}/?igsh=abc"}
 
-    monkeypatch.setattr("reels_wiki.ingestion.queue_manager.httpx.head", lambda *a, **kw: _FakeResp())
+    captured = {}
+
+    def _fake_head(url, **kw):
+        captured["url"] = url
+        captured["follow_redirects"] = kw.get("follow_redirects")
+        return _FakeResp()
+
+    monkeypatch.setattr("reels_wiki.ingestion.queue_manager.httpx.head", _fake_head)
     assert extract_shortcode("https://www.instagram.com/share/reel/xyz123") == SC
+    assert captured["url"] == "https://www.instagram.com/share/reel/xyz123"
+    assert captured["follow_redirects"] is False
+
+
+def test_parse_share_url_rejects_offhost_redirect(monkeypatch):
+    class _EvilResp:
+        status_code = 302
+        headers = {"location": f"http://127.0.0.1/reel/{SC}/"}
+
+    monkeypatch.setattr("reels_wiki.ingestion.queue_manager.httpx.head", lambda *a, **kw: _EvilResp())
+    assert extract_shortcode("https://www.instagram.com/share/reel/xyz123") is None

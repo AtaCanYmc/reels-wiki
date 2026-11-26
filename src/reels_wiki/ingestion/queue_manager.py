@@ -6,7 +6,7 @@ import os
 import re
 from pathlib import Path
 from typing import Any, Iterable
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import httpx
 from filelock import FileLock
@@ -16,21 +16,43 @@ from ..core.utils import atomic_write_text
 
 IG_HOSTS = {"instagram.com", "www.instagram.com", "m.instagram.com", "instagr.am"}
 _PATH_RE = re.compile(r"(?:^|/)(reels?|p|tv)/([A-Za-z0-9_-]{11})(?=/|$)")
-_SHARE_RE = re.compile(r"(?:^|/)share/[A-Za-z0-9_/-]+")
+_SHARE_RE = re.compile(r"(?:^|/)share/([A-Za-z0-9_-]+(?:/[A-Za-z0-9_-]+)*)/?$")
 ALL_STATUSES: tuple[str, ...] = ("pending", "processing", "processed", "skipped", "failed")
 
 
 def resolve_share_url(url: str, *, timeout: float = 10.0) -> str:
-    """Follow Instagram ``/share/...`` redirects and return the resolved URL (or ``url`` on failure)."""
+    """Follow Instagram ``/share/...`` redirects safely on ``www.instagram.com`` only."""
     try:
-        resp = httpx.head(url, follow_redirects=True, timeout=timeout)
-        final_url = str(resp.url)
-        if resp.status_code in (403, 405) or _SHARE_RE.search(urlparse(final_url).path):
-            resp = httpx.get(url, follow_redirects=True, timeout=timeout)
-            final_url = str(resp.url)
-        return final_url
+        parsed = urlparse(url)
+    except ValueError:
+        return url
+    if (parsed.hostname or "").lower() not in IG_HOSTS:
+        return url
+    match = _SHARE_RE.search(parsed.path)
+    if not match:
+        return url
+
+    # Reconstruct from a fixed allowlisted origin so arbitrary hosts/ports/schemes cannot be probed.
+    safe_url = f"https://www.instagram.com/share/{match.group(1)}"
+    try:
+        resp = httpx.head(safe_url, follow_redirects=False, timeout=timeout)
+        location = resp.headers.get("location")
+        if not location and resp.status_code in (403, 405):
+            resp = httpx.get(safe_url, follow_redirects=False, timeout=timeout)
+            location = resp.headers.get("location")
     except httpx.HTTPError:
         return url
+
+    if not location:
+        return url
+    target = urljoin("https://www.instagram.com", location)
+    try:
+        t_parsed = urlparse(target)
+    except ValueError:
+        return url
+    if t_parsed.scheme not in ("http", "https") or (t_parsed.hostname or "").lower() not in IG_HOSTS:
+        return url
+    return target
 
 
 def parse_instagram_url(url: str) -> tuple[str, str] | None:
