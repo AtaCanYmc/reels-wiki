@@ -24,6 +24,10 @@
         {
           "type": "generic",
           "path": "src/reels_wiki/__init__.py"
+        },
+        {
+          "type": "generic",
+          "path": "site/index.html"
         }
       ]
     }
