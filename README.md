@@ -246,16 +246,19 @@ reels-secretary/
 ├── assets/
 │   └── logo.png
 ├── docs/
+│   ├── README.md
 │   ├── architecture.md
 │   ├── cli-and-mcp.md
 │   ├── configuration.md
 │   ├── example-walkthrough.md
+│   ├── saved-posts-workflow.md
 │   ├── step-by-step.md
 │   └── troubleshooting.md
 ├── src/
 │   └── reels_wiki/
 │       ├── __init__.py
 │       ├── cli.py
+│       ├── cli_ui.py
 │       ├── config.py
 │       ├── extractor.py
 │       ├── ig_export.py
@@ -270,7 +273,10 @@ reels-secretary/
 │       └── writer.py
 ├── tests/
 │   ├── test_cli.py
+│   ├── test_extractor.py
 │   ├── test_ig_export.py
+│   ├── test_mcp_server.py
+│   ├── test_pipeline.py
 │   ├── test_queue_manager.py
 │   ├── test_synthesizer.py
 │   ├── test_telegram_bot.py
@@ -287,6 +293,7 @@ Tests run offline via `make test` (`pytest`) without making network or LLM API c
 
 - [Architecture Guide](docs/architecture.md)
 - [Step-by-Step Guide](docs/step-by-step.md)
+- [Saved Posts Workflow](docs/saved-posts-workflow.md)
 - [Example Walkthrough](docs/example-walkthrough.md)
 - [CLI and MCP Reference](docs/cli-and-mcp.md)
 - [Configuration Reference](docs/configuration.md)
