@@ -15,7 +15,12 @@ from ..core.models import QueueItem, QueueStatus, utcnow_iso
 from ..core.utils import atomic_write_text
 
 IG_HOSTS = {"instagram.com", "www.instagram.com", "m.instagram.com", "instagr.am"}
+YT_HOSTS = {"youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be"}
+TT_HOSTS = {"tiktok.com", "www.tiktok.com", "m.tiktok.com"}
 _PATH_RE = re.compile(r"(?:^|/)(reels?|p|tv)/([A-Za-z0-9_-]{11})(?=/|$)")
+_YT_SHORT_RE = re.compile(r"(?:^|/)shorts/([A-Za-z0-9_-]{11})(?=/|$)")
+_YT_BE_RE = re.compile(r"^/([A-Za-z0-9_-]{11})(?=/|$)")
+_TT_VIDEO_RE = re.compile(r"(?:^|/)(?:@[^/]+/)?(?:video|v)/(\d+)(?=/|$)")
 _SHARE_SEG_RE = re.compile(r"[A-Za-z0-9_-]+")
 ALL_STATUSES: tuple[str, ...] = ("pending", "processing", "processed", "skipped", "failed")
 
@@ -101,15 +106,50 @@ def parse_instagram_url(url: str) -> tuple[str, str] | None:
     return kind, match.group(2)
 
 
+def parse_media_url(url: str) -> tuple[str, str, str] | None:
+    """Return ``(platform, kind, key)`` for Instagram, YouTube Shorts, or TikTok URLs."""
+    ig = parse_instagram_url(url)
+    if ig:
+        return "instagram", ig[0], ig[1]
+    if not url or not isinstance(url, str):
+        return None
+    candidate = url.strip().strip("<>")
+    if not candidate:
+        return None
+    if "://" not in candidate:
+        candidate = "https://" + candidate
+    try:
+        parsed = urlparse(candidate)
+    except ValueError:
+        return None
+    host = (parsed.hostname or "").lower()
+    if host in YT_HOSTS:
+        m = _YT_BE_RE.search(parsed.path) if host == "youtu.be" else _YT_SHORT_RE.search(parsed.path)
+        if m:
+            return "youtube", "short", f"yt_{m.group(1)}"
+    elif host in TT_HOSTS:
+        m = _TT_VIDEO_RE.search(parsed.path)
+        if m:
+            return "tiktok", "video", f"tt_{m.group(1)}"
+    return None
+
+
 def extract_shortcode(url: str) -> str | None:
-    parsed = parse_instagram_url(url)
-    return parsed[1] if parsed else None
+    parsed = parse_media_url(url)
+    return parsed[2] if parsed else None
 
 
 def normalize_url(shortcode_or_url: str) -> str:
-    """Canonical form: ``https://www.instagram.com/reel/<shortcode>/``."""
-    sc = extract_shortcode(shortcode_or_url) or shortcode_or_url
-    return f"https://www.instagram.com/reel/{sc}/"
+    """Canonical URL for Instagram Reels, YouTube Shorts, or TikTok videos."""
+    parsed = parse_media_url(shortcode_or_url)
+    if parsed:
+        platform, _kind, key = parsed
+        if platform == "youtube":
+            return f"https://www.youtube.com/shorts/{key.removeprefix('yt_')}"
+        if platform == "tiktok":
+            return f"https://www.tiktok.com/video/{key.removeprefix('tt_')}"
+        return f"https://www.instagram.com/reel/{key}/"
+    return f"https://www.instagram.com/reel/{shortcode_or_url}/"
 
 
 def _index_entry(item: QueueItem) -> dict:

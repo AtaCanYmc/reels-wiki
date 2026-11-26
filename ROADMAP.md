@@ -10,7 +10,7 @@ Product and engineering milestones for `reels-wiki`, grouped by SemVer releases 
 | `v0.2.0` | Reliability, static analysis, coverage gates, `init` wizard, PyPI publishing | Completed |
 | `v0.3.0` | Extraction fidelity, local LLM synthesis, observability | Completed |
 | `v0.4.0` | Background scheduling, container packaging, ecosystem distribution | Completed |
-| `v0.5.0` | Multi-platform (Shorts/TikTok), weekly digest, extension auto-sync | Planned |
+| `v0.5.0` | Multi-platform (Shorts/TikTok), weekly digest, extension auto-sync | Completed |
 | `v1.0.0` | Frozen schemas, public SDK contract, E2E fixture suite | Future |
 
 ## v0.1.0 (Completed)
@@ -68,15 +68,15 @@ Focus: Unattended background execution, containerized deployment, and broader pa
 
 **Exit Criteria**: Containerized `reels-sync process` and `launchd`/`systemd` schedules run unattended against a mounted vault with zero manual intervention.
 
-## v0.5.0 (Planned - Multi-Platform, Digests, and Extension Sync)
+## v0.5.0 (Completed - Multi-Platform, Digests, and Extension Sync)
 
 Focus: Expand capture beyond Instagram, synthesize periodic digests across recent notes, and automate offline extension syncing.
 
-- [ ] **Multi-Platform Short-Form Support (`ingestion/queue_manager.py`, `pipeline/extractor.py`)**:
+- [x] **Multi-Platform Short-Form Support (`ingestion/queue_manager.py`)**:
   - Accept YouTube Shorts and TikTok URLs alongside Instagram Reels through the same `yt-dlp` waterfall and Obsidian writer.
-- [ ] **Weekly Knowledge Digest (`interfaces/cli.py`, `pipeline/synthesizer.py`)**:
+- [x] **Weekly Knowledge Digest (`vault/digest.py`, `interfaces/cli.py`)**:
   - Add `reels-sync digest --days 7` to synthesize a weekly summary note grouping recent atomic notes by theme and tag.
-- [ ] **Extension Background Auto-Sync (`extension/background.js`)**:
+- [x] **Extension Background Auto-Sync (`extension/background.js`, `extension/manifest.json`)**:
   - Use `chrome.alarms` to flush `pendingQueue` automatically when `reels-sync serve` comes online.
 
 **Exit Criteria**: Users can ingest Shorts/TikTok/Reels, generate weekly digest notes from CLI, and capture offline in the extension without manual sync clicks.

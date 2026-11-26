@@ -319,6 +319,7 @@ reels-secretary/
 │       └── vault/
 │           ├── __init__.py
 │           ├── context.py
+│           ├── digest.py
 │           └── writer.py
 ├── extension/
 │   ├── icons/

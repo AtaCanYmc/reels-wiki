@@ -18,6 +18,7 @@ from ..core.utils import atomic_write_text
 from ..ingestion.ig_export import import_ig_export
 from ..ingestion.queue_manager import enqueue, queue_stats
 from ..pipeline.runner import process_queue, reprocess
+from ..vault.digest import generate_digest
 from .cli_ui import (
     make_progress_callback,
     render_doctor,
@@ -193,6 +194,11 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     p_serve.add_argument("--host", default="127.0.0.1", help="Bind address (default: 127.0.0.1).")
     p_serve.add_argument("--port", type=int, default=8765, help="Bind port (default: 8765).")
+
+    # digest
+    p_digest = subparsers.add_parser("digest", help="Generate a weekly digest note grouping recent vault notes by tag.")
+    p_digest.add_argument("--days", type=int, default=7, help="Lookback window in days (default: 7).")
+    p_digest.add_argument("--dry-run", action="store_true", help="Preview matched notes without writing a digest file.")
 
     return parser
 
@@ -418,6 +424,14 @@ def main(argv: list[str] | None = None) -> int:
 
         if args.command == "serve":
             run_http_server(cfg=cfg, host=args.host, port=args.port)
+            return 0
+
+        if args.command == "digest":
+            result = generate_digest(cfg.vault_path, days=args.days, dry_run=args.dry_run)
+            if args.json_output:
+                _emit_json(result)
+            else:
+                print(f"Digest ({result['notes_count']} notes): {result['digest_path'] or 'none'}")
             return 0
 
         parser.error(f"Unknown command: {args.command}")

@@ -29,6 +29,7 @@ reels-sync [--config PATH] [--vault PATH] [--json] [-v] <subcommand>
 | `telegram` | Start long-polling Telegram share capture bot | None |
 | `mcp` | Start MCP server over stdio | None |
 | `serve` | Start HTTP ingest server for Shortcuts and browser extensions | `--host`, `--port` |
+| `digest` | Generate weekly summary note grouping recent vault notes by tag | `--days N`, `--dry-run` |
 
 ### Output Modes
 

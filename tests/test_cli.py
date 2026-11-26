@@ -267,3 +267,26 @@ def test_cli_doctor_passes_with_ollama_without_cloud_keys(
     assert out["ok"] is True
     assert out["api_keys"]["ok"] is True
     assert out["api_keys"]["primary_provider"] == "ollama"
+
+
+def test_cli_digest_writes_weekly_summary(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    from datetime import date
+
+    today = date.today().isoformat()
+    ideas = tmp_path / "ideas"
+    ideas.mkdir()
+    (ideas / "note-one.md").write_text(
+        f"---\ntitle: First Idea\ncreated: {today}\ntags: [cli, local]\n---\nBody\n",
+        encoding="utf-8",
+    )
+    cfg = _fake_cfg(tmp_path)
+    with patch("reels_wiki.interfaces.cli.load_config", return_value=cfg):
+        rc = cli.main(["--json", "digest", "--days", "7"])
+
+    assert rc == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["notes_count"] == 1
+    assert out["tags"] == ["cli", "local"]
+    digest_file = tmp_path / out["digest_path"]
+    assert digest_file.is_file()
+    assert "[[note-one|First Idea]]" in digest_file.read_text(encoding="utf-8")

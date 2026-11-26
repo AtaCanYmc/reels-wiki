@@ -9,7 +9,7 @@ const pendingCount = document.getElementById("pendingCount");
 const syncBtn = document.getElementById("syncBtn");
 const exportBtn = document.getElementById("exportBtn");
 
-const IG_URL_RE = /^https?:\/\/(?:www\.|m\.)?(?:instagram\.com|instagr\.am)\//i;
+const MEDIA_URL_RE = /^https?:\/\/(?:www\.|m\.)?(?:instagram\.com|instagr\.am|youtube\.com|youtu\.be|tiktok\.com)\//i;
 
 function setStatus(text, cls) {
   statusEl.textContent = text;
@@ -84,8 +84,8 @@ saveBtn.addEventListener("click", async () => {
   const url = urlInput.value.trim();
   const endpoint = cleanEndpoint();
   const token = tokenInput.value.trim();
-  if (!url || !IG_URL_RE.test(url)) {
-    setStatus("Enter a valid Instagram URL.", "err");
+  if (!url || !MEDIA_URL_RE.test(url)) {
+    setStatus("Enter an Instagram, YouTube Shorts, or TikTok URL.", "err");
     return;
   }
 

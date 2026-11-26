@@ -205,3 +205,12 @@ def test_parse_share_url_rejects_offhost_redirect(monkeypatch):
 
     monkeypatch.setattr("reels_wiki.ingestion.queue_manager.httpx.head", lambda *a, **kw: _EvilResp())
     assert extract_shortcode("https://www.instagram.com/share/reel/xyz123") is None
+
+
+def test_parse_youtube_shorts_and_tiktok_urls():
+    yt = "https://www.youtube.com/shorts/dQw4w9WgXcQ?feature=share"
+    tt = "https://www.tiktok.com/@creator/video/7351234567890123456"
+    assert extract_shortcode(yt) == "yt_dQw4w9WgXcQ"
+    assert normalize_url(yt) == "https://www.youtube.com/shorts/dQw4w9WgXcQ"
+    assert extract_shortcode(tt) == "tt_7351234567890123456"
+    assert normalize_url(tt) == "https://www.tiktok.com/video/7351234567890123456"
