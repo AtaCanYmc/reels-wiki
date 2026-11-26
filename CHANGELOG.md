@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.1.3](https://github.com/AtaCanYmc/reels-wiki/compare/v0.1.2...v0.1.3) (2026-11-26)
+
+
+### Features
+
+* add CSS styles for theming and layout, implement JavaScript for color scheme toggle and interactive features ([66ba631](https://github.com/AtaCanYmc/reels-wiki/commit/66ba631e9f589a898ee5877c3920b7fc5f2cb205))
+* add favicon and apple-touch-icon links to enhance site branding ([91e84f3](https://github.com/AtaCanYmc/reels-wiki/commit/91e84f3cf9afaea35adba918518e862e9a999ab3))
+* add interactive setup wizard for config and environment files in CLI ([9136c2a](https://github.com/AtaCanYmc/reels-wiki/commit/9136c2a96e9f23907d08c4012a399c8bdc3cb461))
+* add support for custom note templates and enhance deployment documentation ([1ebd987](https://github.com/AtaCanYmc/reels-wiki/commit/1ebd987f51bc8955d888584e5fbbc93097758779))
+* add support for Ollama as a primary LLM provider in CLI and configuration ([8196363](https://github.com/AtaCanYmc/reels-wiki/commit/81963638a710b67804524d395d9b1adbef1303bb))
+* enhance documentation for multi-provider synthesis and unattended deployment, update tool references ([007d35c](https://github.com/AtaCanYmc/reels-wiki/commit/007d35c7759444bfcc979797796b03dc3eed527d))
+* enhance stats command to include artifact counts, extraction stages, and LLM usage metrics ([c496f4a](https://github.com/AtaCanYmc/reels-wiki/commit/c496f4adc38ab13e09883a6f445889501b5cc300))
+* implement Jinja2 prompt rendering for synthesizer and add new templates ([0cf8aa8](https://github.com/AtaCanYmc/reels-wiki/commit/0cf8aa824c324ff007c271058a5d2e9c50fcb4f4))
+* refactor module structure and update imports for ingestion and interfaces ([faab430](https://github.com/AtaCanYmc/reels-wiki/commit/faab430f465e069ba9ded0bdf155e1deaf94d292))
+* remove logo bg ([b80d2f6](https://github.com/AtaCanYmc/reels-wiki/commit/b80d2f685ccd245e8d242846d22ec7b23f311cf8))
+* resolve Instagram share URLs and enhance image extraction for posts without video ([8ec254b](https://github.com/AtaCanYmc/reels-wiki/commit/8ec254bc05139dc1f57d8baf71beb70031cf5dea))
+* update Groq model configuration to use openai/gpt-oss-120b and add providers guide ([b37b84a](https://github.com/AtaCanYmc/reels-wiki/commit/b37b84a623839354516b216330c7c377ecbc6e39))
+* update roadmap to mark v0.3.0 as completed and enhance content hash reprocessing logic ([3f9e736](https://github.com/AtaCanYmc/reels-wiki/commit/3f9e7360cc92b7d269e730f034695349ba73af54))
+
+
+### Documentation
+
+* add saved posts workflow guide and sync repository layout ([64abc00](https://github.com/AtaCanYmc/reels-wiki/commit/64abc009f5e3e1834c7ec48e8dccaa56643f6a91))
+
 ## [0.1.2](https://github.com/AtaCanYmc/reels-wiki/compare/v0.1.1...v0.1.2) (2026-11-23)
 
 
