@@ -1,0 +1,32 @@
+# reels-wiki
+
+> Local-first Python pipeline that converts saved Instagram Reels into deduplicated atomic Markdown notes inside a 3-layer Obsidian LLM Wiki vault.
+
+## Key Capabilities
+
+- **URL Normalization & Deduplication**: Maps `/reel/`, `/reels/`, `/p/`, `/tv/`, and `/share/...` redirects to an 11-character shortcode and tracks state in `sources/.reels_index.json` + append-only `inbox/reels-queue.jsonl`.
+- **3-Stage Cost-Aware Extraction**:
+  1. `yt-dlp` metadata and captions (`min_caption_chars: 150`).
+  2. Audio transcription via Groq `whisper-large-v3-turbo` or offline `faster-whisper`.
+  3. Frame OCR via `ffmpeg` + Gemini Vision (`gemini-2.5-flash`), including image-only `/p/` carousel fallback.
+- **Multi-Provider Synthesis**: Supports Groq (`openai/gpt-oss-120b`), Google Gemini (`gemini-2.5-flash`), and offline OpenAI-compatible local models (`ollama`), with automatic JSON repair and token/retry observability.
+- **5 Interfaces**: CLI (`reels-sync`), Python SDK (`reels_wiki`), MCP Server (`reels-wiki-mcp`), Telegram Capture Bot (`reels-wiki-telegram`), and Agent Skill (`SKILL.md`).
+
+## Quick Start
+
+```bash
+pip install reels-wiki
+reels-sync init
+reels-sync doctor
+reels-sync ingest "https://www.instagram.com/reel/DAbCdEfGhIj/"
+reels-sync process --limit 10
+```
+
+## Links
+
+- [Repository](https://github.com/AtaCanYmc/reels-wiki)
+- [Documentation Index](https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/README.md)
+- [Providers Guide](https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/providers.md)
+- [Saved Posts Workflow](https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/saved-posts-workflow.md)
+- [Telegram Bot Setup](https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/telegram-bot.md)
+- [CLI and MCP Reference](https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/cli-and-mcp.md)
