@@ -233,19 +233,7 @@ process_queue(cfg, limit=3)
 
 ## How It Works
 
-```mermaid
-flowchart LR
-    A["CLI / Telegram / MCP / IG Export"] --> B["Queue (inbox/reels-queue.jsonl)"]
-    B --> C{"Index Dedupe (sources/.reels_index.json)"}
-    C -->|"New Shortcode"| D["1. yt-dlp Metadata & Caption"]
-    D --> E["2. Audio -> Whisper Transcript"]
-    E --> F["3. Frames -> Gemini Vision OCR"]
-    F --> G["sources/reels/<shortcode>.json"]
-    G --> H{"LLM Synthesis (Noise Filter)"}
-    H -->|"should_keep = false"| I["Mark skipped"]
-    H -->|"should_keep = true"| J["Write <folder>/<slug>.md"]
-    J --> K["Update _index.md & _log.md"]
-```
+![reels-wiki Core Pipeline Architecture](assets/architecture-diagram.svg)
 
 ### Step 1: URL normalization and deduplication
 
@@ -287,6 +275,7 @@ reels-secretary/
 │   │   ├── promo-marquee-1400x560.png
 │   │   ├── promo-small-440x280.png
 │   │   └── screenshot-1280x800.png
+│   ├── architecture-diagram.svg
 │   ├── logo.png
 │   ├── promo-local-sync.jpg
 │   ├── promo-never-lose.jpg
@@ -349,6 +338,7 @@ reels-secretary/
 │   ├── popup.html
 │   └── popup.js
 ├── site/
+│   ├── architecture-diagram.html
 │   ├── favicon.ico
 │   ├── favicon.png
 │   ├── index.css

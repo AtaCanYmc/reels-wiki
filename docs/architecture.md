@@ -1,22 +1,10 @@
 # Architecture
 
-`reels-wiki` is a local-first pipeline that ingests saved Instagram Reel URLs, extracts text through a 3-stage waterfall, synthesizes atomic notes via LLM, and updates an Obsidian LLM Wiki vault.
+`reels-wiki` is a local-first pipeline that ingests saved Instagram Reels, YouTube Shorts, and TikTok videos, extracts text through a 3-stage waterfall, synthesizes atomic notes via LLM, and updates a 3-layer Obsidian LLM Wiki vault.
 
 ## Data Flow
 
-```mermaid
-flowchart LR
-    A["CLI / Telegram / MCP / IG Export"] --> B["Queue (inbox/reels-queue.jsonl)"]
-    B --> C{"Index Dedupe (sources/.reels_index.json)"}
-    C -->|"New Shortcode"| D["1. yt-dlp Metadata & Caption"]
-    D --> E["2. Audio -> Whisper Transcript"]
-    E --> F["3. Frames -> Gemini Vision OCR"]
-    F --> G["sources/reels/<shortcode>.json"]
-    G --> H{"LLM Synthesis (Noise Filter)"}
-    H -->|"should_keep = false"| I["Mark skipped"]
-    H -->|"should_keep = true"| J["Write <folder>/<slug>.md"]
-    J --> K["Update _index.md & _log.md"]
-```
+![reels-wiki Core Pipeline Architecture](../assets/architecture-diagram.svg)
 
 ## Vault Layout
 

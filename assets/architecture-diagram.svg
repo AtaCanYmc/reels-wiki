@@ -1,0 +1,166 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 448" role="img" aria-labelledby="arch-title arch-desc">
+  <title id="arch-title">reels-wiki Core Pipeline Architecture</title>
+  <desc id="arch-desc">Flow from six capture surfaces through O(1) media ID deduplication, the 3-stage cost-aware extraction waterfall, raw JSON artifact storage, LLM synthesis filtering, and atomic Obsidian 3-layer vault writes.</desc>
+  <defs>
+    <style>
+      svg {
+        --paper: #fafaf9;
+        --surface: #ffffff;
+        --subtle: #f4f4f5;
+        --ink: #18181b;
+        --muted: #52525b;
+        --soft: #52525b;
+        --border: #d4d4d8;
+        --rule: #e4e4e7;
+        --accent: #b45309;
+        --accent-tint: #fef5ec;
+        --ok: #15803d;
+        --ok-tint: #f0fdf4;
+        --skip: #b91c1c;
+        --skip-tint: #fef2f2;
+        font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      @media (prefers-color-scheme: dark) {
+        svg {
+          --paper: #0c0d10;
+          --surface: #14161b;
+          --subtle: #1b1e25;
+          --ink: #f4f4f5;
+          --muted: #a1a1aa;
+          --soft: #a1a1aa;
+          --border: #363a45;
+          --rule: #272a33;
+          --accent: #f59e0b;
+          --accent-tint: #2b2112;
+          --ok: #4ade80;
+          --ok-tint: #102619;
+          --skip: #f87171;
+          --skip-tint: #2a1414;
+        }
+      }
+      .bg { fill: var(--paper); }
+      .node { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+      .node-accent { fill: var(--accent-tint); stroke: var(--accent); stroke-width: 1.75; }
+      .node-ok { fill: var(--ok-tint); stroke: var(--ok); stroke-width: 1.75; }
+      .node-skip { fill: var(--skip-tint); stroke: var(--skip); stroke-width: 1.5; }
+      .group-box { fill: var(--subtle); stroke: var(--border); stroke-width: 1.25; }
+      .step-card { fill: var(--surface); stroke: var(--rule); stroke-width: 1; }
+      .pill { fill: var(--subtle); stroke: var(--border); stroke-width: 1; }
+      .kicker { font: 700 10px/1 "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.08em; fill: var(--muted); }
+      .kicker-accent { fill: var(--accent); }
+      .kicker-ok { fill: var(--ok); }
+      .title { font: 700 14px/1.2 "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: var(--ink); }
+      .title-skip { font: 700 13px/1.2 "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: var(--skip); }
+      .mono { font: 500 10.5px/1.3 "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; fill: var(--ink); }
+      .mono-sm { font: 500 9.5px/1 "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; fill: var(--muted); }
+      .sub { font: 500 11px/1.2 "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: var(--soft); }
+      .edge-label { font: 600 10px/1 "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; fill: var(--muted); }
+      .edge { fill: none; stroke: var(--muted); stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+      .edge-ok { stroke: var(--ok); }
+      .edge-skip { stroke: var(--skip); }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M 1 1.5 L 8.5 5 L 1 8.5 z" fill="var(--muted)" />
+    </marker>
+    <marker id="arrow-ok" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M 1 1.5 L 8.5 5 L 1 8.5 z" fill="var(--ok)" />
+    </marker>
+    <marker id="arrow-skip" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M 1 1.5 L 8.5 5 L 1 8.5 z" fill="var(--skip)" />
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="960" height="448" rx="14" />
+
+  <!-- Connectors -->
+  <line class="edge" x1="244" y1="112" x2="282" y2="112" marker-end="url(#arrow)" />
+  <line class="edge" x1="508" y1="112" x2="550" y2="112" marker-end="url(#arrow)" />
+  <text class="edge-label" x="529" y="103" text-anchor="middle">new</text>
+
+  <line class="edge" x1="742" y1="186" x2="742" y2="232" marker-end="url(#arrow)" />
+
+  <line class="edge" x1="668" y1="290" x2="626" y2="290" marker-end="url(#arrow)" />
+  <line class="edge edge-ok" x1="364" y1="290" x2="310" y2="290" marker-end="url(#arrow-ok)" />
+  <text class="edge-label" x="337" y="281" text-anchor="middle">keep</text>
+
+  <line class="edge edge-skip" x1="494" y1="346" x2="494" y2="376" marker-end="url(#arrow-skip)" />
+  <text class="edge-label" x="504" y="365">false</text>
+
+  <!-- 1. Capture Surfaces -->
+  <g>
+    <rect class="node" x="28" y="54" width="216" height="116" rx="10" />
+    <text class="kicker" x="44" y="76">CAPTURE</text>
+    <text class="title" x="44" y="98">Six Entry Points</text>
+    <text class="mono" x="44" y="119">CLI · Telegram · MCP</text>
+    <text class="mono" x="44" y="135">HTTP / Ext · IG Export</text>
+    <text class="sub" x="44" y="156">Reels · Shorts · TikTok</text>
+  </g>
+
+  <!-- 2. O(1) Dedupe & Queue (Focal #1) -->
+  <g>
+    <rect class="node-accent" x="284" y="54" width="224" height="116" rx="10" />
+    <text class="kicker kicker-accent" x="300" y="76">DEDUPE GATE</text>
+    <text class="title" x="300" y="98">O(1) Media ID Index</text>
+    <text class="mono" x="300" y="119">sources/.reels_index.json</text>
+    <text class="mono" x="300" y="135">inbox/reels-queue.jsonl</text>
+    <text class="sub" x="300" y="156">Shortcode · yt_&lt;id&gt; · tt_&lt;id&gt;</text>
+  </g>
+
+  <!-- 3. 3-Stage Extraction Waterfall -->
+  <g>
+    <rect class="group-box" x="552" y="30" width="380" height="156" rx="12" />
+    <text class="kicker" x="568" y="50">COST-AWARE EXTRACTION WATERFALL</text>
+
+    <rect class="step-card" x="568" y="62" width="348" height="32" rx="7" />
+    <text class="mono" x="580" y="82">1. yt-dlp Metadata &amp; Subtitles</text>
+    <rect class="pill" x="822" y="68" width="84" height="20" rx="5" />
+    <text class="mono-sm" x="864" y="81" text-anchor="middle">&gt;= 150 chars</text>
+
+    <rect class="step-card" x="568" y="102" width="348" height="32" rx="7" />
+    <text class="mono" x="580" y="122">2. Whisper Audio Fallback</text>
+    <rect class="pill" x="822" y="108" width="84" height="20" rx="5" />
+    <text class="mono-sm" x="864" y="121" text-anchor="middle">&gt;= 40 chars</text>
+
+    <rect class="step-card" x="568" y="142" width="348" height="32" rx="7" />
+    <text class="mono" x="580" y="162">3. Gemini Vision OCR (4 frames)</text>
+    <rect class="pill" x="822" y="148" width="84" height="20" rx="5" />
+    <text class="mono-sm" x="864" y="161" text-anchor="middle">img / short</text>
+  </g>
+
+  <!-- 4. Raw Artifact -->
+  <g>
+    <rect class="node" x="668" y="234" width="264" height="112" rx="10" />
+    <text class="kicker" x="684" y="256">STORED PAYLOAD</text>
+    <text class="title" x="684" y="278">Raw Media Artifact</text>
+    <text class="mono" x="684" y="299">sources/reels/&lt;id&gt;.json</text>
+    <text class="mono" x="684" y="315">schema v1 · no raw media</text>
+    <text class="sub" x="684" y="334">Offline reprocess source</text>
+  </g>
+
+  <!-- 5. LLM Synthesis (Focal #2) -->
+  <g>
+    <rect class="node-accent" x="364" y="234" width="260" height="112" rx="10" />
+    <text class="kicker kicker-accent" x="380" y="256">STRUCTURED SYNTHESIS</text>
+    <text class="title" x="380" y="278">LLM Filter &amp; Normalizer</text>
+    <text class="mono" x="380" y="299">Groq · Gemini · Ollama</text>
+    <text class="mono" x="380" y="315">JSON repair + vault rules</text>
+    <text class="sub" x="380" y="334">Reads _CLAUDE.md &amp; _index.md</text>
+  </g>
+
+  <!-- 6. Skipped -->
+  <g>
+    <rect class="node-skip" x="386" y="378" width="216" height="50" rx="8" />
+    <text class="title-skip" x="494" y="400" text-anchor="middle">Marked Skipped</text>
+    <text class="mono-sm" x="494" y="416" text-anchor="middle">should_keep = false</text>
+  </g>
+
+  <!-- 7. Obsidian 3-Layer Vault -->
+  <g>
+    <rect class="node-ok" x="28" y="234" width="280" height="112" rx="10" />
+    <text class="kicker kicker-ok" x="44" y="256">3-LAYER OBSIDIAN VAULT</text>
+    <text class="title" x="44" y="278">Atomic Note &amp; Wiki Sync</text>
+    <text class="mono" x="44" y="299">&lt;folder&gt;/&lt;slug&gt;.md</text>
+    <text class="mono" x="44" y="315">_index.md · _log.md · digests/</text>
+    <text class="sub" x="44" y="334">SHA-256 hash + link safe</text>
+  </g>
+</svg>

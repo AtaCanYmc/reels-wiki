@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <script>
+    try {
+      const saved = localStorage.getItem("color-scheme");
+      if (saved === "light" || saved === "dark") {
+        document.querySelector('meta[name="color-scheme"]').content = saved;
+      }
+    } catch {}
+  </script>
+  <title>Architecture Diagram | reels-wiki</title>
+  <meta name="description" content="Core pipeline architecture schematic for reels-wiki: capture surfaces, O(1) deduplication, 3-stage extraction waterfall, LLM synthesis, and 3-layer Obsidian vault writes." />
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon.png" />
+  <link rel="stylesheet" href="index.css" />
+  <style>
+    .diagram-shell { max-width: 1020px; margin: 0 auto; padding: 36px 20px 56px; }
+    .diagram-meta { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+    .diagram-back { font-size: 0.9rem; font-weight: 600; color: var(--accent); }
+    .diagram-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-default);
+      border-radius: 14px;
+      padding: 16px;
+      overflow-x: auto;
+    }
+    .diagram-card svg { display: block; width: 100%; height: auto; }
+  </style>
+</head>
+<body>
+  <main class="diagram-shell">
+    <div class="diagram-meta">
+      <div>
+        <a href="./" class="diagram-back">Back to reels-wiki</a>
+        <h1>Core Pipeline Architecture</h1>
+        <p class="section-desc">End-to-end flow from six capture surfaces into an atomic 3-layer Obsidian LLM Wiki vault.</p>
+      </div>
+      <a href="../assets/architecture-diagram.svg" class="btn-github">Raw SVG</a>
+    </div>
+
+    <div class="diagram-card">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 448" role="img" aria-labelledby="arch-title arch-desc">
+        <title id="arch-title">reels-wiki Core Pipeline Architecture</title>
+        <desc id="arch-desc">Flow from six capture surfaces through O(1) media ID deduplication, the 3-stage cost-aware extraction waterfall, raw JSON artifact storage, LLM synthesis filtering, and atomic Obsidian 3-layer vault writes.</desc>
+        <defs>
+          <style>
+            .diag-bg { fill: var(--bg-page); }
+            .diag-node { fill: var(--bg-surface); stroke: var(--border-strong); stroke-width: 1.5; }
+            .diag-node-accent { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.75; }
+            .diag-node-ok { fill: var(--bg-surface); stroke: var(--ok); stroke-width: 1.75; }
+            .diag-node-skip { fill: var(--bg-surface); stroke: var(--skip); stroke-width: 1.5; }
+            .diag-group { fill: var(--bg-subtle); stroke: var(--border-strong); stroke-width: 1.25; }
+            .diag-step { fill: var(--bg-surface); stroke: var(--border-default); stroke-width: 1; }
+            .diag-pill { fill: var(--bg-subtle); stroke: var(--border-strong); stroke-width: 1; }
+            .diag-kicker { font: 700 10px/1 var(--font-mono); letter-spacing: 0.08em; fill: var(--ink-secondary); }
+            .diag-kicker-accent { fill: var(--accent); }
+            .diag-kicker-ok { fill: var(--ok); }
+            .diag-title { font: 700 14px/1.2 var(--font-sans); fill: var(--ink-primary); }
+            .diag-title-skip { font: 700 13px/1.2 var(--font-sans); fill: var(--skip); }
+            .diag-mono { font: 500 10.5px/1.3 var(--font-mono); fill: var(--ink-primary); }
+            .diag-mono-sm { font: 500 9.5px/1 var(--font-mono); fill: var(--ink-secondary); }
+            .diag-sub { font: 500 11px/1.2 var(--font-sans); fill: var(--ink-secondary); }
+            .diag-edge-label { font: 600 10px/1 var(--font-mono); fill: var(--ink-secondary); }
+            .diag-edge { fill: none; stroke: var(--ink-secondary); stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+            .diag-edge-ok { stroke: var(--ok); }
+            .diag-edge-skip { stroke: var(--skip); }
+          </style>
+          <marker id="d-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+            <path d="M 1 1.5 L 8.5 5 L 1 8.5 z" fill="var(--ink-secondary)" />
+          </marker>
+          <marker id="d-arrow-ok" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+            <path d="M 1 1.5 L 8.5 5 L 1 8.5 z" fill="var(--ok)" />
+          </marker>
+          <marker id="d-arrow-skip" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+            <path d="M 1 1.5 L 8.5 5 L 1 8.5 z" fill="var(--skip)" />
+          </marker>
+        </defs>
+
+        <rect class="diag-bg" x="0" y="0" width="960" height="448" rx="14" />
+
+        <line class="diag-edge" x1="244" y1="112" x2="282" y2="112" marker-end="url(#d-arrow)" />
+        <line class="diag-edge" x1="508" y1="112" x2="550" y2="112" marker-end="url(#d-arrow)" />
+        <text class="diag-edge-label" x="529" y="103" text-anchor="middle">new</text>
+
+        <line class="diag-edge" x1="742" y1="186" x2="742" y2="232" marker-end="url(#d-arrow)" />
+
+        <line class="diag-edge" x1="668" y1="290" x2="626" y2="290" marker-end="url(#d-arrow)" />
+        <line class="diag-edge diag-edge-ok" x1="364" y1="290" x2="310" y2="290" marker-end="url(#d-arrow-ok)" />
+        <text class="diag-edge-label" x="337" y="281" text-anchor="middle">keep</text>
+
+        <line class="diag-edge diag-edge-skip" x1="494" y1="346" x2="494" y2="376" marker-end="url(#d-arrow-skip)" />
+        <text class="diag-edge-label" x="504" y="365">false</text>
+
+        <g>
+          <rect class="diag-node" x="28" y="54" width="216" height="116" rx="10" />
+          <text class="diag-kicker" x="44" y="76">CAPTURE</text>
+          <text class="diag-title" x="44" y="98">Six Entry Points</text>
+          <text class="diag-mono" x="44" y="119">CLI · Telegram · MCP</text>
+          <text class="diag-mono" x="44" y="135">HTTP / Ext · IG Export</text>
+          <text class="diag-sub" x="44" y="156">Reels · Shorts · TikTok</text>
+        </g>
+
+        <g>
+          <rect class="diag-node-accent" x="284" y="54" width="224" height="116" rx="10" />
+          <text class="diag-kicker diag-kicker-accent" x="300" y="76">DEDUPE GATE</text>
+          <text class="diag-title" x="300" y="98">O(1) Media ID Index</text>
+          <text class="diag-mono" x="300" y="119">sources/.reels_index.json</text>
+          <text class="diag-mono" x="300" y="135">inbox/reels-queue.jsonl</text>
+          <text class="diag-sub" x="300" y="156">Shortcode · yt_&lt;id&gt; · tt_&lt;id&gt;</text>
+        </g>
+
+        <g>
+          <rect class="diag-group" x="552" y="30" width="380" height="156" rx="12" />
+          <text class="diag-kicker" x="568" y="50">COST-AWARE EXTRACTION WATERFALL</text>
+
+          <rect class="diag-step" x="568" y="62" width="348" height="32" rx="7" />
+          <text class="diag-mono" x="580" y="82">1. yt-dlp Metadata &amp; Subtitles</text>
+          <rect class="diag-pill" x="822" y="68" width="84" height="20" rx="5" />
+          <text class="diag-mono-sm" x="864" y="81" text-anchor="middle">&gt;= 150 chars</text>
+
+          <rect class="diag-step" x="568" y="102" width="348" height="32" rx="7" />
+          <text class="diag-mono" x="580" y="122">2. Whisper Audio Fallback</text>
+          <rect class="diag-pill" x="822" y="108" width="84" height="20" rx="5" />
+          <text class="diag-mono-sm" x="864" y="121" text-anchor="middle">&gt;= 40 chars</text>
+
+          <rect class="diag-step" x="568" y="142" width="348" height="32" rx="7" />
+          <text class="diag-mono" x="580" y="162">3. Gemini Vision OCR (4 frames)</text>
+          <rect class="diag-pill" x="822" y="148" width="84" height="20" rx="5" />
+          <text class="diag-mono-sm" x="864" y="161" text-anchor="middle">img / short</text>
+        </g>
+
+        <g>
+          <rect class="diag-node" x="668" y="234" width="264" height="112" rx="10" />
+          <text class="diag-kicker" x="684" y="256">STORED PAYLOAD</text>
+          <text class="diag-title" x="684" y="278">Raw Media Artifact</text>
+          <text class="diag-mono" x="684" y="299">sources/reels/&lt;id&gt;.json</text>
+          <text class="diag-mono" x="684" y="315">schema v1 · no raw media</text>
+          <text class="diag-sub" x="684" y="334">Offline reprocess source</text>
+        </g>
+
+        <g>
+          <rect class="diag-node-accent" x="364" y="234" width="260" height="112" rx="10" />
+          <text class="diag-kicker diag-kicker-accent" x="380" y="256">STRUCTURED SYNTHESIS</text>
+          <text class="diag-title" x="380" y="278">LLM Filter &amp; Normalizer</text>
+          <text class="diag-mono" x="380" y="299">Groq · Gemini · Ollama</text>
+          <text class="diag-mono" x="380" y="315">JSON repair + vault rules</text>
+          <text class="diag-sub" x="380" y="334">Reads _CLAUDE.md &amp; _index.md</text>
+        </g>
+
+        <g>
+          <rect class="diag-node-skip" x="386" y="378" width="216" height="50" rx="8" />
+          <text class="diag-title-skip" x="494" y="400" text-anchor="middle">Marked Skipped</text>
+          <text class="diag-mono-sm" x="494" y="416" text-anchor="middle">should_keep = false</text>
+        </g>
+
+        <g>
+          <rect class="diag-node-ok" x="28" y="234" width="280" height="112" rx="10" />
+          <text class="diag-kicker diag-kicker-ok" x="44" y="256">3-LAYER OBSIDIAN VAULT</text>
+          <text class="diag-title" x="44" y="278">Atomic Note &amp; Wiki Sync</text>
+          <text class="diag-mono" x="44" y="299">&lt;folder&gt;/&lt;slug&gt;.md</text>
+          <text class="diag-mono" x="44" y="315">_index.md · _log.md · digests/</text>
+          <text class="diag-sub" x="44" y="334">SHA-256 hash + link safe</text>
+        </g>
+      </svg>
+    </div>
+  </main>
+</body>
+</html>
