@@ -162,6 +162,8 @@ Focus: Zero-terminal local observability and built-in queue watching without OS 
   - Serve a lightweight local status UI at `GET /` on `reels-sync serve` showing queue health, failed-item error traces, one-click retry/reprocess triggers, and recent notes.
 - **Built-in Watch Daemon (`interfaces/cli.py`)**:
   - Add `reels-sync watch [--interval 30]` to poll `inbox/reels-queue.jsonl` and auto-process newly ingested URLs on a debounced schedule without external cron, `launchd`, or `systemd` configuration.
+- **Obsidian Community Plugin Store Submission (`obsidian-plugin/`)**:
+  - Mirror `obsidian-plugin/` into a dedicated public GitHub repository (`obsidian-reels-wiki`) with root `versions.json`, publish a bare SemVer tag release (`X.Y.Z` without `v` prefix) attaching standalone `main.js`, `manifest.json`, and `styles.css` assets, and submit via `https://community.obsidian.md/account/plugins`.
 
 **Exit Criteria**: Opening `http://127.0.0.1:8765/` renders live queue state safely behind optional token auth, and `reels-sync watch` processes newly captured URLs automatically in foreground/Docker containers.
 
