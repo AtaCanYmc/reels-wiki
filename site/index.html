@@ -12,8 +12,8 @@
       }
     } catch {}
   </script>
-  <title>reels-wiki | Saved Instagram Reels to Obsidian LLM Wiki</title>
-  <meta name="description" content="Local-first pipeline that converts saved Instagram Reels into deduplicated atomic Markdown notes inside a 3-layer Obsidian LLM Wiki vault." />
+  <title>reels-wiki | Saved Reels, Shorts &amp; TikTok to Obsidian LLM Wiki</title>
+  <meta name="description" content="Local-first pipeline that converts saved Instagram Reels, YouTube Shorts, and TikTok videos into deduplicated atomic Markdown notes inside a 3-layer Obsidian LLM Wiki vault." />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://atacanymc.github.io/reels-wiki/" />
   <link rel="icon" href="favicon.ico" sizes="any" />
@@ -21,14 +21,14 @@
   <link rel="apple-touch-icon" href="favicon.png" />
 
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="reels-wiki | Saved Instagram Reels to Obsidian LLM Wiki" />
-  <meta property="og:description" content="Local-first pipeline that converts saved Instagram Reels into deduplicated atomic Markdown notes inside a 3-layer Obsidian LLM Wiki vault." />
+  <meta property="og:title" content="reels-wiki | Saved Reels, Shorts &amp; TikTok to Obsidian LLM Wiki" />
+  <meta property="og:description" content="Local-first pipeline that converts saved Instagram Reels, YouTube Shorts, and TikTok videos into deduplicated atomic Markdown notes inside a 3-layer Obsidian LLM Wiki vault." />
   <meta property="og:url" content="https://atacanymc.github.io/reels-wiki/" />
   <meta property="og:image" content="https://raw.githubusercontent.com/AtaCanYmc/reels-wiki/main/assets/logo.png" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="reels-wiki | Saved Instagram Reels to Obsidian LLM Wiki" />
-  <meta name="twitter:description" content="Local-first pipeline that converts saved Instagram Reels into deduplicated atomic Markdown notes inside a 3-layer Obsidian LLM Wiki vault." />
+  <meta name="twitter:title" content="reels-wiki | Saved Reels, Shorts &amp; TikTok to Obsidian LLM Wiki" />
+  <meta name="twitter:description" content="Local-first pipeline that converts saved Instagram Reels, YouTube Shorts, and TikTok videos into deduplicated atomic Markdown notes inside a 3-layer Obsidian LLM Wiki vault." />
   <meta name="twitter:image" content="https://raw.githubusercontent.com/AtaCanYmc/reels-wiki/main/assets/logo.png" />
 
   <script type="application/ld+json">
@@ -36,14 +36,14 @@
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
       "name": "reels-wiki",
-      "description": "Local-first pipeline that converts saved Instagram Reels into deduplicated atomic Markdown notes inside a 3-layer Obsidian LLM Wiki vault.",
+      "description": "Local-first pipeline that converts saved Instagram Reels, YouTube Shorts, and TikTok videos into deduplicated atomic Markdown notes inside a 3-layer Obsidian LLM Wiki vault.",
       "url": "https://atacanymc.github.io/reels-wiki/",
       "codeRepository": "https://github.com/AtaCanYmc/reels-wiki",
       "license": "https://opensource.org/licenses/MIT",
       "applicationCategory": "DeveloperApplication",
       "operatingSystem": "macOS, Linux, Windows",
       "programmingLanguage": "Python",
-      "softwareVersion": "0.1.2",
+      "softwareVersion": "0.1.3",
       "author": {
         "@type": "Person",
         "name": "Atacan YMC",
@@ -100,7 +100,7 @@
         </button>
 
         <a
-          href="https://github.com/AtaCanYmc/reels-secretary"
+          href="https://github.com/AtaCanYmc/reels-wiki"
           target="_blank"
           rel="noopener noreferrer"
           class="btn-github"
@@ -115,13 +115,21 @@
     <section class="hero">
       <div class="container hero-grid">
         <div>
-          <h1>Saved Instagram Reels to Obsidian Atomic Notes</h1>
+          <h1>Saved Short-Form Videos to Obsidian Atomic Notes</h1>
           <p class="hero-lead">
-            A local-first pipeline that extracts captions, Whisper speech transcripts, and Gemini Vision frame OCR, writing deduplicated Markdown notes directly into an existing 3-layer Obsidian LLM Wiki vault.
+            A local-first pipeline that converts saved Instagram Reels, YouTube Shorts, and TikTok videos via captions, Whisper speech transcripts, and Gemini Vision OCR into deduplicated Markdown notes inside an existing 3-layer Obsidian LLM Wiki vault.
           </p>
 
           <div class="hero-actions">
             <a href="#sandbox" class="btn-primary">Inspect Live Sandbox</a>
+            <a
+              href="https://youtu.be/olA_FnqwgkY"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn-github"
+            >
+              Watch Demo Video
+            </a>
 
             <div class="install-box">
               <code id="install-cmd">pip install reels-wiki</code>
@@ -163,6 +171,8 @@
             <span class="surface-chip">CLI: reels-sync</span>
             <span class="surface-chip">MCP: reels-wiki-mcp</span>
             <span class="surface-chip">Bot: reels-wiki-telegram</span>
+            <span class="surface-chip">HTTP / Extension: reels-sync serve</span>
+            <span class="surface-chip">Platforms: Reels / Shorts / TikTok</span>
             <span class="surface-chip">Skill: SKILL.md</span>
           </div>
         </div>
@@ -173,8 +183,8 @@
             <li class="flow-item">
               <span class="flow-num">01</span>
               <div>
-                <strong>O(1) Shortcode Gate</strong>
-                <span>Normalizes URLs to 11-char shortcodes; tracks state in <code>sources/.reels_index.json</code> and <code>inbox/reels-queue.jsonl</code>.</span>
+                <strong>O(1) Media ID Gate</strong>
+                <span>Normalizes Instagram shortcodes, YouTube Shorts (<code>yt_&lt;id&gt;</code>), and TikTok (<code>tt_&lt;id&gt;</code>); tracks state in <code>sources/.reels_index.json</code> and <code>inbox/reels-queue.jsonl</code>.</span>
               </div>
             </li>
             <li class="flow-item">
@@ -332,8 +342,8 @@
     <section id="interfaces" class="section section-alt">
       <div class="container">
         <div class="section-header">
-          <span class="section-kicker">Five Interfaces</span>
-          <h2>Run from terminal, MCP client, Python script, or Telegram</h2>
+          <span class="section-kicker">Six Interfaces</span>
+          <h2>Run from terminal, browser extension, MCP client, Python script, or Telegram</h2>
           <p class="section-desc">
             Every entry point shares the same queue, deduplication index, and vault writer. Use arrow keys or click a tab to inspect each interface.
           </p>
@@ -367,17 +377,24 @@ reels-sync init
 # Verify Python, ffmpeg, cookies, API keys, and vault permissions
 reels-sync doctor
 
-# Enqueue a single Reel (or /share/ redirect URL)
+# Enqueue Instagram Reels, YouTube Shorts, or TikTok URLs
 reels-sync ingest "https://www.instagram.com/reel/DAbCdEfGhIj/?igsh=xyz"
+reels-sync ingest "https://www.youtube.com/shorts/dQw4w9WgXcQ"
 
 # Import saved_posts.json from an Instagram export
 reels-sync import-ig ~/Downloads/instagram-export/ --reels-only
+
+# Start local HTTP ingest daemon for Shortcuts &amp; Chrome/Firefox extension
+reels-sync serve
 
 # Preview pending items without spending API calls
 reels-sync process --dry-run
 
 # Extract, synthesize, and update _index.md + _log.md
 reels-sync process --limit 10 --retry-failed
+
+# Generate a weekly knowledge digest grouping recent notes by tag
+reels-sync digest --days 7
 
 # Re-synthesize from sources/reels/&lt;shortcode&gt;.json offline
 reels-sync reprocess DAbCdEfGhIj
@@ -615,14 +632,17 @@ reels-sync stats</code></pre>
     <div class="container footer-inner">
       <div>reels-wiki · MIT License</div>
       <div class="footer-links">
+        <a href="https://youtu.be/olA_FnqwgkY" target="_blank" rel="noopener noreferrer">YouTube Demo</a>
         <a href="https://pypi.org/project/reels-wiki/" target="_blank" rel="noopener noreferrer">PyPI</a>
         <a href="https://github.com/AtaCanYmc/homebrew-tap" target="_blank" rel="noopener noreferrer">Homebrew</a>
-        <a href="https://github.com/AtaCanYmc/reels-secretary/blob/main/docs/architecture.md" target="_blank" rel="noopener noreferrer">Architecture</a>
-        <a href="https://github.com/AtaCanYmc/reels-secretary/blob/main/docs/step-by-step.md" target="_blank" rel="noopener noreferrer">Step-by-Step</a>
-        <a href="https://github.com/AtaCanYmc/reels-secretary/blob/main/docs/example-walkthrough.md" target="_blank" rel="noopener noreferrer">Examples</a>
-        <a href="https://github.com/AtaCanYmc/reels-secretary/blob/main/docs/cli-and-mcp.md" target="_blank" rel="noopener noreferrer">CLI &amp; MCP</a>
-        <a href="https://github.com/AtaCanYmc/reels-secretary/blob/main/docs/configuration.md" target="_blank" rel="noopener noreferrer">Configuration</a>
-        <a href="https://github.com/AtaCanYmc/reels-secretary/blob/main/ROADMAP.md" target="_blank" rel="noopener noreferrer">Roadmap</a>
+        <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/architecture.md" target="_blank" rel="noopener noreferrer">Architecture</a>
+        <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/step-by-step.md" target="_blank" rel="noopener noreferrer">Step-by-Step</a>
+        <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/shortcuts-and-extension.md" target="_blank" rel="noopener noreferrer">Shortcuts &amp; Extension</a>
+        <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/example-walkthrough.md" target="_blank" rel="noopener noreferrer">Examples</a>
+        <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/cli-and-mcp.md" target="_blank" rel="noopener noreferrer">CLI &amp; MCP</a>
+        <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/configuration.md" target="_blank" rel="noopener noreferrer">Configuration</a>
+        <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/ROADMAP.md" target="_blank" rel="noopener noreferrer">Roadmap</a>
+        <a href="privacy.html">Privacy</a>
       </div>
     </div>
   </footer>

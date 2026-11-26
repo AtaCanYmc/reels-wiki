@@ -121,13 +121,17 @@ reels-sync stats
 
 ## Usage
 
-### 1. Enqueue a single Reel
+### 1. Enqueue a single URL
+
+`reels-sync ingest` accepts Instagram Reels/posts (`/share/...` supported), YouTube Shorts, and TikTok video URLs:
 
 ```bash
 reels-sync ingest "https://www.instagram.com/reel/DAbCdEfGhIj/?igsh=xyz"
+reels-sync ingest "https://www.youtube.com/shorts/dQw4w9WgXcQ"
+reels-sync ingest "https://www.tiktok.com/@creator/video/7123456789012345678"
 ```
 
-Duplicate shortcodes are skipped automatically unless `--force` is passed.
+Duplicate media IDs are skipped automatically unless `--force` is passed.
 
 ### 2. Import an Instagram data export
 
@@ -176,6 +180,15 @@ reels-sync --json stats
 ```
 
 When using `--json`, global flags must appear before the subcommand.
+
+### 6. Generate a weekly knowledge digest
+
+Scan atomic notes created within the last `N` days (excluding `sources/`, `inbox/`, and `digests/`) and write a tag-grouped summary note at `digests/<YYYY-MM-DD>-digest.md`:
+
+```bash
+reels-sync digest --days 7
+reels-sync digest --days 7 --dry-run
+```
 
 ### Telegram Capture Bot
 
@@ -270,6 +283,10 @@ The `AtomicNoteSynthesis` schema includes a `should_keep` boolean. Memes, trends
 ```text
 reels-secretary/
 ├── assets/
+│   ├── chrome-store/
+│   │   ├── promo-marquee-1400x560.png
+│   │   ├── promo-small-440x280.png
+│   │   └── screenshot-1280x800.png
 │   ├── logo.png
 │   ├── promo-local-sync.jpg
 │   ├── promo-never-lose.jpg
@@ -323,6 +340,8 @@ reels-secretary/
 │           └── writer.py
 ├── extension/
 │   ├── icons/
+│   ├── store-assets/
+│   ├── STORE_LISTING.md
 │   ├── background.js
 │   ├── manifest.json
 │   ├── popup.css
@@ -335,6 +354,7 @@ reels-secretary/
 │   ├── index.html
 │   ├── index.js
 │   ├── llms.txt
+│   ├── privacy.html
 │   ├── robots.txt
 │   └── sitemap.xml
 ├── tests/
@@ -378,7 +398,7 @@ Tests run offline via `make test` (`pytest`) without making network or LLM API c
 
 ## Notes and Limits
 
-- Shortcodes are validated as exactly 11 characters (`[A-Za-z0-9_-]`). Instagram `/share/...` redirect links are resolved automatically via HTTP redirects before shortcode extraction.
+- Multi-platform ID normalization: Instagram URLs resolve to 11-character shortcodes (`[A-Za-z0-9_-]`, including `/share/...` HTTP redirects), YouTube Shorts normalize to `yt_<id>`, and TikTok video URLs normalize to `tt_<id>`.
 - Carousel and image-only photo posts (`/p/`) are accepted: when `yt-dlp` finds no video stream, downloaded carousel/thumbnail frames are routed to Gemini Vision OCR. Use `import-ig --reels-only` to skip `/p/` posts during bulk import.
 - Note titles are generated in Turkish for Turkish content and technical English otherwise.
 - Offline synthesis is supported via `synthesis.provider: ollama` against any OpenAI-compatible local endpoint (`http://localhost:11434/v1`), requiring no cloud API keys when paired with `whisper_provider: local`.

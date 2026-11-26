@@ -2,10 +2,10 @@
 
 # Apple Shortcuts & Browser Extension
 
-Capture Instagram Reels directly into your `reels-wiki` queue without opening Telegram:
+Capture Instagram Reels/posts, YouTube Shorts, and TikTok videos directly into your `reels-wiki` queue without opening Telegram:
 
-- **iOS / macOS Apple Shortcuts**: Share from the Instagram app Share Sheet via HTTP.
-- **Chrome / Firefox Extension**: One-click capture from the active desktop browser tab (`extension/`).
+- **iOS / macOS Apple Shortcuts**: Share from mobile or desktop apps via the Share Sheet over HTTP.
+- **Chrome / Firefox Extension**: One-click popup and right-click context menu capture (`extension/`), with automatic offline queueing when the local server is asleep.
 
 Both interfaces connect to the built-in `reels-sync serve` HTTP ingest endpoint.
 
@@ -59,16 +59,28 @@ Now tap **Share > More > Save to reels-wiki** from any Instagram Reel on iOS or 
 
 ## 3. Chrome & Firefox Extension (`extension/`)
 
+Supports **Instagram** (Reels and posts), **YouTube Shorts**, and **TikTok** URLs via either the toolbar popup (`Alt+Shift+S`) or the right-click context menu (**Save to reels-wiki**).
+
 ### Chrome / Edge / Brave / Arc
 
 1. Open `chrome://extensions` and enable **Developer mode**.
 2. Click **Load unpacked** and select the `extension/` folder in this repository.
-3. Open any Instagram Reel or post, click the **reels-wiki Capture** icon, and click **Save to Queue**.
+3. Open any Instagram, YouTube Shorts, or TikTok tab, click the **reels-wiki Capture** icon (or right-click the page/link), and choose **Save to Queue**.
 
 ### Firefox
 
 1. Open `about:debugging#/runtime/this-firefox`.
 2. Click **Load Temporary Add-on...** and select `extension/manifest.json`.
-3. Click the extension icon on any Instagram tab to enqueue the URL.
+3. Click the extension icon on any supported tab to enqueue the URL.
 
-> **Note:** Make sure `reels-sync serve` is running while capturing.
+### Offline Queue & Automatic Background Sync
+
+If `reels-sync serve` is unreachable when you capture a URL, the extension stores it locally in `pendingQueue` (`chrome.storage.local`) instead of failing:
+
+- **Automatic retry**: `background.js` runs a `chrome.alarms` schedule every 5 minutes (plus on browser startup) that probes `GET /health` and flushes queued URLs automatically once `reels-sync serve` comes online.
+- **Manual controls**: When queued items exist offline, the popup reveals **Sync** (flush immediately) and **Export JSON** (download pending items).
+
+### Store Packaging & Privacy
+
+- Chrome Web Store submission copy and permissions justification: [`extension/STORE_LISTING.md`](../extension/STORE_LISTING.md)
+- Extension privacy policy (zero remote data collection): [`site/privacy.html`](../site/privacy.html)
