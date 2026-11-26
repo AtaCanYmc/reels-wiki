@@ -16,18 +16,20 @@ URL ?=
 SHORTCODE ?=
 EXPORT_DIR ?=
 K ?=
+HOST ?= 127.0.0.1
+PORT ?= 8765
 
 GLOBAL_FLAGS := $(if $(CONFIG),--config "$(CONFIG)",) $(if $(VAULT),--vault "$(VAULT)",)
 
-.PHONY: help venv install install-dev install-local install-all update-yt-dlp init-config doctor \
-        test test-fast test-match test-cov lint typecheck check-docs check-release verify \
-        stats stats-json ingest import-ig process-dry process retry-failed reprocess reprocess-all telegram mcp \
-        build clean clean-all
+.PHONY: help venv install install-dev install-local install-all update-yt-dlp init-config init doctor \
+        test test-fast test-match test-cov lint typecheck check-docs check-release check-site verify \
+        stats stats-json ingest import-ig process-dry process retry-failed reprocess reprocess-all telegram mcp serve \
+        docker-build docker-process docker-telegram build build-extension clean clean-all
 
 help: ## Show available targets grouped by category
 	@echo "reels-wiki Makefile targets"
 	@echo ""
-	@echo "Variables: CONFIG= VAULT= LIMIT=$(LIMIT) URL= SHORTCODE= EXPORT_DIR= K="
+	@echo "Variables: CONFIG= VAULT= LIMIT=$(LIMIT) URL= SHORTCODE= EXPORT_DIR= K= HOST=$(HOST) PORT=$(PORT)"
 	@echo ""
 	@awk 'BEGIN {FS = ":.*## "} \
 		/^# --- / { printf "\n\033[1m%s\033[0m\n", substr($$0, 7); next } \
@@ -111,9 +113,21 @@ check-release: ## Validate release-please JSON/YAML and version parity
 	@$(VENV_PYTHON) -c 'import yaml, pathlib; yaml.safe_load(pathlib.Path(".github/workflows/release-please.yml").read_text()); print("Workflow YAML syntax OK.")' 2>/dev/null || \
 		$(PYTHON) -c 'import yaml, pathlib; yaml.safe_load(pathlib.Path(".github/workflows/release-please.yml").read_text()); print("Workflow YAML syntax OK.")'
 
-verify: check-docs check-release lint typecheck test-cov ## Run doc checks, release parity, lint, mypy, and coverage tests
+check-site: ## Validate site/ and extension/ JS, JSON, and XML files
+	@if command -v node >/dev/null 2>&1; then \
+		node --check site/index.js && node --check extension/background.js && node --check extension/popup.js; \
+	fi
+	@$(PYTHON) -c 'import json, pathlib, xml.etree.ElementTree as ET; \
+		json.loads(pathlib.Path("extension/manifest.json").read_text()); \
+		ET.fromstring(pathlib.Path("site/sitemap.xml").read_text()); \
+		print("Site and extension checks passed.")'
+
+verify: check-docs check-release check-site lint typecheck test-cov ## Run all docs, release, site, lint, type, and test gates
 
 # --- CLI Workflows
+init: ## Run interactive setup wizard (config.yaml + .env + doctor)
+	$(REELS_SYNC) $(GLOBAL_FLAGS) init
+
 stats: ## Show queue statistics
 	$(REELS_SYNC) $(GLOBAL_FLAGS) stats
 
@@ -150,10 +164,28 @@ telegram: ## Start the Telegram capture bot
 mcp: ## Start the MCP server on stdio
 	$(REELS_SYNC) $(GLOBAL_FLAGS) mcp
 
+serve: ## Start local HTTP ingest server (HOST=$(HOST) PORT=$(PORT))
+	$(REELS_SYNC) $(GLOBAL_FLAGS) serve --host $(HOST) --port $(PORT)
+
+# --- Docker
+docker-build: ## Build Docker image via docker compose
+	docker compose build
+
+docker-process: ## Run queued processor inside Docker container
+	docker compose run --rm reels-process
+
+docker-telegram: ## Start Telegram capture bot container in background
+	docker compose up -d reels-telegram
+
 # --- Build & Cleanup
 build: $(VENV_PYTHON) ## Build sdist and wheel distributions into dist/
 	$(VENV_PYTHON) -m pip install --upgrade build
 	$(VENV_PYTHON) -m build
+
+build-extension: ## Package Chrome/Firefox extension ZIP into dist/
+	@mkdir -p dist
+	@cd extension && rm -f ../dist/reels-wiki-extension.zip && zip -q -r -X ../dist/reels-wiki-extension.zip manifest.json background.js popup.html popup.css popup.js icons/ -x "*.DS_Store"
+	@echo "Built dist/reels-wiki-extension.zip"
 
 clean: ## Remove build artifacts and Python caches
 	rm -rf build/ dist/ *.egg-info .pytest_cache
