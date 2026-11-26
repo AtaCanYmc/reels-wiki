@@ -81,6 +81,7 @@
         <a href="#interfaces">Interfaces</a>
         <a href="#guardrails">Vault Rules</a>
         <a href="#quickstart">Quick Start</a>
+        <a href="#docs">Docs</a>
       </nav>
 
       <div class="nav-actions">
@@ -640,6 +641,71 @@ reels-sync stats</code></pre>
         </ol>
       </div>
     </section>
+
+    <section id="docs" class="section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-kicker">Guides &amp; Reference</span>
+          <h2>Documentation</h2>
+          <p class="section-desc">
+            Full operational guides covering provider setup, background scheduling, offline capture workflows, v1 compatibility, and diagnostics.
+          </p>
+        </div>
+
+        <div class="spec-grid">
+          <div class="spec-row">
+            <h3>Architecture &amp; Schematic</h3>
+            <p>
+              Data flow, 3-stage extraction thresholds, frozen v1 schemas, and visual pipeline overview.
+              <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/architecture.md" target="_blank" rel="noopener noreferrer" style="color: var(--accent); font-weight: 600;">Architecture Guide</a> ·
+              <a href="architecture-diagram.html" style="color: var(--accent); font-weight: 600;">Full Schematic</a> ·
+              <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/step-by-step.md" target="_blank" rel="noopener noreferrer" style="color: var(--accent); font-weight: 600;">Step-by-Step</a>
+            </p>
+          </div>
+          <div class="spec-row">
+            <h3>Providers &amp; Offline Mode</h3>
+            <p>
+              Configure Groq, Google Gemini, or local Ollama endpoints plus Whisper model selection and fallback rules.
+              <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/providers.md" target="_blank" rel="noopener noreferrer" style="color: var(--accent); font-weight: 600;">Providers Guide</a> ·
+              <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/configuration.md" target="_blank" rel="noopener noreferrer" style="color: var(--accent); font-weight: 600;">Configuration</a>
+            </p>
+          </div>
+          <div class="spec-row">
+            <h3>Saved Posts &amp; Telegram</h3>
+            <p>
+              Backfill Instagram <code>saved_posts.json</code> exports or share Reels from mobile via an allowlisted Telegram bot.
+              <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/saved-posts-workflow.md" target="_blank" rel="noopener noreferrer" style="color: var(--accent); font-weight: 600;">Saved Posts Workflow</a> ·
+              <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/telegram-bot.md" target="_blank" rel="noopener noreferrer" style="color: var(--accent); font-weight: 600;">Telegram Bot Setup</a>
+            </p>
+          </div>
+          <div class="spec-row">
+            <h3>Shortcuts &amp; Browser Extension</h3>
+            <p>
+              Capture Instagram, YouTube Shorts, and TikTok via <code>reels-sync serve</code> with 5-minute <code>chrome.alarms</code> offline auto-sync.
+              <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/shortcuts-and-extension.md" target="_blank" rel="noopener noreferrer" style="color: var(--accent); font-weight: 600;">Shortcuts &amp; Extension</a> ·
+              <a href="privacy.html" style="color: var(--accent); font-weight: 600;">Extension Privacy</a>
+            </p>
+          </div>
+          <div class="spec-row">
+            <h3>Deployment &amp; Scheduling</h3>
+            <p>
+              Run unattended via Docker Compose, macOS <code>launchd</code>, Linux <code>systemd</code> timers, Homebrew/pipx, or custom Jinja2 note templates.
+              <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/deployment.md" target="_blank" rel="noopener noreferrer" style="color: var(--accent); font-weight: 600;">Deployment Guide</a> ·
+              <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/cli-and-mcp.md" target="_blank" rel="noopener noreferrer" style="color: var(--accent); font-weight: 600;">CLI &amp; MCP</a>
+            </p>
+          </div>
+          <div class="spec-row">
+            <h3>Migration &amp; Troubleshooting</h3>
+            <p>
+              Frozen v1 schema contracts, safe upgrades, queue/index rebuilds, verified walkthroughs, and <code>reels-sync doctor</code> diagnostics.
+              <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/migration.md" target="_blank" rel="noopener noreferrer" style="color: var(--accent); font-weight: 600;">Migration Policy</a> ·
+              <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/troubleshooting.md" target="_blank" rel="noopener noreferrer" style="color: var(--accent); font-weight: 600;">Troubleshooting</a> ·
+              <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/example-walkthrough.md" target="_blank" rel="noopener noreferrer" style="color: var(--accent); font-weight: 600;">Examples</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer class="site-footer">
@@ -649,12 +715,16 @@ reels-sync stats</code></pre>
         <a href="https://youtu.be/olA_FnqwgkY" target="_blank" rel="noopener noreferrer">YouTube Demo</a>
         <a href="https://pypi.org/project/reels-wiki/" target="_blank" rel="noopener noreferrer">PyPI</a>
         <a href="https://github.com/AtaCanYmc/homebrew-tap" target="_blank" rel="noopener noreferrer">Homebrew</a>
+        <a href="architecture-diagram.html">Schematic</a>
         <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/architecture.md" target="_blank" rel="noopener noreferrer">Architecture</a>
-        <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/step-by-step.md" target="_blank" rel="noopener noreferrer">Step-by-Step</a>
+        <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/providers.md" target="_blank" rel="noopener noreferrer">Providers</a>
+        <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/deployment.md" target="_blank" rel="noopener noreferrer">Deployment</a>
         <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/shortcuts-and-extension.md" target="_blank" rel="noopener noreferrer">Shortcuts &amp; Extension</a>
         <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/example-walkthrough.md" target="_blank" rel="noopener noreferrer">Examples</a>
         <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/cli-and-mcp.md" target="_blank" rel="noopener noreferrer">CLI &amp; MCP</a>
         <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/configuration.md" target="_blank" rel="noopener noreferrer">Configuration</a>
+        <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/migration.md" target="_blank" rel="noopener noreferrer">Migration</a>
+        <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/troubleshooting.md" target="_blank" rel="noopener noreferrer">Troubleshooting</a>
         <a href="https://github.com/AtaCanYmc/reels-wiki/blob/main/ROADMAP.md" target="_blank" rel="noopener noreferrer">Roadmap</a>
         <a href="privacy.html">Privacy</a>
       </div>

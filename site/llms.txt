@@ -29,6 +29,7 @@ reels-sync digest --days 7
 
 - [Repository](https://github.com/AtaCanYmc/reels-wiki)
 - [YouTube Demo](https://youtu.be/olA_FnqwgkY)
+- [Architecture Schematic](https://atacanymc.github.io/reels-wiki/architecture-diagram.html)
 - [Documentation Index](https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/README.md)
 - [Providers Guide](https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/providers.md)
 - [Saved Posts Workflow](https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/saved-posts-workflow.md)
@@ -36,4 +37,6 @@ reels-sync digest --days 7
 - [Telegram Bot Setup](https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/telegram-bot.md)
 - [Deployment and Scheduling](https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/deployment.md)
 - [CLI and MCP Reference](https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/cli-and-mcp.md)
+- [Migration Policy](https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/migration.md)
+- [Troubleshooting Guide](https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/troubleshooting.md)
 - [Extension Privacy Policy](https://atacanymc.github.io/reels-wiki/privacy.html)
