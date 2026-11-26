@@ -13,6 +13,7 @@ Technical reference and operational guides for `reels-wiki`.
 | [Apple Shortcuts & Browser Extension](shortcuts-and-extension.md) | Direct HTTP capture via `reels-sync serve`, iOS/macOS Share Sheet, and Chrome/Firefox extension |
 | [Architecture Guide](architecture.md) | Data flow, queue invariants, 3-stage extraction waterfall, and vault context rules |
 | [CLI and MCP Reference](cli-and-mcp.md) | `reels-sync` flags, subcommands, Rich/JSON output modes, and `reels-wiki-mcp` tools |
+| [Search, Curation & Digests](search-and-curation.md) | Hybrid search (`sources/.embeddings.sqlite`), `reels-sync review`, topic digests, backlinks, and `--workers` |
 | [Configuration Reference](configuration.md) | Config file lookup order, `.env` variables, extraction settings, and synthesis options |
 | [Providers Guide](providers.md) | Obtaining API keys and discovering models for Groq, Google Gemini, and Ollama |
 | [Migration Policy](migration.md) | Frozen v1 schemas, deprecation policy, upgrade steps, and queue/index recovery |

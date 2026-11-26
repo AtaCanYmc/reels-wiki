@@ -151,10 +151,11 @@ Preview pending items before spending LLM or transcription calls:
 reels-sync process --dry-run
 ```
 
-Run extraction, synthesis, and note writing in batches:
+Run extraction, synthesis, and note writing in batches (optionally parallelize synthesis via `--workers`):
 
 ```bash
 reels-sync process --limit 10
+reels-sync process --limit 20 --workers 4
 ```
 
 Retry previously failed items:
@@ -181,14 +182,25 @@ reels-sync --json stats
 
 When using `--json`, global flags must appear before the subcommand.
 
-### 6. Generate a weekly knowledge digest
+### 6. Generate a weekly or topic-scoped digest
 
-Scan atomic notes created within the last `N` days (excluding `sources/`, `inbox/`, and `digests/`) and write a tag-grouped summary note at `digests/<YYYY-MM-DD>-digest.md`:
+Scan atomic notes created within the last `N` days (excluding `sources/`, `inbox/`, and `digests/`) and write a summary note at `digests/<YYYY-MM-DD>-digest.md` (or `-<tag>-digest.md` with `--tag`):
 
 ```bash
 reels-sync digest --days 7
-reels-sync digest --days 7 --dry-run
+reels-sync digest --days 30 --tag ai-agents
 ```
+
+### 7. Search and curate inbox notes
+
+Search vault notes offline via keyword or optional local embeddings (`ollama` / `fastembed`), and interactively promote, retag, or archive `status: inbox` notes:
+
+```bash
+reels-sync search "ffmpeg framing" --backend ollama
+reels-sync review --limit 10
+```
+
+See [Search, Curation & Digests](docs/search-and-curation.md) for backlinks, folder prompt profiles, and worker concurrency details.
 
 ### Telegram Capture Bot
 
@@ -200,7 +212,7 @@ reels-sync digest --days 7 --dry-run
 reels-sync telegram
 ```
 
-Share a Reel to your bot from the Instagram mobile app. The bot rejects all other chat IDs and refuses to start without `TELEGRAM_ALLOWED_CHAT_ID`. It only enqueues URLs; schedule `reels-sync process` via cron or `launchd` to digest the queue.
+Share Instagram Reels, YouTube Shorts, or TikTok links to your bot from mobile. The bot rejects all other chat IDs and refuses to start without `TELEGRAM_ALLOWED_CHAT_ID`. It only enqueues URLs; schedule `reels-sync process` via cron or `launchd` to digest the queue.
 
 ### MCP Server
 
@@ -290,6 +302,7 @@ reels-secretary/
 │   ├── migration.md
 │   ├── providers.md
 │   ├── saved-posts-workflow.md
+│   ├── search-and-curation.md
 │   ├── shortcuts-and-extension.md
 │   ├── step-by-step.md
 │   ├── telegram-bot.md
@@ -383,6 +396,7 @@ Tests run offline via `make test` (`pytest`) without making network or LLM API c
 - [Apple Shortcuts & Browser Extension](docs/shortcuts-and-extension.md)
 - [Example Walkthrough](docs/example-walkthrough.md)
 - [CLI and MCP Reference](docs/cli-and-mcp.md)
+- [Search, Curation & Digests](docs/search-and-curation.md)
 - [Configuration Reference](docs/configuration.md)
 - [Migration Policy](docs/migration.md)
 - [Providers Guide](docs/providers.md)

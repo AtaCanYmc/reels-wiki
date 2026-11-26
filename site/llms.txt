@@ -9,10 +9,11 @@
   1. `yt-dlp` metadata and captions (`min_caption_chars: 150`).
   2. Audio transcription via Groq `whisper-large-v3-turbo` or offline `faster-whisper`.
   3. Frame OCR via `ffmpeg` + Gemini Vision (`gemini-2.5-flash`), including image-only `/p/` carousel fallback.
-- **Multi-Provider Synthesis & Weekly Digests**: Supports Groq (`openai/gpt-oss-120b`), Google Gemini (`gemini-2.5-flash`), and offline OpenAI-compatible local models (`ollama`), with automatic JSON repair, content-hash skip on reprocess, sandboxed custom `template_path`, token/retry observability, and `reels-sync digest --days 7` weekly summary generation in `digests/<YYYY-MM-DD>-digest.md`.
+- **Multi-Provider Synthesis, Graph Links & Digests**: Supports Groq (`openai/gpt-oss-120b`), Google Gemini (`gemini-2.5-flash`), and offline OpenAI-compatible local models (`ollama`), with automatic JSON repair, per-folder `folder_prompts`, content-hash skip on reprocess, sandboxed `template_path`, optional reciprocal `enable_backlinks`, bounded `--workers N` concurrency, and `reels-sync digest --days 30 [--tag TAG]` summaries.
+- **Local Hybrid Search & Inbox Curation**: Indexes vault notes in `sources/.embeddings.sqlite` (`reels-sync search "<query>"` and MCP `search_vault_notes`) with optional `ollama`/`fastembed` vectors, and curates `status: inbox` notes via `reels-sync review`.
 - **Browser Extension & Offline Auto-Sync**: Chrome/Firefox MV3 extension (`extension/`) captures Instagram Reels, YouTube Shorts, and TikTok URLs from the popup or right-click context menu via `reels-sync serve`, stores unreachable URLs in `pendingQueue`, and flushes automatically every 5 minutes using `chrome.alarms`.
 - **Unattended Deployment**: Ships `Dockerfile` (`python:3.12-slim` + `ffmpeg`, non-root), `docker-compose.yml`, macOS `launchd`, and Linux `systemd` user timer examples.
-- **6 Interfaces**: CLI (`reels-sync` with `init`, `doctor`, `digest`), Python SDK (`reels_wiki`), MCP Server (`reels-wiki-mcp` exposing `enqueue_reel`, `import_ig_export`, `process_reels_queue`, `get_queue_stats`, `reprocess_reel`, `search_vault_notes`), Telegram Capture Bot (`reels-wiki-telegram`), Local HTTP Ingest (`reels-sync serve` for Apple Shortcuts & browser extensions), and Agent Skill (`SKILL.md`).
+- **6 Interfaces**: CLI (`reels-sync` with `init`, `doctor`, `digest`, `search`, `review`), Python SDK (`reels_wiki`), MCP Server (`reels-wiki-mcp` exposing `enqueue_reel`, `import_ig_export`, `process_reels_queue`, `get_queue_stats`, `reprocess_reel`, `search_vault_notes`), Telegram Capture Bot (`reels-wiki-telegram` accepting Reels, Shorts, and TikTok), Local HTTP Ingest (`reels-sync serve` for Apple Shortcuts & browser extensions), and Agent Skill (`SKILL.md`).
 
 ## Quick Start
 
@@ -21,8 +22,9 @@ pip install reels-wiki
 reels-sync init
 reels-sync doctor
 reels-sync ingest "https://www.instagram.com/reel/DAbCdEfGhIj/"
-reels-sync process --limit 10
+reels-sync process --limit 10 --workers 4
 reels-sync digest --days 7
+reels-sync search "ffmpeg framing" --backend ollama
 ```
 
 ## Links
@@ -31,6 +33,7 @@ reels-sync digest --days 7
 - [YouTube Demo](https://youtu.be/olA_FnqwgkY)
 - [Architecture Schematic](https://atacanymc.github.io/reels-wiki/architecture-diagram.html)
 - [Documentation Index](https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/README.md)
+- [Search, Curation & Digests](https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/search-and-curation.md)
 - [Providers Guide](https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/providers.md)
 - [Saved Posts Workflow](https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/saved-posts-workflow.md)
 - [Apple Shortcuts & Browser Extension](https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/shortcuts-and-extension.md)
