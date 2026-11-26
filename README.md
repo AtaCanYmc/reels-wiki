@@ -328,8 +328,8 @@ Tests run offline via `make test` (`pytest`) without making network or LLM API c
 
 ## Notes and Limits
 
-- Shortcodes are validated as exactly 11 characters (`[A-Za-z0-9_-]`). Instagram `/share/...` redirect links are not resolved automatically; open them in a browser first and copy the canonical URL.
-- Carousel and photo posts (`/p/`) are accepted. `yt-dlp` may fail on image-only posts, which marks them `failed`. Use `import-ig --reels-only` to filter them out during bulk import.
+- Shortcodes are validated as exactly 11 characters (`[A-Za-z0-9_-]`). Instagram `/share/...` redirect links are resolved automatically via HTTP redirects before shortcode extraction.
+- Carousel and image-only photo posts (`/p/`) are accepted: when `yt-dlp` finds no video stream, downloaded carousel/thumbnail frames are routed to Gemini Vision OCR. Use `import-ig --reels-only` to skip `/p/` posts during bulk import.
 - Note titles are generated in Turkish for Turkish content and technical English otherwise.
 - Offline synthesis is supported via `synthesis.provider: ollama` against any OpenAI-compatible local endpoint (`http://localhost:11434/v1`), requiring no cloud API keys when paired with `whisper_provider: local`.
 - Provider integrations for Groq, Google GenAI, and `yt-dlp` are isolated in `extractor.py` and `synthesizer.py` so upstream SDK changes only require edits in those two files.

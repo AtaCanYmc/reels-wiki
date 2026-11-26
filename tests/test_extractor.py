@@ -88,3 +88,37 @@ def test_extract_reel_whisper_failure_degrades_gracefully_to_vision(tmp_path: Pa
     assert art.steps_used == ["metadata", "vision:gemini"]
     assert any("audio transcription failed: RuntimeError: Groq down" in w for w in art.warnings)
     mock_vision.assert_called_once()
+
+
+def test_extract_reel_carousel_images_fallback_when_no_video(tmp_path: Path) -> None:
+    from reels_wiki.pipeline.extractor import ExtractionError
+
+    info = {
+        "description": "Short",
+        "uploader": "creator_five",
+        "entries": [
+            {"ext": "jpg", "url": "https://cdn.example.com/1.jpg"},
+            {"ext": "jpg", "url": "https://cdn.example.com/2.jpg"},
+        ],
+    }
+
+    with (
+        patch("reels_wiki.pipeline.extractor._fetch_metadata", return_value=info),
+        patch("reels_wiki.pipeline.extractor._fetch_subtitles", return_value=""),
+        patch("reels_wiki.pipeline.extractor._transcribe", side_effect=ExtractionError("no video")),
+        patch("reels_wiki.pipeline.extractor._download", side_effect=ExtractionError("no video")),
+        patch(
+            "reels_wiki.pipeline.extractor._download_images",
+            return_value=[tmp_path / "slide_00.jpg", tmp_path / "slide_01.jpg"],
+        ) as mock_dl_imgs,
+        patch(
+            "reels_wiki.pipeline.extractor._vision_notes_from_frames",
+            return_value="Carousel slide text",
+        ) as mock_vlm,
+    ):
+        art = extract_reel("https://www.instagram.com/p/DAbCdEfGhIj/", "DAbCdEfGhIj", _cfg(tmp_path))
+
+    assert art.visual_notes == "Carousel slide text"
+    assert art.steps_used == ["metadata", "vision:gemini"]
+    mock_dl_imgs.assert_called_once()
+    mock_vlm.assert_called_once()

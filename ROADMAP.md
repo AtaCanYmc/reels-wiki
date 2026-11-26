@@ -39,7 +39,7 @@ Focus: Turn the repository into a strictly verified package with zero broken ent
 
 Focus: Reduce failed extractions on edge-case Instagram posts, enable 100% offline synthesis, and expose cost/stage metrics.
 
-- [ ] **Instagram Edge Cases (`extractor.py`)**:
+- [x] **Instagram Edge Cases (`ingestion/queue_manager.py`, `pipeline/extractor.py`)**:
   - Resolve `/share/...` redirect URLs before shortcode extraction.
   - Handle image-only `/p/` carousel posts by routing downloaded frames to Gemini Vision when `yt-dlp` finds no video stream.
 - [x] **Offline LLM Synthesis (`synthesizer.py`, `config.py`, `cli.py`)**:

@@ -178,3 +178,12 @@ def test_stats_aggregates_stages_and_llm_usage(tmp_path):
     assert stats["artifacts_count"] == 2
     assert stats["stages"] == {"metadata": 1, "subtitles": 0, "whisper": 1, "vision": 1}
     assert stats["llm_usage"] == {"prompt_tokens": 200, "completion_tokens": 50, "total_tokens": 250, "retries": 2}
+
+
+def test_parse_share_url_resolves_redirect(monkeypatch):
+    class _FakeResp:
+        status_code = 200
+        url = f"https://www.instagram.com/reel/{SC}/?igsh=abc"
+
+    monkeypatch.setattr("reels_wiki.ingestion.queue_manager.httpx.head", lambda *a, **kw: _FakeResp())
+    assert extract_shortcode("https://www.instagram.com/share/reel/xyz123") == SC

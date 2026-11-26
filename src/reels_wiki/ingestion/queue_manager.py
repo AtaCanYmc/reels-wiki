@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Iterable
 from urllib.parse import urlparse
 
+import httpx
 from filelock import FileLock
 
 from ..core.models import QueueItem, QueueStatus, utcnow_iso
@@ -15,14 +16,28 @@ from ..core.utils import atomic_write_text
 
 IG_HOSTS = {"instagram.com", "www.instagram.com", "m.instagram.com", "instagr.am"}
 _PATH_RE = re.compile(r"(?:^|/)(reels?|p|tv)/([A-Za-z0-9_-]{11})(?=/|$)")
+_SHARE_RE = re.compile(r"(?:^|/)share/[A-Za-z0-9_/-]+")
 ALL_STATUSES: tuple[str, ...] = ("pending", "processing", "processed", "skipped", "failed")
+
+
+def resolve_share_url(url: str, *, timeout: float = 10.0) -> str:
+    """Follow Instagram ``/share/...`` redirects and return the resolved URL (or ``url`` on failure)."""
+    try:
+        resp = httpx.head(url, follow_redirects=True, timeout=timeout)
+        final_url = str(resp.url)
+        if resp.status_code in (403, 405) or _SHARE_RE.search(urlparse(final_url).path):
+            resp = httpx.get(url, follow_redirects=True, timeout=timeout)
+            final_url = str(resp.url)
+        return final_url
+    except httpx.HTTPError:
+        return url
 
 
 def parse_instagram_url(url: str) -> tuple[str, str] | None:
     """Return ``(kind, shortcode)`` for any reel/post URL variant, else ``None``.
 
-    Handles ``/reel/<id>/``, ``/reels/<id>/``, ``/p/<id>/``, ``/tv/<id>/``, a leading ``/<username>/``
-    segment, missing scheme, and tracking params such as ``?igsh=...``.
+    Handles ``/reel/<id>/``, ``/reels/<id>/``, ``/p/<id>/``, ``/tv/<id>/``, ``/share/...``,
+    a leading ``/<username>/`` segment, missing scheme, and tracking params such as ``?igsh=...``.
     """
     if not url or not isinstance(url, str):
         return None
@@ -38,6 +53,15 @@ def parse_instagram_url(url: str) -> tuple[str, str] | None:
     if (parsed.hostname or "").lower() not in IG_HOSTS:
         return None
     match = _PATH_RE.search(parsed.path)
+    if not match and _SHARE_RE.search(parsed.path):
+        resolved = resolve_share_url(candidate)
+        try:
+            r_parsed = urlparse(resolved)
+        except ValueError:
+            return None
+        if (r_parsed.hostname or "").lower() not in IG_HOSTS:
+            return None
+        match = _PATH_RE.search(r_parsed.path)
     if not match:
         return None
     kind = "post" if match.group(1) == "p" else "reel"

@@ -74,7 +74,7 @@ def _flatten_info(info: dict[str, Any]) -> dict[str, Any]:
     if not entries:
         return info
     first = next((e for e in entries if e), None) or {}
-    merged = {**first}
+    merged = {**first, "entries": entries}
     for key in ("description", "uploader", "channel", "title"):
         if info.get(key) and not merged.get(key):
             merged[key] = info[key]
@@ -233,20 +233,72 @@ def _transcribe(url: str, tmp: Path, cfg: Config) -> tuple[str, str]:
 
 
 # ---------------------------------------------------------------------- vision
-def _vision_notes(url: str, tmp: Path, duration: float | None, cfg: Config) -> str:
+def _extract_image_urls(info: dict[str, Any], limit: int) -> list[str]:
+    urls: list[str] = []
+    entries = info.get("entries") or [info]
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        candidate = entry.get("url") if str(entry.get("ext") or "").lower() in {"jpg", "jpeg", "png", "webp"} else None
+        candidate = candidate or entry.get("thumbnail")
+        if isinstance(candidate, str) and candidate.startswith("http") and candidate not in urls:
+            urls.append(candidate)
+            if len(urls) >= limit:
+                return urls
+    thumb = info.get("thumbnail")
+    if isinstance(thumb, str) and thumb.startswith("http") and thumb not in urls and len(urls) < limit:
+        urls.append(thumb)
+    return urls
+
+
+def _download_images(image_urls: list[str], outdir: Path) -> list[Path]:
+    frames: list[Path] = []
+    for i, img_url in enumerate(image_urls):
+        try:
+            resp = httpx.get(img_url, timeout=20, follow_redirects=True)
+            resp.raise_for_status()
+            if resp.content:
+                out = outdir / f"slide_{i:02d}.jpg"
+                out.write_bytes(resp.content)
+                frames.append(out)
+        except httpx.HTTPError:
+            continue
+    return frames
+
+
+def _vision_notes_from_frames(frames: list[Path], cfg: Config) -> str:
     from google import genai
     from google.genai import types
 
-    ecfg = cfg.extraction
-    video = _download(url, tmp, "best[height<=720][ext=mp4]/best[height<=720]/best", ecfg)
-    frames = extract_frames(video, tmp, ecfg.vision_frames, duration, ecfg)
-    if not frames:
-        raise ExtractionError("ffmpeg produced no frames")
     parts: list[Any] = [types.Part.from_bytes(data=f.read_bytes(), mime_type="image/jpeg") for f in frames]
     parts.append(render_prompt("vision_ocr.j2", n=len(frames)))
     client = genai.Client(api_key=cfg.require_key("gemini"))
-    resp = client.models.generate_content(model=ecfg.vision_model, contents=parts)
+    resp = client.models.generate_content(model=cfg.extraction.vision_model, contents=parts)
     return (resp.text or "").strip()
+
+
+def _vision_notes(
+    url: str,
+    tmp: Path,
+    duration: float | None,
+    cfg: Config,
+    *,
+    image_urls: list[str] | None = None,
+) -> str:
+    ecfg = cfg.extraction
+    frames: list[Path] = []
+    try:
+        video = _download(url, tmp, "best[height<=720][ext=mp4]/best[height<=720]/best", ecfg)
+        frames = extract_frames(video, tmp, ecfg.vision_frames, duration, ecfg)
+    except Exception:
+        if not image_urls:
+            raise
+        frames = _download_images(image_urls, tmp)
+    if not frames and image_urls:
+        frames = _download_images(image_urls, tmp)
+    if not frames:
+        raise ExtractionError("ffmpeg produced no frames")
+    return _vision_notes_from_frames(frames, cfg)
 
 
 # ---------------------------------------------------------------------- public API
@@ -289,9 +341,10 @@ def extract_reel(url: str, shortcode: str, cfg: Config) -> RawReelArtifact:
     # Step 3: frame OCR/VLM when neither caption nor transcript carries enough text
     if (len(caption) < ecfg.min_caption_chars and len(art.transcript) < ecfg.min_transcript_chars
             and ecfg.enable_vision_fallback):
+        image_urls = _extract_image_urls(info, ecfg.vision_frames)
         try:
             with tempfile.TemporaryDirectory(prefix="reels-video-") as tmp:
-                notes = _vision_notes(url, Path(tmp), art.duration, cfg)
+                notes = _vision_notes(url, Path(tmp), art.duration, cfg, image_urls=image_urls)
             if notes:
                 art.visual_notes = notes
                 art.steps_used.append("vision:gemini")
