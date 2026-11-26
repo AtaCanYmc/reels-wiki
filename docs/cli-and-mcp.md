@@ -23,7 +23,7 @@ reels-sync [--config PATH] [--vault PATH] [--json] [-v] <subcommand>
 | `import-ig <path>` | Bulk-import from `saved_posts.json` or export folder | `--reels-only`, `--force` |
 | `process` | Run waterfall extraction, synthesis, and note writing | `--limit N`, `--dry-run`, `--retry-failed`, `--force` |
 | `reprocess [shortcode]` | Re-synthesize from `sources/reels/<code>.json` | `--all`, `--dry-run` |
-| `stats` | Show index counts by status and artifact count | None |
+| `stats` | Show queue counts, artifact count, extraction `stages`, and `llm_usage` token/retry metrics | None |
 | `doctor` | Verify Python, `ffmpeg`, cookies, API keys, and vault permissions | None |
 | `init` | Interactively scaffold `config.yaml`, `.env`, and run `doctor` | `--env-path PATH`, `--force` |
 | `telegram` | Start long-polling Telegram share capture bot | None |

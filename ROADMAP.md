@@ -44,8 +44,8 @@ Focus: Reduce failed extractions on edge-case Instagram posts, enable 100% offli
   - Handle image-only `/p/` carousel posts by routing downloaded frames to Gemini Vision when `yt-dlp` finds no video stream.
 - [x] **Offline LLM Synthesis (`synthesizer.py`, `config.py`, `cli.py`)**:
   - Add an `ollama` / OpenAI-compatible local provider option alongside `groq` and `gemini` so audio (`faster-whisper`) and synthesis run completely offline.
-- [ ] **Stage & Token Observability (`pipeline.py`, `cli.py`)**:
-  - Track waterfall stage counts (`metadata`, `whisper`, `vision`) and LLM token/retry counts in `sources/reels/<shortcode>.json` and `reels-sync stats --json`.
+- [x] **Stage & Token Observability (`pipeline/runner.py`, `pipeline/synthesizer.py`, `ingestion/queue_manager.py`)**:
+  - Track waterfall stage counts (`metadata`, `subtitles`, `whisper`, `vision`) and LLM token/retry counts (`prompt_tokens`, `completion_tokens`, `total_tokens`, `retries`) in `sources/reels/<shortcode>.json` and `reels-sync --json stats`.
 - [ ] **Content-Hash Reprocessing (`queue_manager.py`, `writer.py`)**:
   - Skip rewriting identical notes during `reels-sync reprocess --all` unless synthesized content or frontmatter actually changed.
 

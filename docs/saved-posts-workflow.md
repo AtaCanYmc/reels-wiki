@@ -50,7 +50,7 @@ Common `import-ig` options:
 
 ### How deduplication works
 
-During import, `src/reels_wiki/ig_export.py` reads `saved_posts.json`, extracts links via `string_map_data -> "Saved on" -> href` (falling back to nested `href` fields), and normalizes each URL to its 11-character Instagram shortcode. Any shortcode already present in `sources/.reels_index.json` is skipped unless `--force` is passed. New items are appended to `inbox/reels-queue.jsonl` with `source="ig_export"`.
+During import, `src/reels_wiki/ingestion/ig_export.py` reads `saved_posts.json`, extracts links via `string_map_data -> "Saved on" -> href` (falling back to nested `href` fields), and normalizes each URL to its 11-character Instagram shortcode. Any shortcode already present in `sources/.reels_index.json` is skipped unless `--force` is passed. New items are appended to `inbox/reels-queue.jsonl` with `source="ig_export"`.
 
 ---
 

@@ -11,7 +11,7 @@ import httpx
 from pydantic import ValidationError
 
 from ..core.config import Config, ConfigError
-from ..core.models import AtomicNoteSynthesis, RawReelArtifact
+from ..core.models import AtomicNoteSynthesis, RawReelArtifact, SynthesisMetrics
 from ..core.utils import slugify
 from ..prompts import render_prompt
 from ..vault.context import VaultContext
@@ -60,6 +60,10 @@ class BaseProvider(ABC):
     """Abstract base class for LLM synthesis providers."""
 
     name: str
+    last_usage: dict[str, int]
+
+    def __init__(self) -> None:
+        self.last_usage = {}
 
     @abstractmethod
     def complete(self, system: str, user: str, cfg: Config) -> str:
@@ -84,6 +88,16 @@ class GroqProvider(BaseProvider):
             response_format={"type": "json_object"},
             messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
         )
+        usage = getattr(resp, "usage", None)
+        self.last_usage = (
+            {
+                "prompt_tokens": int(getattr(usage, "prompt_tokens", 0) or 0),
+                "completion_tokens": int(getattr(usage, "completion_tokens", 0) or 0),
+                "total_tokens": int(getattr(usage, "total_tokens", 0) or 0),
+            }
+            if usage
+            else {}
+        )
         return resp.choices[0].message.content or ""
 
 
@@ -107,6 +121,16 @@ class GeminiProvider(BaseProvider):
         except (TypeError, ValidationError):
             config = types.GenerateContentConfig(**kwargs)
         resp = client.models.generate_content(model=cfg.synthesis.gemini_model, contents=user, config=config)
+        meta = getattr(resp, "usage_metadata", None)
+        self.last_usage = (
+            {
+                "prompt_tokens": int(getattr(meta, "prompt_token_count", 0) or 0),
+                "completion_tokens": int(getattr(meta, "candidates_token_count", 0) or 0),
+                "total_tokens": int(getattr(meta, "total_token_count", 0) or 0),
+            }
+            if meta
+            else {}
+        )
         return resp.text or ""
 
 
@@ -130,6 +154,12 @@ class OllamaProvider(BaseProvider):
         )
         resp.raise_for_status()
         data = resp.json()
+        usage = data.get("usage") or {}
+        self.last_usage = {
+            "prompt_tokens": int(usage.get("prompt_tokens") or 0),
+            "completion_tokens": int(usage.get("completion_tokens") or 0),
+            "total_tokens": int(usage.get("total_tokens") or 0),
+        }
         return (data["choices"][0]["message"].get("content") or "").strip()
 
 
@@ -153,21 +183,47 @@ def parse_json_object(raw: str) -> dict:
     return json.loads(text[start : end + 1])
 
 
-def _run_provider(provider: str, user: str, cfg: Config) -> AtomicNoteSynthesis:
+def _provider_model(provider: str, cfg: Config) -> str | None:
+    return getattr(cfg.synthesis, f"{provider}_model", None)
+
+
+def _run_provider(provider: str, user: str, cfg: Config) -> tuple[AtomicNoteSynthesis, SynthesisMetrics]:
     cfg.require_key(provider)
     prompt: str = user
     last_err: Exception | None = None
+    prompt_tokens = 0
+    completion_tokens = 0
+    total_tokens = 0
+    retries = 0
+    impl = PROVIDERS[provider]
     for attempt in range(1, cfg.synthesis.max_retries + 1):
         try:
-            raw = PROVIDERS[provider](SYSTEM_PROMPT, prompt, cfg)
-            return AtomicNoteSynthesis.model_validate(parse_json_object(raw))
+            if isinstance(impl, BaseProvider):
+                impl.last_usage = {}
+            raw = impl(SYSTEM_PROMPT, prompt, cfg)
+            usage = impl.last_usage if isinstance(impl, BaseProvider) else {}
+            prompt_tokens += int(usage.get("prompt_tokens", 0))
+            completion_tokens += int(usage.get("completion_tokens", 0))
+            total_tokens += int(usage.get("total_tokens", 0))
+            parsed = AtomicNoteSynthesis.model_validate(parse_json_object(raw))
+            metrics = SynthesisMetrics(
+                provider=provider,
+                model=_provider_model(provider, cfg),
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=total_tokens,
+                retries=retries,
+            )
+            return parsed, metrics
         except (ValidationError, json.JSONDecodeError, ValueError) as exc:
             last_err = exc  # model produced bad JSON: tell it what was wrong and retry
+            retries += 1
             prompt = f"{user}\n\nYour previous reply was invalid ({str(exc)[:400]}). Return corrected JSON only."
         except ConfigError:
             raise
         except Exception as exc:  # noqa: BLE001 - network/rate-limit/provider errors
             last_err = exc
+            retries += 1
             if attempt < cfg.synthesis.max_retries:
                 time.sleep(min(2 ** attempt, 20))
     raise SynthesisError(f"{provider} failed after {cfg.synthesis.max_retries} attempts: {last_err}")
@@ -209,7 +265,9 @@ def synthesize(artifact: RawReelArtifact, ctx: VaultContext, cfg: Config) -> Ato
     errors: list[str] = []
     for provider in providers:
         try:
-            return normalize_synthesis(_run_provider(provider, user, cfg), ctx, artifact)
+            syn, metrics = _run_provider(provider, user, cfg)
+            artifact.synthesis_metrics = metrics
+            return normalize_synthesis(syn, ctx, artifact)
         except (SynthesisError, ConfigError) as exc:
             errors.append(str(exc))
     raise SynthesisError(" | ".join(errors))

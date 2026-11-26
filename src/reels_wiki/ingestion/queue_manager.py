@@ -250,7 +250,34 @@ class QueueManager:
         by_source: dict[str, int] = {}
         for item in self.read_queue().values():
             by_source[item.source] = by_source.get(item.source, 0) + 1
-        return {"vault": str(self.vault), "total": len(index), **counts, "by_source": by_source}
+        stages = {"metadata": 0, "subtitles": 0, "whisper": 0, "vision": 0}
+        llm_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0, "retries": 0}
+        artifacts_count = 0
+        reels_dir = self.vault / "sources" / "reels"
+        if reels_dir.is_dir():
+            for path in sorted(reels_dir.glob("*.json")):
+                artifacts_count += 1
+                try:
+                    data = json.loads(path.read_text(encoding="utf-8"))
+                except (OSError, json.JSONDecodeError):
+                    continue
+                for step in data.get("steps_used") or []:
+                    key = step.split(":", 1)[0]
+                    if key in stages:
+                        stages[key] += 1
+                metrics = data.get("synthesis_metrics")
+                if isinstance(metrics, dict):
+                    for field in llm_usage:
+                        llm_usage[field] += int(metrics.get(field) or 0)
+        return {
+            "vault": str(self.vault),
+            "total": len(index),
+            **counts,
+            "by_source": by_source,
+            "artifacts_count": artifacts_count,
+            "stages": stages,
+            "llm_usage": llm_usage,
+        }
 
 
 # ---------------------------------------------------------------------- module-level SDK helpers

@@ -264,20 +264,35 @@ reels-secretary/
 ├── src/
 │   └── reels_wiki/
 │       ├── __init__.py
-│       ├── cli.py
-│       ├── cli_ui.py
-│       ├── config.py
-│       ├── extractor.py
-│       ├── ig_export.py
-│       ├── mcp_server.py
-│       ├── models.py
-│       ├── pipeline.py
-│       ├── queue_manager.py
-│       ├── synthesizer.py
-│       ├── telegram_bot.py
-│       ├── utils.py
-│       ├── vault_context.py
-│       └── writer.py
+│       ├── core/
+│       │   ├── __init__.py
+│       │   ├── config.py
+│       │   ├── models.py
+│       │   └── utils.py
+│       ├── ingestion/
+│       │   ├── __init__.py
+│       │   ├── ig_export.py
+│       │   └── queue_manager.py
+│       ├── interfaces/
+│       │   ├── __init__.py
+│       │   ├── cli.py
+│       │   ├── cli_ui.py
+│       │   ├── mcp_server.py
+│       │   └── telegram_bot.py
+│       ├── pipeline/
+│       │   ├── __init__.py
+│       │   ├── extractor.py
+│       │   ├── runner.py
+│       │   └── synthesizer.py
+│       ├── prompts/
+│       │   ├── __init__.py
+│       │   ├── synthesis_system.j2
+│       │   ├── synthesis_user.j2
+│       │   └── vision_ocr.j2
+│       └── vault/
+│           ├── __init__.py
+│           ├── context.py
+│           └── writer.py
 ├── tests/
 │   ├── test_cli.py
 │   ├── test_extractor.py

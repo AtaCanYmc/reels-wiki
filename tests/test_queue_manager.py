@@ -159,3 +159,22 @@ def test_corrupt_queue_line_is_ignored(tmp_path):
     with open(q.queue_path, "a", encoding="utf-8") as fh:
         fh.write('{"shortcode": "truncated\n')
     assert list(q.read_queue()) == [SC]
+
+
+def test_stats_aggregates_stages_and_llm_usage(tmp_path):
+    q = QueueManager(tmp_path)
+    q.enqueue(CANON)
+    reels_dir = tmp_path / "sources" / "reels"
+    reels_dir.mkdir(parents=True, exist_ok=True)
+    (reels_dir / f"{SC}.json").write_text(
+        '{"shortcode": "DAbCdEfGhIj", "url": "https://www.instagram.com/reel/DAbCdEfGhIj/", '
+        '"steps_used": ["metadata", "whisper:groq", "vision:gemini"], '
+        '"synthesis_metrics": {"provider": "groq", "prompt_tokens": 200, "completion_tokens": 50, "total_tokens": 250, "retries": 2}}',
+        encoding="utf-8",
+    )
+    (reels_dir / "broken.json").write_text("{bad", encoding="utf-8")
+
+    stats = q.stats()
+    assert stats["artifacts_count"] == 2
+    assert stats["stages"] == {"metadata": 1, "subtitles": 0, "whisper": 1, "vision": 1}
+    assert stats["llm_usage"] == {"prompt_tokens": 200, "completion_tokens": 50, "total_tokens": 250, "retries": 2}

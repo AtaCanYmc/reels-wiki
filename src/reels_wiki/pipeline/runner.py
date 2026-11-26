@@ -43,10 +43,14 @@ def process_item(
             downloaded = True
         ctx = _ctx(cfg)
         syn = synthesize(artifact, ctx, cfg)
+        if artifact.synthesis_metrics is not None:
+            save_artifact(cfg.vault_path, artifact)
         result = write_synthesis(queue, ctx, artifact, syn, overwrite_path=item.note_path)
         result["warnings"] = artifact.warnings
         result["steps"] = artifact.steps_used
         result["downloaded"] = downloaded
+        if artifact.synthesis_metrics is not None:
+            result["synthesis_metrics"] = artifact.synthesis_metrics.model_dump()
         return result
     except Exception as exc:  # noqa: BLE001 - one bad reel must not stop the batch
         message = f"{type(exc).__name__}: {exc}"

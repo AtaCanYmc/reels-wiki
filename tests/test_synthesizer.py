@@ -117,7 +117,10 @@ def test_ollama_provider_synthesizes_offline(tmp_path, ctx, monkeypatch):
             return None
 
         def json(self):
-            return {"choices": [{"message": {"content": json.dumps(payload)}}]}
+            return {
+                "choices": [{"message": {"content": json.dumps(payload)}}],
+                "usage": {"prompt_tokens": 120, "completion_tokens": 45, "total_tokens": 165},
+            }
 
     captured = {}
 
@@ -127,11 +130,19 @@ def test_ollama_provider_synthesizes_offline(tmp_path, ctx, monkeypatch):
         return _FakeResp()
 
     monkeypatch.setattr(synthesizer.httpx, "post", _fake_post)
-    out = synthesize(ART, ctx, cfg)
+    art = ART.model_copy(deep=True)
+    out = synthesize(art, ctx, cfg)
     assert out.should_keep is True
     assert out.title == "Offline Synthesis"
     assert captured["url"] == "http://localhost:11434/v1/chat/completions"
     assert captured["json"]["model"] == "llama3.1:8b"
+    assert art.synthesis_metrics is not None
+    assert art.synthesis_metrics.provider == "ollama"
+    assert art.synthesis_metrics.model == "llama3.1:8b"
+    assert art.synthesis_metrics.prompt_tokens == 120
+    assert art.synthesis_metrics.completion_tokens == 45
+    assert art.synthesis_metrics.total_tokens == 165
+    assert art.synthesis_metrics.retries == 0
 
 
 def test_provider_abc_and_registration(monkeypatch):
@@ -156,3 +167,13 @@ def test_provider_abc_and_registration(monkeypatch):
     synthesizer.register_provider(CustomProvider())
     assert isinstance(synthesizer.PROVIDERS["custom_test"], CustomProvider)
     assert json.loads(synthesizer.PROVIDERS["custom_test"]("sys", "usr", None))["skip_reason"] == "custom"
+
+
+def test_synthesis_metrics_track_retries(ctx, cfg, monkeypatch):
+    replies = iter(["not json", json.dumps({"should_keep": False, "skip_reason": "noise"})])
+    art = ART.model_copy(deep=True)
+    monkeypatch.setitem(synthesizer.PROVIDERS, "groq", lambda *a: next(replies))
+    out = synthesize(art, ctx, cfg)
+    assert out.should_keep is False
+    assert art.synthesis_metrics is not None
+    assert art.synthesis_metrics.retries == 1

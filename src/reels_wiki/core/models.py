@@ -28,6 +28,17 @@ class QueueItem(BaseModel):
     attempts: int = 0
 
 
+class SynthesisMetrics(BaseModel):
+    """LLM usage and retry metrics recorded per synthesis run."""
+
+    provider: str | None = None
+    model: str | None = None
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    retries: int = 0
+
+
 class RawReelArtifact(BaseModel):
     """Everything extracted for a reel; stored at ``sources/reels/<shortcode>.json``."""
 
@@ -44,6 +55,7 @@ class RawReelArtifact(BaseModel):
     visual_notes: str = ""
     steps_used: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
+    synthesis_metrics: SynthesisMetrics | None = None
     extracted_at: str = Field(default_factory=utcnow_iso)
 
     def has_content(self) -> bool:
