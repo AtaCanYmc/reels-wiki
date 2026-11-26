@@ -2,12 +2,16 @@
 from __future__ import annotations
 
 import os
+import warnings
 from pathlib import Path
 from typing import Literal
 
 import yaml
 from dotenv import find_dotenv, load_dotenv
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+
+CONFIG_SCHEMA_VERSION = 1
+DEPRECATED_CONFIG_KEYS: dict[str, str] = {}
 
 
 class ConfigError(RuntimeError):
@@ -55,6 +59,7 @@ class SynthesisConfig(BaseModel):
 class Config(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    schema_version: Literal[1] = 1
     vault_path: Path
     template_path: Path | None = None
     allowed_folders: list[str] | None = None
@@ -98,6 +103,25 @@ def _candidate_paths(explicit: Path | None) -> list[Path]:
     out.append(Path.cwd() / "config.yaml")
     out.append(Path.home() / ".config" / "reels-wiki" / "config.yaml")
     return out
+
+
+def _has_dotted_key(data: dict, dotted: str) -> bool:
+    cur: object = data
+    for part in dotted.split("."):
+        if not isinstance(cur, dict) or part not in cur:
+            return False
+        cur = cur[part]
+    return True
+
+
+def _warn_deprecated_keys(data: dict) -> None:
+    for key, hint in DEPRECATED_CONFIG_KEYS.items():
+        if _has_dotted_key(data, key):
+            warnings.warn(
+                f"Config key '{key}' is deprecated and will be removed in a future release: {hint}",
+                DeprecationWarning,
+                stacklevel=3,
+            )
 
 
 def load_config(
@@ -144,6 +168,7 @@ def load_config(
             raise ConfigError("TELEGRAM_ALLOWED_CHAT_ID must be an integer") from exc
 
     try:
+        _warn_deprecated_keys(data)
         cfg = Config.model_validate(data)
     except ValidationError as exc:
         raise ConfigError(f"Invalid configuration:\n{exc}") from exc

@@ -298,6 +298,7 @@ reels-secretary/
 │   ├── configuration.md
 │   ├── deployment.md
 │   ├── example-walkthrough.md
+│   ├── migration.md
 │   ├── providers.md
 │   ├── saved-posts-workflow.md
 │   ├── shortcuts-and-extension.md
@@ -359,6 +360,7 @@ reels-secretary/
 │   └── sitemap.xml
 ├── tests/
 │   ├── test_cli.py
+│   ├── test_e2e_vault.py
 │   ├── test_extractor.py
 │   ├── test_http_server.py
 │   ├── test_ig_export.py
@@ -389,6 +391,7 @@ Tests run offline via `make test` (`pytest`) without making network or LLM API c
 - [Example Walkthrough](docs/example-walkthrough.md)
 - [CLI and MCP Reference](docs/cli-and-mcp.md)
 - [Configuration Reference](docs/configuration.md)
+- [Migration Policy](docs/migration.md)
 - [Providers Guide](docs/providers.md)
 - [Troubleshooting Guide](docs/troubleshooting.md)
 - [Contributing Guide](CONTRIBUTING.md)

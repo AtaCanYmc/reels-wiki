@@ -4,8 +4,10 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+ARTIFACT_SCHEMA_VERSION = 1
+QUEUE_SCHEMA_VERSION = 1
 QueueStatus = Literal["pending", "processing", "processed", "skipped", "failed"]
 
 
@@ -16,6 +18,9 @@ def utcnow_iso() -> str:
 class QueueItem(BaseModel):
     """One line (state snapshot) of ``inbox/reels-queue.jsonl``. Latest line per shortcode wins."""
 
+    model_config = ConfigDict(extra="ignore")
+
+    schema_version: int = QUEUE_SCHEMA_VERSION
     shortcode: str
     url: str
     source: str = "manual"
@@ -42,6 +47,9 @@ class SynthesisMetrics(BaseModel):
 class RawReelArtifact(BaseModel):
     """Everything extracted for a reel; stored at ``sources/reels/<shortcode>.json``."""
 
+    model_config = ConfigDict(extra="ignore")
+
+    schema_version: int = ARTIFACT_SCHEMA_VERSION
     shortcode: str
     url: str
     creator: str | None = None

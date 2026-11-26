@@ -15,6 +15,7 @@ Technical reference and operational guides for `reels-wiki`.
 | [CLI and MCP Reference](cli-and-mcp.md) | `reels-sync` flags, subcommands, Rich/JSON output modes, and `reels-wiki-mcp` tools |
 | [Configuration Reference](configuration.md) | Config file lookup order, `.env` variables, extraction settings, and synthesis options |
 | [Providers Guide](providers.md) | Obtaining API keys and discovering models for Groq, Google Gemini, and Ollama |
+| [Migration Policy](migration.md) | Frozen v1 schemas, deprecation policy, upgrade steps, and queue/index recovery |
 | [Example Walkthrough](example-walkthrough.md) | Real Instagram Reel, YouTube Shorts, and TikTok extraction traces (`Df44o7WhunQ`, `Df2jr_RN9gb`, `DdYn6ekug5W`, `DgNTHLDg9X5`, `yt_VpW4T7e34EI`, `tt_7684682826159049991`) |
 | [Troubleshooting Guide](troubleshooting.md) | Diagnostics (`reels-sync doctor`), cookie expiration, `yt-dlp` updates, and lock recovery |
 

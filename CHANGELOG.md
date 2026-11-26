@@ -1,5 +1,7 @@
 # Changelog
 
+For frozen v1 schemas (`config.yaml`, `sources/reels/<shortcode>.json`, `inbox/reels-queue.jsonl`, `reels_wiki.__all__`), deprecation notices, and upgrade/rollback procedures, see [Migration & Backward-Compatibility Policy](docs/migration.md).
+
 ## [0.1.3](https://github.com/AtaCanYmc/reels-wiki/compare/v0.1.2...v0.1.3) (2026-11-26)
 
 
