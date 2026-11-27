@@ -37,6 +37,7 @@ reels-sync search "ffmpeg framing" --backend ollama
 - [Providers Guide](https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/providers.md)
 - [Saved Posts Workflow](https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/saved-posts-workflow.md)
 - [Apple Shortcuts & Browser Extension](https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/shortcuts-and-extension.md)
+- [Chrome Web Store (reels-wiki Capture)](https://chromewebstore.google.com/detail/reels-wiki-capture/cenhmdpdngcmjhhllfmgndkcgmfcefhc)
 - [Telegram Bot Setup](https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/telegram-bot.md)
 - [Deployment and Scheduling](https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/deployment.md)
 - [CLI and MCP Reference](https://github.com/AtaCanYmc/reels-wiki/blob/main/docs/cli-and-mcp.md)

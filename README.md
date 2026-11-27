@@ -17,6 +17,7 @@
 [![Website](https://img.shields.io/badge/website-atacanymc.github.io-0A66C2?logo=githubpages&logoColor=white)](https://atacanymc.github.io/reels-wiki/)
 [![Obsidian Plugin](https://img.shields.io/badge/obsidian-plugin-7C3AED?logo=obsidian&logoColor=white)](obsidian-plugin/README.md)
 [![Browser Extension](https://img.shields.io/badge/extension-Chrome%20%7C%20Firefox%20%7C%20Safari-4285F4?logo=googlechrome&logoColor=white)](docs/shortcuts-and-extension.md)
+[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-reels--wiki%20Capture-4285F4?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/reels-wiki-capture/cenhmdpdngcmjhhllfmgndkcgmfcefhc)
 [![MCP Server](https://img.shields.io/badge/MCP-server-111827?logo=modelcontextprotocol&logoColor=white)](docs/cli-and-mcp.md)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](pyproject.toml)
 [![Checked with mypy](https://img.shields.io/badge/type--checked-mypy-2A6DB2)](pyproject.toml)

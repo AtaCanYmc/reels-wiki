@@ -84,6 +84,8 @@ Supports **Instagram** (Reels and posts), **YouTube Shorts**, and **TikTok** URL
 
 ### Chrome / Edge / Brave / Arc
 
+Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/reels-wiki-capture/cenhmdpdngcmjhhllfmgndkcgmfcefhc), or load unpacked from source:
+
 1. Open `chrome://extensions` and enable **Developer mode**.
 2. Click **Load unpacked** and select the `extension/` folder in this repository.
 3. Open any Instagram, YouTube Shorts, or TikTok tab, click the **reels-wiki Capture** icon (or right-click the page/link), and choose **Save to Queue**.
