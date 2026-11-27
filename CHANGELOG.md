@@ -2,6 +2,13 @@
 
 For frozen v1 schemas (`config.yaml`, `sources/reels/<shortcode>.json`, `inbox/reels-queue.jsonl`, `reels_wiki.__all__`), deprecation notices, and upgrade/rollback procedures, see [Migration & Backward-Compatibility Policy](docs/migration.md).
 
+## [0.1.6](https://github.com/AtaCanYmc/reels-wiki/compare/v0.1.5...v0.1.6) (2026-11-27)
+
+
+### Documentation
+
+* add Chrome Web Store link to docs and website ([d7a73f6](https://github.com/AtaCanYmc/reels-wiki/commit/d7a73f6ad326c669387a55dfbbb7daabb6b8db6d))
+
 ## [0.1.5](https://github.com/AtaCanYmc/reels-wiki/compare/v0.1.4...v0.1.5) (2026-11-26)
 
 
